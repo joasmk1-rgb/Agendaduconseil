@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Conseil Étudiant</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Agenda Conseil Étudiant</h1>
+    <p class="subtitle">Indique tes disponibilités pour les réunions du Conseil</p>
+  </header>
+
+  <section id="login-section" class="login-section">
+    <form id="login-form" class="login-form">
+      <div class="control-group">
+        <label for="password-input">Ton mot de passe</label>
+        <input type="password" id="password-input" placeholder="ex: pikachu" autocomplete="off" autocapitalize="off">
+      </div>
+      <button type="submit" class="btn btn-primary">Entrer</button>
+      <p id="login-error" class="login-error hidden">Mot de passe incorrect.</p>
+    </form>
+  </section>
+
+  <div id="app" class="hidden">
+    <section class="controls" aria-label="Ton identité">
+      <div class="control-group">
+        <span class="greeting">Bonjour, <strong id="member-name"></strong></span>
+      </div>
+      <div class="control-group mode-group">
+        <span class="mode-label">Je marque :</span>
+        <div class="mode-toggle">
+          <button type="button" id="mode-available" class="mode-btn active" data-mode="available">✅ Dispo</button>
+          <button type="button" id="mode-unavailable" class="mode-btn" data-mode="unavailable">❌ Pas dispo</button>
+        </div>
+      </div>
+      <div class="control-group save-indicator">
+        <span id="save-status" class="save-status"></span>
+      </div>
+      <div class="control-group actions">
+        <button type="button" id="logout-btn" class="btn btn-ghost">Se déconnecter</button>
+      </div>
+    </section>
+
+    <section class="legend" aria-hidden="true">
+      <span class="legend-item"><i class="swatch free"></i> Neutre</span>
+      <span class="legend-item"><i class="swatch available"></i> Dispo</span>
+      <span class="legend-item"><i class="swatch unavailable"></i> Pas dispo</span>
+      <span class="legend-item"><i class="swatch blocked"></i> Cours / bloqué</span>
+      <span class="legend-item"><i class="swatch event"></i> Événement</span>
+    </section>
+
+    <main>
+      <div id="grid-scroll" class="grid-scroll">
+        <div id="grid" class="grid"></div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <p>Tes disponibilités sont enregistrées automatiquement dès que tu cliques.</p>
+    </footer>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
