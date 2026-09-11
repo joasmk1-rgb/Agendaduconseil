@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Conseil — Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header admin">
+    <h1>Agenda Conseil — Admin</h1>
+    <p class="subtitle">Membres, événements et disponibilités en direct</p>
+  </header>
+
+  <p id="access-denied" class="empty-state hidden">Accès refusé. Recharge la page pour réessayer.</p>
+
+  <div id="admin-app">
+    <section class="controls admin-form-section" aria-label="Fenêtre glissante">
+      <form id="config-form" class="admin-form">
+        <div class="control-group">
+          <label for="config-range">Fenêtre glissante</label>
+          <select id="config-range">
+            <option value="30">1 mois</option>
+            <option value="60">2 mois</option>
+            <option value="90" selected>3 mois</option>
+          </select>
+        </div>
+        <div class="control-group checkbox-group">
+          <label><input type="checkbox" id="config-weekend"> Inclure week-ends</label>
+        </div>
+        <div class="control-group actions">
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <button type="button" id="reset-btn" class="btn btn-ghost">Réinitialiser les disponibilités</button>
+        </div>
+      </form>
+      <p id="config-status" class="hint"></p>
+    </section>
+
+    <section class="admin-columns">
+      <section class="admin-panel" aria-label="Membres">
+        <h2>Membres</h2>
+        <form id="member-form" class="inline-form">
+          <input type="text" id="member-name-input" placeholder="Nom">
+          <input type="text" id="member-password-input" placeholder="Mot de passe">
+          <label class="checkbox-group"><input type="checkbox" id="member-admin-input"> Admin</label>
+          <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+        </form>
+        <p class="hint">Coche "Admin" pour donner l'accès à cette page à quelqu'un — il/elle l'utilisera avec son propre mot de passe, pas besoin d'un second mot de passe séparé.</p>
+        <ul id="member-list" class="item-list"></ul>
+      </section>
+
+      <section class="admin-panel" aria-label="Événements">
+        <h2>Événements</h2>
+        <form id="event-form" class="inline-form event-form">
+          <input type="text" id="event-label-input" placeholder="Libellé (ex: AG, Blocus...)">
+          <label class="checkbox-group"><input type="checkbox" id="event-allday-input" checked> Toute la journée</label>
+          <input type="date" id="event-date-input">
+          <input type="date" id="event-enddate-input" placeholder="Fin (optionnel)">
+          <input type="time" id="event-start-input" class="hidden">
+          <input type="time" id="event-end-input" class="hidden">
+          <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+        </form>
+        <ul id="event-list" class="item-list"></ul>
+      </section>
+    </section>
+
+    <section class="stats-section">
+      <p class="response-summary"><strong id="response-count">0</strong> / <span id="member-count">0</span> membres ont indiqué au moins une disponibilité</p>
+      <div id="ranking" class="ranking"></div>
+    </section>
+
+    <section>
+      <div class="grid-scroll">
+        <div id="heatmap-grid" class="grid"></div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="app-footer">
+    <p>Cette page n'est pas protégée par une vraie sécurité — ne partage pas son lien avec les membres.</p>
+  </footer>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

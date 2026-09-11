@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Un membre du Conseil. Doc id = son mot de passe (= son identifiant).
+    match /members/{password} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['name'])
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100
+                   && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin is bool);
+    }
+
+    // Fenêtre glissante (toujours ouverte, pas de deadline).
+    match /config/current {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['rangeDays', 'includeWeekends'])
+                   && request.resource.data.rangeDays is number
+                   && request.resource.data.rangeDays > 0 && request.resource.data.rangeDays <= 120
+                   && request.resource.data.includeWeekends is bool;
+    }
+
+    // Disponibilités tri-état d'un membre. Doc id = même mot de passe que members.
+    match /availability/{password} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['name', 'marks'])
+                   && request.resource.data.name is string && request.resource.data.name.size() < 100
+                   && request.resource.data.marks is map && request.resource.data.marks.size() < 1000;
+    }
+
+    // Événements (ponctuels ou toute la journée), visibles par tous.
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['label', 'allDay', 'date'])
+                   && request.resource.data.label is string && request.resource.data.label.size() < 200
+                   && request.resource.data.allDay is bool
+                   && request.resource.data.date is string;
+    }
+
+    // Historique écrit par "Réinitialiser les disponibilités" dans l'admin.
+    match /archive/{archiveId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Tout le reste est fermé par défaut.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
