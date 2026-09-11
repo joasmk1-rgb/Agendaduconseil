@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Conseil — Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header admin">
+    <button type="button" id="menu-toggle-btn" class="menu-toggle-btn" aria-label="Menu">☰</button>
+    <div class="app-header-titles">
+      <h1>Agenda Conseil — Admin</h1>
+      <p class="subtitle" id="current-view-title">Tableau de bord</p>
+    </div>
+  </header>
+
+  <div id="nav-overlay" class="nav-overlay hidden"></div>
+  <nav id="nav-drawer" class="nav-drawer hidden" aria-label="Navigation">
+    <button type="button" class="nav-item active" data-view="dashboard"><span class="nav-icon">📊</span> Tableau de bord</button>
+    <button type="button" class="nav-item" data-view="meetings"><span class="nav-icon">🗓️</span> Réunions</button>
+    <button type="button" class="nav-item" data-view="tasks"><span class="nav-icon">📋</span> Tâches</button>
+    <button type="button" class="nav-item" data-view="projects"><span class="nav-icon">📁</span> Dossiers</button>
+    <button type="button" class="nav-item" data-view="decisions"><span class="nav-icon">🗳️</span> Décisions</button>
+    <button type="button" class="nav-item" data-view="events"><span class="nav-icon">📅</span> Événements</button>
+    <button type="button" class="nav-item" data-view="availability"><span class="nav-icon">✅</span> Disponibilités</button>
+    <button type="button" class="nav-item" data-view="members"><span class="nav-icon">👥</span> Membres</button>
+    <button type="button" class="nav-item" data-view="settings"><span class="nav-icon">⚙️</span> Paramètres</button>
+  </nav>
+
+  <p id="access-denied" class="empty-state hidden">Accès refusé. Recharge la page pour réessayer.</p>
+
+  <div id="admin-app">
+    <div class="view active" data-view="dashboard">
+      <section class="admin-panel full-width dashboard" aria-label="Tableau de bord">
+        <h2>Tableau de bord</h2>
+        <div id="dashboard-content" class="dashboard-grid"></div>
+      </section>
+    </div>
+
+    <div class="view" data-view="settings">
+      <section class="controls admin-form-section" aria-label="Fenêtre glissante">
+        <form id="config-form" class="admin-form">
+          <div class="control-group">
+            <label for="config-range">Fenêtre glissante</label>
+            <select id="config-range">
+              <option value="30">1 mois</option>
+              <option value="60">2 mois</option>
+              <option value="90" selected>3 mois</option>
+            </select>
+          </div>
+          <div class="control-group checkbox-group">
+            <label><input type="checkbox" id="config-weekend"> Inclure week-ends</label>
+          </div>
+          <div class="control-group actions">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <button type="button" id="reset-btn" class="btn btn-ghost">Réinitialiser les disponibilités</button>
+          </div>
+        </form>
+        <p id="config-status" class="hint"></p>
+      </section>
+
+      <section class="controls admin-form-section" aria-label="Vue ciblée">
+        <form id="focus-form" class="admin-form">
+          <div class="control-group">
+            <label for="focus-date-input">Vue ciblée (optionnel)</label>
+            <input type="date" id="focus-date-input">
+          </div>
+          <div class="control-group actions">
+            <button type="submit" class="btn btn-primary">Cibler cette date</button>
+            <button type="button" id="focus-clear-btn" class="btn btn-ghost">Revenir à "aujourd'hui"</button>
+          </div>
+        </form>
+        <p class="hint">Force la vue de tout le monde (y compris toi) à s'ouvrir sur cette date au lieu d'aujourd'hui — utile pour pointer une période précise, par exemple la date d'un événement à venir. Tu peux aussi cliquer "Cibler" directement sur un événement dans l'onglet Événements.</p>
+        <p id="focus-status" class="hint"></p>
+      </section>
+    </div>
+
+    <div class="view" data-view="members">
+      <section class="admin-columns">
+        <section class="admin-panel" aria-label="Membres">
+          <h2>Membres</h2>
+          <form id="member-form" class="inline-form">
+            <input type="text" id="member-name-input" placeholder="Nom">
+            <input type="text" id="member-password-input" placeholder="Mot de passe">
+            <label class="checkbox-group"><input type="checkbox" id="member-admin-input"> Admin</label>
+            <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+          </form>
+          <p class="hint">Coche "Admin" pour donner l'accès à cette page à quelqu'un — il/elle l'utilisera avec son propre mot de passe, pas besoin d'un second mot de passe séparé.</p>
+          <div class="item-list-actions">
+            <button type="button" id="member-bulk-delete-btn" class="btn btn-ghost btn-sm" disabled>Supprimer la sélection (0)</button>
+          </div>
+          <ul id="member-list" class="item-list"></ul>
+        </section>
+
+        <section class="admin-panel" aria-label="Cours récurrents">
+          <h2>Cours récurrents</h2>
+          <form id="blocked-form" class="inline-form">
+            <select id="blocked-day-input">
+              <option value="1">Lundi</option>
+              <option value="2">Mardi</option>
+              <option value="3">Mercredi</option>
+              <option value="4">Jeudi</option>
+              <option value="5">Vendredi</option>
+              <option value="6">Samedi</option>
+              <option value="0">Dimanche</option>
+            </select>
+            <input type="time" id="blocked-start-input">
+            <input type="time" id="blocked-end-input">
+            <input type="text" id="blocked-label-input" placeholder="Libellé (optionnel)">
+            <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+          </form>
+          <p class="hint">Se répète chaque semaine sur ce jour — grisé et non cliquable pour tout le monde.</p>
+          <ul id="blocked-list" class="item-list"></ul>
+        </section>
+      </section>
+    </div>
+
+    <div class="view" data-view="events">
+      <section class="admin-columns">
+        <section class="admin-panel" aria-label="Événements">
+          <h2>Événements</h2>
+          <form id="event-form" class="inline-form event-form">
+            <input type="text" id="event-label-input" placeholder="Libellé (ex: AG, Blocus...)">
+            <label class="checkbox-group"><input type="checkbox" id="event-allday-input" checked> Toute la journée</label>
+            <input type="date" id="event-date-input">
+            <input type="date" id="event-enddate-input" placeholder="Fin (optionnel)">
+            <input type="time" id="event-start-input" class="hidden">
+            <input type="time" id="event-end-input" class="hidden">
+            <input type="number" id="event-required-input" min="1" placeholder="Nb requis (optionnel)" title="Nombre de membres nécessaires pour cet événement (optionnel)">
+            <input type="number" id="event-threshold-input" min="1" placeholder="Seuil dispo (min, défaut 45)" title="Nombre de minutes dispo minimum sur le créneau pour être considéré comme disponible (défaut : 45)">
+            <select id="event-project-select"><option value="">Dossier (optionnel)</option></select>
+            <button type="submit" class="btn btn-primary btn-sm">Ajouter</button>
+          </form>
+          <ul id="event-list" class="item-list"></ul>
+        </section>
+
+        <section class="admin-panel full-width" aria-label="Disponibilités par événement">
+          <h2>Qui est dispo pour un événement ?</h2>
+          <div class="control-group">
+            <label for="event-availability-select">Événement</label>
+            <select id="event-availability-select"><option value="">— Choisir un événement —</option></select>
+          </div>
+          <div id="event-availability-result" class="hint"></div>
+        </section>
+
+        <section class="admin-panel full-width" aria-label="Trouver le meilleur créneau">
+          <h2>Trouver le meilleur créneau pour une réunion</h2>
+          <p class="hint">Cherche, dans la période donnée, le(s) créneau(x) de la durée choisie où le plus de monde est disponible.</p>
+          <form id="best-slot-form" class="inline-form">
+            <input type="date" id="best-slot-start-input" title="Début de la période à explorer" required>
+            <input type="date" id="best-slot-end-input" title="Fin de la période à explorer" required>
+            <input type="number" id="best-slot-duration-input" min="15" step="15" value="60" placeholder="Durée (min)" title="Durée de la réunion en minutes">
+            <input type="number" id="best-slot-threshold-input" min="1" value="45" placeholder="Seuil dispo (min)" title="Minutes dispo minimum pour compter quelqu'un comme disponible">
+            <button type="submit" class="btn btn-primary btn-sm">Chercher</button>
+          </form>
+          <div id="best-slot-result" class="hint"></div>
+        </section>
+      </section>
+    </div>
+
+    <div class="view" data-view="tasks">
+      <section class="admin-panel full-width" aria-label="Tâches">
+        <h2>Tâches (ex : issues d'un PV)</h2>
+        <form id="task-form" class="inline-form">
+          <input type="text" id="task-label-input" placeholder="Libellé (ex: Réserver la salle)">
+          <input type="text" id="task-description-input" placeholder="Détail (optionnel)">
+          <input type="date" id="task-deadline-input" title="Date d'échéance (optionnel)">
+          <input type="time" id="task-deadline-time-input" title="Heure d'échéance (optionnel) — pour une tâche à faire à un moment précis">
+          <select id="task-project-select"><option value="">Dossier (optionnel)</option></select>
+          <select id="task-decision-select"><option value="">Décision liée (optionnel)</option></select>
+          <select id="task-priority-select" title="Priorité">
+            <option value="normal">⚪ Normal</option>
+            <option value="important">🟠 Important</option>
+            <option value="urgent">🔴 Urgent</option>
+          </select>
+        </form>
+        <div class="control-group mode-group">
+          <span class="mode-label">Mode :</span>
+          <div class="mode-toggle">
+            <button type="button" id="task-mode-libre" class="mode-btn active" data-mode="libre">Libre</button>
+            <button type="button" id="task-mode-assignee" class="mode-btn" data-mode="assignee">Assignée directement</button>
+          </div>
+        </div>
+        <div id="task-libre-options" class="control-group">
+          <label for="task-required-input">Nombre de personnes requises</label>
+          <input type="number" id="task-required-input" min="1" value="1">
+          <p class="hint">N'importe quel membre connecté peut cliquer "je m'en occupe" tant qu'il reste de la place ; chacun peut se retirer ensuite.</p>
+        </div>
+        <div id="task-assignee-options" class="control-group hidden">
+          <label>Qui doit s'en occuper ?</label>
+          <div id="task-assignee-checkboxes" class="checkbox-list"></div>
+          <p class="hint">La ou les personnes choisies sont fixées sur cette tâche — elles ne peuvent pas se retirer elles-mêmes, seul toi (l'admin) peux la réattribuer.</p>
+        </div>
+        <div class="control-group actions">
+          <button type="button" id="task-submit-btn" class="btn btn-primary btn-sm">Ajouter la tâche</button>
+        </div>
+        <h3>Vue d'ensemble — qui fait quoi, pour quand</h3>
+        <ul id="task-list" class="item-list"></ul>
+      </section>
+    </div>
+
+    <div class="view" data-view="projects">
+      <section class="admin-columns">
+        <section class="admin-panel" aria-label="Dossiers">
+          <h2>Dossiers</h2>
+          <form id="project-form" class="inline-form">
+            <input type="text" id="project-name-input" placeholder="Nom (ex: Transition écologique)">
+            <select id="project-status-input">
+              <option value="todo">🟡 À faire</option>
+              <option value="in_progress">🔵 En cours</option>
+              <option value="paused">⏸️ En pause</option>
+              <option value="done">🟢 Terminé</option>
+            </select>
+            <select id="project-responsible-input"><option value="">Responsable (optionnel)</option></select>
+            <input type="text" id="project-description-input" placeholder="Description (optionnel)">
+            <button type="submit" class="btn btn-primary btn-sm">Créer le dossier</button>
+          </form>
+          <ul id="project-list" class="item-list"></ul>
+        </section>
+
+        <section class="admin-panel full-width" aria-label="Vue Dossier">
+          <h2>Vue d'un dossier — tout ce qui lui est lié</h2>
+          <div class="control-group">
+            <label for="project-view-select">Dossier</label>
+            <select id="project-view-select"><option value="">— Choisir un dossier —</option></select>
+          </div>
+          <div id="project-view-result"></div>
+        </section>
+      </section>
+    </div>
+
+    <div class="view" data-view="decisions">
+      <section class="admin-panel full-width" aria-label="Décisions">
+        <h2>Décisions</h2>
+        <form id="decision-form" class="inline-form">
+          <input type="text" id="decision-label-input" placeholder="Sujet (ex: Créer un poste de délégué)">
+          <input type="date" id="decision-date-input" title="Date de la décision">
+          <select id="decision-status-input">
+            <option value="pending">❔ En attente</option>
+            <option value="adopted">✅ Adoptée</option>
+            <option value="rejected">❌ Rejetée</option>
+          </select>
+          <select id="decision-meeting-select"><option value="">Réunion (optionnel)</option></select>
+          <select id="decision-project-select"><option value="">Dossier (optionnel)</option></select>
+          <button type="submit" class="btn btn-primary btn-sm">Créer la décision</button>
+        </form>
+        <ul id="decision-list" class="item-list"></ul>
+      </section>
+    </div>
+
+    <div class="view" data-view="meetings">
+      <section class="admin-panel full-width" aria-label="Réunions">
+        <h2>Réunions</h2>
+        <p class="hint">Une réunion se crée à partir d'un événement déjà présent au calendrier. Les présences sont pré-remplies automatiquement d'après les disponibilités marquées sur ce créneau (seuil de l'événement, 45 min par défaut) — modifiable ensuite librement.</p>
+        <form id="meeting-form" class="inline-form">
+          <select id="meeting-event-select"><option value="">— Choisir un événement —</option></select>
+          <input type="text" id="meeting-location-input" placeholder="Lieu (optionnel)">
+          <input type="text" id="meeting-type-input" placeholder="Type (ex: Bureau, Conseil...)">
+          <button type="submit" class="btn btn-primary btn-sm">Créer la réunion</button>
+        </form>
+        <div class="control-group">
+          <label>Dossiers abordés (optionnel)</label>
+          <div id="meeting-project-checkboxes" class="checkbox-list"></div>
+        </div>
+        <ul id="meeting-list" class="item-list meeting-list"></ul>
+      </section>
+    </div>
+
+    <div class="view" data-view="availability">
+      <section class="admin-panel full-width" aria-label="Remplir pour un membre">
+        <h2>Remplir les disponibilités d'un membre</h2>
+        <p class="hint">Pratique si un membre te communique ses dispos autrement (oral, message) : ça enregistre directement à sa place, comme s'il/elle avait cliqué lui-même/elle-même.</p>
+        <div class="control-group">
+          <label for="fill-member-select">Membre</label>
+          <select id="fill-member-select"><option value="">— Choisir un membre —</option></select>
+        </div>
+        <div class="control-group mode-group">
+          <span class="mode-label">Marquer en :</span>
+          <div class="mode-toggle">
+            <button type="button" id="fill-mode-available" class="mode-btn active" data-mode="available">✅ Dispo</button>
+            <button type="button" id="fill-mode-unavailable" class="mode-btn" data-mode="unavailable">❌ Pas dispo</button>
+          </div>
+        </div>
+        <p id="fill-status" class="hint"></p>
+        <div class="grid-scroll">
+          <div id="fill-grid" class="grid"></div>
+        </div>
+      </section>
+
+      <section class="stats-section">
+        <p class="response-summary"><strong id="response-count">0</strong> / <span id="member-count">0</span> membres ont indiqué au moins une disponibilité</p>
+        <div id="orphan-section" class="hidden">
+          <p class="hint">⚠️ Des réponses existent encore pour des personnes qui ne sont plus dans la liste des membres (ex : suppression faite avant un correctif) — elles ne comptent plus dans les stats ci-dessus, mais tu peux les effacer définitivement :</p>
+          <ul id="orphan-list" class="item-list"></ul>
+        </div>
+        <div id="ranking" class="ranking"></div>
+      </section>
+
+      <section>
+        <div class="grid-scroll">
+          <div id="heatmap-grid" class="grid"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <p>Cette page n'est pas protégée par une vraie sécurité — ne partage pas son lien avec les membres.</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

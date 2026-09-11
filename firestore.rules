@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Un membre du Conseil. Doc id = son mot de passe (= son identifiant).
+    match /members/{password} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['name'])
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100
+                   && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin is bool);
+      allow delete: if true;
+    }
+
+    // Fenêtre glissante (toujours ouverte, pas de deadline) + cours récurrents bloqués.
+    match /config/current {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAll(['rangeDays', 'includeWeekends'])
+                   && request.resource.data.rangeDays is number
+                   && request.resource.data.rangeDays > 0 && request.resource.data.rangeDays <= 120
+                   && request.resource.data.includeWeekends is bool
+                   && (!('blockedSlots' in request.resource.data)
+                       || (request.resource.data.blockedSlots is list && request.resource.data.blockedSlots.size() < 200))
+                   && (!('focusDate' in request.resource.data)
+                       || (request.resource.data.focusDate is string && request.resource.data.focusDate.size() < 20));
+    }
+
+    // Disponibilités tri-état d'un membre. Doc id = même mot de passe que members.
+    match /availability/{password} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['name', 'marks'])
+                   && request.resource.data.name is string && request.resource.data.name.size() < 100
+                   && request.resource.data.marks is map && request.resource.data.marks.size() < 1000;
+      allow delete: if true;
+    }
+
+    // Événements (ponctuels ou toute la journée), visibles par tous.
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['label', 'allDay', 'date'])
+                   && request.resource.data.label is string && request.resource.data.label.size() < 200
+                   && request.resource.data.allDay is bool
+                   && request.resource.data.date is string;
+      allow delete: if true;
+    }
+
+    // Tâches (typiquement issues d'un PV), libres (attribuables par les
+    // membres) ou assignées directement par l'admin. assignedTo est toujours
+    // une liste de { password, name } (même vide, même à 1 élément).
+    match /tasks/{taskId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['label'])
+                   && request.resource.data.label is string
+                   && request.resource.data.label.size() > 0 && request.resource.data.label.size() < 300
+                   && (!('description' in request.resource.data) || request.resource.data.description is string)
+                   && (!('deadline' in request.resource.data) || request.resource.data.deadline is string)
+                   && (!('deadlineTime' in request.resource.data) || request.resource.data.deadlineTime is string)
+                   && (!('requiredCount' in request.resource.data)
+                       || (request.resource.data.requiredCount is number && request.resource.data.requiredCount > 0))
+                   && (!('fixedAssignment' in request.resource.data) || request.resource.data.fixedAssignment is bool)
+                   && (!('assignedTo' in request.resource.data)
+                       || (request.resource.data.assignedTo is list && request.resource.data.assignedTo.size() < 200))
+                   && (!('status' in request.resource.data) || request.resource.data.status is string)
+                   && (!('priority' in request.resource.data) || request.resource.data.priority is string)
+                   && (!('projectId' in request.resource.data) || request.resource.data.projectId is string)
+                   && (!('decisionId' in request.resource.data) || request.resource.data.decisionId is string);
+      allow delete: if true;
+    }
+
+    // Réunions (liées à un event du calendrier) : date, lieu, type, statut,
+    // présences/procurations par membre.
+    match /meetings/{meetingId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['eventId', 'date'])
+                   && request.resource.data.eventId is string
+                   && request.resource.data.date is string
+                   && (!('startTime' in request.resource.data) || request.resource.data.startTime is string)
+                   && (!('endTime' in request.resource.data) || request.resource.data.endTime is string)
+                   && (!('location' in request.resource.data) || request.resource.data.location is string)
+                   && (!('type' in request.resource.data) || request.resource.data.type is string)
+                   && (!('status' in request.resource.data) || request.resource.data.status is string)
+                   && (!('attendance' in request.resource.data) || request.resource.data.attendance is map)
+                   && (!('proxies' in request.resource.data) || request.resource.data.proxies is map);
+      allow delete: if true;
+    }
+
+    // Dossiers (projets) : l'objet central qui relie réunions/décisions/
+    // tâches/événements entre eux (via projectId / projectIds sur ces objets).
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['name'])
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+                   && (!('status' in request.resource.data) || request.resource.data.status is string)
+                   && (!('priority' in request.resource.data) || request.resource.data.priority is string)
+                   && (!('responsible' in request.resource.data) || request.resource.data.responsible is string)
+                   && (!('description' in request.resource.data) || request.resource.data.description is string)
+                   && (!('type' in request.resource.data) || request.resource.data.type is string)
+                   && (!('documents' in request.resource.data)
+                       || (request.resource.data.documents is list && request.resource.data.documents.size() < 100));
+      allow delete: if true;
+    }
+
+    // Décisions : liées à une réunion et/ou un dossier. Pas de tâches
+    // générées automatiquement — juste un lien manuel (decisionId sur une tâche).
+    match /decisions/{decisionId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['label'])
+                   && request.resource.data.label is string
+                   && request.resource.data.label.size() > 0 && request.resource.data.label.size() < 300
+                   && (!('description' in request.resource.data) || request.resource.data.description is string)
+                   && (!('status' in request.resource.data) || request.resource.data.status is string)
+                   && (!('date' in request.resource.data) || request.resource.data.date is string)
+                   && (!('meetingId' in request.resource.data) || request.resource.data.meetingId is string)
+                   && (!('projectId' in request.resource.data) || request.resource.data.projectId is string)
+                   && (!('documents' in request.resource.data)
+                       || (request.resource.data.documents is list && request.resource.data.documents.size() < 100));
+      allow delete: if true;
+    }
+
+    // Points d'ODJ (ordre du jour) d'une réunion, ordre modifiable via `order`.
+    match /agendaItems/{agendaItemId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasAll(['meetingId', 'label'])
+                   && request.resource.data.meetingId is string
+                   && request.resource.data.label is string
+                   && request.resource.data.label.size() > 0 && request.resource.data.label.size() < 300
+                   && (!('order' in request.resource.data) || request.resource.data.order is number)
+                   && (!('done' in request.resource.data) || request.resource.data.done is bool)
+                   && (!('projectId' in request.resource.data) || request.resource.data.projectId is string)
+                   && (!('decisionId' in request.resource.data) || request.resource.data.decisionId is string);
+      allow delete: if true;
+    }
+
+    // Historique écrit par "Réinitialiser les disponibilités" dans l'admin.
+    match /archive/{archiveId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Tout le reste est fermé par défaut.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
