@@ -17,7 +17,7 @@ export const LAYOUT = {
   monthRowHeight: 26,
   dayRowHeight: 48,
   eventsRowHeight: 24,
-  hourRowHeight: 22,
+  hourRowHeight: 12,
 };
 
 // Les lignes horaires commencent après : bandeau mois (1) + jour (2) + événements toute la journée (3)
