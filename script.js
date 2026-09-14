@@ -87,6 +87,10 @@ const tabPanels = Array.from(document.querySelectorAll("[data-tab-panel]"));
 const rolesTabBtn = document.getElementById("roles-tab-btn");
 const rolesEventSelect = document.getElementById("roles-event-select");
 const rolesEventResult = document.getElementById("roles-event-result");
+const rolesPollingSlotGridEl = document.getElementById("roles-polling-slot-grid");
+const rolesPollingSlotSaveBtn = document.getElementById("roles-polling-slot-save-btn");
+const rolesPollingSlotClearBtn = document.getElementById("roles-polling-slot-clear-btn");
+const rolesPollingSlotResult = document.getElementById("roles-polling-slot-result");
 const rolesBestSlotForm = document.getElementById("roles-bestslot-form");
 const rolesBestSlotEventSelect = document.getElementById("roles-bestslot-event-select");
 const rolesBestSlotStartInput = document.getElementById("roles-bestslot-start-input");
@@ -919,7 +923,10 @@ function switchTab(tab) {
   });
   if (tab === "agenda") renderAgendaTab();
   if (tab === "tasks") renderMemberDashboard();
-  if (tab === "roles") renderRolesEventSelect();
+  if (tab === "roles") {
+    renderRolesEventSelect();
+    renderRolesPollingSlotGrid();
+  }
 }
 publicTabs.addEventListener("click", (e) => {
   const btn = e.target.closest(".public-tab-btn");
@@ -1051,6 +1058,85 @@ function renderRolesEventSelect() {
   if (sorted.some((ev) => ev.id === previous)) rolesEventSelect.value = previous;
   renderRolesEventResult();
   renderRolesBestSlotEventSelect();
+}
+
+// ---------- Sonder des créneaux (même fonctionnalité que côté admin) ----------
+// Accessible directement depuis l'onglet Disponibilités public, sans avoir à
+// aller dans le panneau admin — même mécanisme (config/current.pollingSlots).
+let rolesPollingSlotSelection = new Set();
+let rolesPollingSlotPainting = false;
+let rolesPollingSlotPaintAction = "set";
+
+function applyRolesPollingSlotPaint(cell, key) {
+  if (rolesPollingSlotPaintAction === "clear") {
+    rolesPollingSlotSelection.delete(key);
+    cell.classList.remove("polling-selected");
+  } else {
+    rolesPollingSlotSelection.add(key);
+    cell.classList.add("polling-selected");
+  }
+}
+document.addEventListener("mouseup", () => {
+  rolesPollingSlotPainting = false;
+});
+
+function renderRolesPollingSlotGrid() {
+  if (!rolesPollingSlotGridEl || !state.config) return;
+  rolesPollingSlotSelection = new Set(state.config.pollingSlots || []);
+  const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+  const times = Grid.buildTimeSlots();
+
+  rolesPollingSlotGridEl.innerHTML = "";
+  rolesPollingSlotGridEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
+  rolesPollingSlotGridEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
+  Grid.renderGridHeaders(rolesPollingSlotGridEl, dates, state.events);
+
+  Grid.renderHourRows(rolesPollingSlotGridEl, dates, times, state.events, state.config.blockedSlots || [], (cell, { dateISO, timeLabel }) => {
+    const key = Grid.slotKey(dateISO, timeLabel);
+    cell.dataset.key = key;
+    if (rolesPollingSlotSelection.has(key)) cell.classList.add("polling-selected");
+    cell.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      rolesPollingSlotPainting = true;
+      rolesPollingSlotPaintAction = rolesPollingSlotSelection.has(key) ? "clear" : "set";
+      applyRolesPollingSlotPaint(cell, key);
+    });
+    cell.addEventListener("mouseenter", () => {
+      if (rolesPollingSlotPainting) applyRolesPollingSlotPaint(cell, key);
+    });
+  });
+}
+
+if (rolesPollingSlotSaveBtn) {
+  rolesPollingSlotSaveBtn.addEventListener("click", async () => {
+    rolesPollingSlotResult.textContent = "Enregistrement…";
+    rolesPollingSlotSaveBtn.disabled = true;
+    try {
+      await db.setPollingSlots(Array.from(rolesPollingSlotSelection));
+      rolesPollingSlotResult.textContent = `${rolesPollingSlotSelection.size} créneau(x) sondé(s) enregistré(s) — visible en orange pour tout le monde.`;
+    } catch (err) {
+      console.error(err);
+      rolesPollingSlotResult.textContent = "Échec de l'enregistrement, réessaie.";
+    }
+    rolesPollingSlotSaveBtn.disabled = false;
+  });
+}
+
+if (rolesPollingSlotClearBtn) {
+  rolesPollingSlotClearBtn.addEventListener("click", async () => {
+    rolesPollingSlotResult.textContent = "Suppression…";
+    rolesPollingSlotClearBtn.disabled = true;
+    try {
+      await db.clearPollingSlots();
+      rolesPollingSlotSelection.clear();
+      renderRolesPollingSlotGrid();
+      rolesPollingSlotResult.textContent = "Créneaux sondés vidés.";
+    } catch (err) {
+      console.error(err);
+      rolesPollingSlotResult.textContent = "Échec, réessaie.";
+    }
+    rolesPollingSlotClearBtn.disabled = false;
+  });
 }
 
 // Sélecteur d'événement optionnel dans "Trouver le meilleur créneau" : au lieu
@@ -1597,12 +1683,14 @@ db.listenConfig((config) => {
   state.config = config;
   renderGrid();
   applyPublicTabsVisibility();
+  if (state.activeTab === "roles") renderRolesPollingSlotGrid();
 });
 db.listenEvents((events) => {
   state.events = events;
   eventsLoaded = true;
   renderGrid();
   renderMemberDashboard();
+  if (state.activeTab === "roles") renderRolesPollingSlotGrid();
 });
 db.listenTasks((tasks) => {
   state.tasks = tasks;
