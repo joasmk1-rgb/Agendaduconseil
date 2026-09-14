@@ -50,6 +50,12 @@ const saveStatus = document.getElementById("save-status");
 const modeAvailableBtn = document.getElementById("mode-available");
 const modeUnavailableBtn = document.getElementById("mode-unavailable");
 const logoutBtn = document.getElementById("logout-btn");
+const passwordChangeBtn = document.getElementById("password-change-btn");
+const passwordChangeForm = document.getElementById("password-change-form");
+const passwordChangeNewInput = document.getElementById("password-change-new-input");
+const passwordChangeConfirmInput = document.getElementById("password-change-confirm-input");
+const passwordChangeCancelBtn = document.getElementById("password-change-cancel-btn");
+const passwordChangeStatus = document.getElementById("password-change-status");
 const viewRangeToggle = document.getElementById("view-range-toggle");
 const gridScrollEl = document.getElementById("grid-scroll");
 const availRequestBanner = document.getElementById("avail-request-banner");
@@ -218,6 +224,8 @@ logoutBtn.addEventListener("click", () => {
   sessionConnected.classList.add("hidden");
   memberControls.classList.add("hidden");
   bulkMarkSection.classList.add("hidden");
+  passwordChangeForm.classList.add("hidden");
+  passwordChangeStatus.textContent = "";
   renderGrid();
   if (state.activeTab === "agenda") renderAgendaTab();
   if (state.openAgendaItemId) renderAgendaModal();
@@ -250,6 +258,57 @@ async function enterAsMember(member) {
   renderMemberDashboard();
   applyPublicTabsVisibility();
 }
+
+// ===================== CHANGER SON MOT DE PASSE =====================
+// Visible uniquement si l'admin a activé "passwordChangeEnabled" (voir
+// applyPublicTabsVisibility). Le mot de passe étant l'id même du document en
+// base, db.changeMemberPassword() s'occupe de migrer proprement toutes les
+// références (tâches, réunions, commentaires, sondages...) — voir db.js.
+passwordChangeBtn.addEventListener("click", () => {
+  passwordChangeStatus.textContent = "";
+  passwordChangeForm.classList.remove("hidden");
+  passwordChangeNewInput.value = "";
+  passwordChangeConfirmInput.value = "";
+  passwordChangeNewInput.focus();
+});
+
+passwordChangeCancelBtn.addEventListener("click", () => {
+  passwordChangeForm.classList.add("hidden");
+  passwordChangeStatus.textContent = "";
+});
+
+passwordChangeForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const newPassword = passwordChangeNewInput.value.trim();
+  const confirmPassword = passwordChangeConfirmInput.value.trim();
+  if (!newPassword) {
+    passwordChangeStatus.textContent = "Choisis un nouveau mot de passe.";
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    passwordChangeStatus.textContent = "Les deux mots de passe ne correspondent pas.";
+    return;
+  }
+  if (newPassword === state.password) {
+    passwordChangeStatus.textContent = "C'est déjà ton mot de passe actuel.";
+    return;
+  }
+  passwordChangeStatus.textContent = "Changement en cours…";
+  const submitBtn = passwordChangeForm.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  try {
+    await db.changeMemberPassword(state.password, newPassword);
+    state.password = newPassword;
+    localStorage.setItem(LOGIN_KEY, newPassword);
+    state.marks = await db.getMarks(state.password);
+    passwordChangeForm.classList.add("hidden");
+    passwordChangeStatus.textContent = "Mot de passe changé ✓ (garde-le bien en mémoire, il n'apparaît nulle part ailleurs)";
+  } catch (err) {
+    console.error(err);
+    passwordChangeStatus.textContent = err.message || "Échec du changement, réessaie.";
+  }
+  submitBtn.disabled = false;
+});
 
 async function tryAutoLogin() {
   const saved = localStorage.getItem(LOGIN_KEY);
@@ -955,6 +1014,12 @@ function applyPublicTabsVisibility() {
   agendaTabBtn.classList.toggle("hidden", !agendaEnabled);
   tasksTabBtn.classList.toggle("hidden", !tasksEnabled);
   rolesTabBtn.classList.toggle("hidden", !rolesEnabled);
+  const passwordChangeEnabled = !!(state.config && state.config.passwordChangeEnabled);
+  passwordChangeBtn.classList.toggle("hidden", !state.password || !passwordChangeEnabled);
+  if (!passwordChangeEnabled) {
+    passwordChangeForm.classList.add("hidden");
+    passwordChangeStatus.textContent = "";
+  }
   if (rolesEnabled) ensureRolesDataLoaded();
   publicTabs.classList.toggle("hidden", !agendaEnabled && !tasksEnabled && !rolesEnabled);
   if (!agendaEnabled && state.activeTab === "agenda") switchTab("calendar");

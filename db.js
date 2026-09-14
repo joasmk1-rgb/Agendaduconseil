@@ -97,6 +97,127 @@ export async function hasAnyAdmin() {
   return !snap.empty;
 }
 
+// ---------------------- Changement de mot de passe (membre) ----------------------
+// Le mot de passe EST l'id du document members/availability : "changer de mot
+// de passe" = créer un nouveau doc sous le nouvel id, recopier les données,
+// supprimer l'ancien, puis mettre à jour toutes les références ailleurs dans
+// la base (tâches, réunions, commentaires/suggestions ODJ, sondages) pour que
+// l'historique reste attribué à la bonne personne.
+export async function changeMemberPassword(oldPassword, newPassword) {
+  const oldPw = (oldPassword || "").trim();
+  const newPw = (newPassword || "").trim();
+  if (!oldPw || !newPw) throw new Error("Mot de passe manquant.");
+  if (oldPw === newPw) throw new Error("Le nouveau mot de passe est identique à l'ancien.");
+
+  const [memberSnap, existingSnap] = await Promise.all([
+    getDoc(doc(firestore, "members", oldPw)),
+    getDoc(doc(firestore, "members", newPw)),
+  ]);
+  if (!memberSnap.exists()) throw new Error("Membre introuvable.");
+  if (existingSnap.exists()) throw new Error("Ce mot de passe est déjà utilisé par quelqu'un d'autre, choisis-en un autre.");
+
+  const memberData = memberSnap.data();
+  const availSnap = await getDoc(doc(firestore, "availability", oldPw));
+
+  const batch = writeBatch(firestore);
+  batch.set(doc(firestore, "members", newPw), memberData);
+  batch.delete(doc(firestore, "members", oldPw));
+  if (availSnap.exists()) {
+    batch.set(doc(firestore, "availability", newPw), availSnap.data());
+    batch.delete(doc(firestore, "availability", oldPw));
+  }
+  await batch.commit();
+
+  await migratePasswordReferences(oldPw, newPw);
+}
+
+// Parcourt les collections où le mot de passe sert de référence (pas de doc
+// id) et remplace l'ancien par le nouveau partout où il apparaît. Petite base
+// (conseil étudiant) : un balayage complet par collection reste largement
+// assez rapide, pas besoin d'index dédié.
+async function migratePasswordReferences(oldPw, newPw) {
+  const swap = (p) => (p === oldPw ? newPw : p);
+  const writes = [];
+
+  // Tâches : assignedTo / proposedTo (listes de { password, name }),
+  // declinedBy (liste de passwords).
+  const tasksSnap = await getDocs(collection(firestore, "tasks"));
+  tasksSnap.forEach((d) => {
+    const data = d.data();
+    const patch = {};
+    if (Array.isArray(data.assignedTo) && data.assignedTo.some((a) => a.password === oldPw)) {
+      patch.assignedTo = data.assignedTo.map((a) => (a.password === oldPw ? { ...a, password: newPw } : a));
+    }
+    if (Array.isArray(data.proposedTo) && data.proposedTo.some((a) => a.password === oldPw)) {
+      patch.proposedTo = data.proposedTo.map((a) => (a.password === oldPw ? { ...a, password: newPw } : a));
+    }
+    if (Array.isArray(data.declinedBy) && data.declinedBy.includes(oldPw)) {
+      patch.declinedBy = data.declinedBy.map(swap);
+    }
+    if (Object.keys(patch).length) writes.push({ ref: d.ref, patch });
+  });
+
+  // Réunions : attendance / proxies sont des maps { [password]: ... } — une
+  // procuration (proxies) peut aussi avoir l'ancien mot de passe comme VALEUR
+  // (la personne qui porte la procuration), pas juste comme clé.
+  const meetingsSnap = await getDocs(collection(firestore, "meetings"));
+  meetingsSnap.forEach((d) => {
+    const data = d.data();
+    const patch = {};
+    if (data.attendance && typeof data.attendance === "object" && oldPw in data.attendance) {
+      const attendance = { ...data.attendance };
+      attendance[newPw] = attendance[oldPw];
+      delete attendance[oldPw];
+      patch.attendance = attendance;
+    }
+    if (data.proxies && typeof data.proxies === "object") {
+      const hasKey = oldPw in data.proxies;
+      const hasValue = Object.values(data.proxies).includes(oldPw);
+      if (hasKey || hasValue) {
+        const proxies = {};
+        Object.entries(data.proxies).forEach(([k, v]) => {
+          proxies[swap(k)] = swap(v);
+        });
+        patch.proxies = proxies;
+      }
+    }
+    if (Object.keys(patch).length) writes.push({ ref: d.ref, patch });
+  });
+
+  // Commentaires ODJ et suggestions : champ "password" simple.
+  const commentsSnap = await getDocs(collection(firestore, "agendaComments"));
+  commentsSnap.forEach((d) => {
+    if (d.data().password === oldPw) writes.push({ ref: d.ref, patch: { password: newPw } });
+  });
+
+  const proposalsSnap = await getDocs(collection(firestore, "agendaProposals"));
+  proposalsSnap.forEach((d) => {
+    if (d.data().password === oldPw) writes.push({ ref: d.ref, patch: { password: newPw } });
+  });
+
+  // Sondages : responses est une liste de { password, name, answer }.
+  const pollsSnap = await getDocs(collection(firestore, "polls"));
+  pollsSnap.forEach((d) => {
+    const data = d.data();
+    if (Array.isArray(data.responses) && data.responses.some((r) => r.password === oldPw)) {
+      writes.push({
+        ref: d.ref,
+        patch: { responses: data.responses.map((r) => (r.password === oldPw ? { ...r, password: newPw } : r)) },
+      });
+    }
+  });
+
+  if (!writes.length) return;
+
+  // writeBatch limité à 500 opérations : on découpe par tranches de 400 par sécurité.
+  for (let i = 0; i < writes.length; i += 400) {
+    const chunk = writes.slice(i, i + 400);
+    const b = writeBatch(firestore);
+    chunk.forEach(({ ref, patch }) => b.update(ref, patch));
+    await b.commit();
+  }
+}
+
 // ---------------------- Config (fenêtre glissante) ----------------------
 const configDocRef = () => doc(firestore, "config", "current");
 

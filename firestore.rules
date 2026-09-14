@@ -27,7 +27,8 @@ service cloud.firestore {
                    && (!('agendaTabEnabled' in request.resource.data) || request.resource.data.agendaTabEnabled is bool)
                    && (!('tasksTabEnabled' in request.resource.data) || request.resource.data.tasksTabEnabled is bool)
                    && (!('pollingSlots' in request.resource.data)
-                       || (request.resource.data.pollingSlots is list && request.resource.data.pollingSlots.size() < 500));
+                       || (request.resource.data.pollingSlots is list && request.resource.data.pollingSlots.size() < 500))
+                   && (!('passwordChangeEnabled' in request.resource.data) || request.resource.data.passwordChangeEnabled is bool);
     }
 
     // Disponibilités tri-état d'un membre. Doc id = même mot de passe que members.

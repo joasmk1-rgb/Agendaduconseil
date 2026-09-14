@@ -178,6 +178,7 @@ function runAdmin() {
   const weekendToggle = document.getElementById("config-weekend");
   const agendaTabToggle = document.getElementById("config-agenda-tab");
   const tasksTabToggle = document.getElementById("config-tasks-tab");
+  const passwordChangeToggle = document.getElementById("config-password-change");
   const configStatus = document.getElementById("config-status");
   const resetBtn = document.getElementById("reset-btn");
 
@@ -471,6 +472,7 @@ function runAdmin() {
     weekendToggle.checked = !!(config && config.includeWeekends);
     agendaTabToggle.checked = !!(config && config.agendaTabEnabled);
     tasksTabToggle.checked = !!(config && config.tasksTabEnabled);
+    passwordChangeToggle.checked = !!(config && config.passwordChangeEnabled);
     focusDateInput.value = (config && config.focusDate) || "";
   }
 
@@ -522,6 +524,7 @@ function runAdmin() {
         includeWeekends: weekendToggle.checked,
         agendaTabEnabled: agendaTabToggle.checked,
         tasksTabEnabled: tasksTabToggle.checked,
+        passwordChangeEnabled: passwordChangeToggle.checked,
       });
       configStatus.textContent = "Enregistré ✓";
     } catch (err) {
