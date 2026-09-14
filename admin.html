@@ -208,6 +208,29 @@
         <section class="admin-panel full-width" aria-label="Sonder des créneaux">
           <h2>Sonder des créneaux (façon Doodle)</h2>
           <p class="hint">Sélectionne les créneaux sur lesquels tu veux particulièrement avoir une réponse — ils apparaissent en <strong style="color:#e08a1e">orange</strong> sur le calendrier de tout le monde, tant qu'un membre n'a pas encore cliqué dispo/pas dispo dessus (une fois répondu, la couleur normale reprend le dessus).</p>
+          <details class="polling-slot-quickselect">
+            <summary>⚡ Marquage rapide (sélectionner par règle)</summary>
+            <div class="control-group">
+              <span class="mode-label">Jour(s) :</span>
+              <div id="polling-slot-day-checkboxes" class="checkbox-list"></div>
+            </div>
+            <div class="control-group">
+              <label for="polling-slot-start-time">De</label>
+              <input type="time" id="polling-slot-start-time" title="Heure de début (vide = toute la journée)">
+              <label for="polling-slot-end-time">à</label>
+              <input type="time" id="polling-slot-end-time" title="Heure de fin (vide = toute la journée)">
+            </div>
+            <div class="control-group">
+              <label for="polling-slot-start-date">Du</label>
+              <input type="date" id="polling-slot-start-date" title="Date de début (vide = début de la période affichée)">
+              <label for="polling-slot-end-date">au</label>
+              <input type="date" id="polling-slot-end-date" title="Date de fin (vide = fin de la période affichée)">
+            </div>
+            <div class="control-group actions">
+              <button type="button" id="polling-slot-quickselect-btn" class="btn btn-ghost btn-sm">+ Ajouter à la sélection</button>
+            </div>
+            <p id="polling-slot-quickselect-result" class="hint"></p>
+          </details>
           <div class="grid-scroll poll-slot-grid-scroll">
             <div id="polling-slot-grid" class="grid"></div>
           </div>

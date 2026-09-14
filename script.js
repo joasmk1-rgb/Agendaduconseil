@@ -91,6 +91,13 @@ const rolesPollingSlotGridEl = document.getElementById("roles-polling-slot-grid"
 const rolesPollingSlotSaveBtn = document.getElementById("roles-polling-slot-save-btn");
 const rolesPollingSlotClearBtn = document.getElementById("roles-polling-slot-clear-btn");
 const rolesPollingSlotResult = document.getElementById("roles-polling-slot-result");
+const rolesPollingSlotDayCheckboxes = document.getElementById("roles-polling-slot-day-checkboxes");
+const rolesPollingSlotStartTime = document.getElementById("roles-polling-slot-start-time");
+const rolesPollingSlotEndTime = document.getElementById("roles-polling-slot-end-time");
+const rolesPollingSlotStartDate = document.getElementById("roles-polling-slot-start-date");
+const rolesPollingSlotEndDate = document.getElementById("roles-polling-slot-end-date");
+const rolesPollingSlotQuickselectBtn = document.getElementById("roles-polling-slot-quickselect-btn");
+const rolesPollingSlotQuickselectResult = document.getElementById("roles-polling-slot-quickselect-result");
 const rolesBestSlotForm = document.getElementById("roles-bestslot-form");
 const rolesBestSlotEventSelect = document.getElementById("roles-bestslot-event-select");
 const rolesBestSlotStartInput = document.getElementById("roles-bestslot-start-input");
@@ -925,6 +932,7 @@ function switchTab(tab) {
   if (tab === "tasks") renderMemberDashboard();
   if (tab === "roles") {
     renderRolesEventSelect();
+    rolesPollingSlotSelection = new Set((state.config && state.config.pollingSlots) || []);
     renderRolesPollingSlotGrid();
   }
 }
@@ -1082,7 +1090,6 @@ document.addEventListener("mouseup", () => {
 
 function renderRolesPollingSlotGrid() {
   if (!rolesPollingSlotGridEl || !state.config) return;
-  rolesPollingSlotSelection = new Set(state.config.pollingSlots || []);
   const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
   const times = Grid.buildTimeSlots();
 
@@ -1136,6 +1143,63 @@ if (rolesPollingSlotClearBtn) {
       rolesPollingSlotResult.textContent = "Échec, réessaie.";
     }
     rolesPollingSlotClearBtn.disabled = false;
+  });
+}
+
+// ---- Marquage rapide (par règle) pour le sondage de créneaux ----
+const ROLES_POLLING_SLOT_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lundi → dimanche
+
+function renderRolesPollingSlotDayCheckboxes() {
+  if (!rolesPollingSlotDayCheckboxes || rolesPollingSlotDayCheckboxes.childElementCount) return; // construit une seule fois
+  ROLES_POLLING_SLOT_DAY_ORDER.forEach((dow) => {
+    const label = document.createElement("label");
+    label.className = "checkbox-group";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "roles-polling-slot-day-checkbox";
+    input.value = String(dow);
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(" " + Grid.WEEKDAYS_FULL[dow].slice(0, 3)));
+    rolesPollingSlotDayCheckboxes.appendChild(label);
+  });
+}
+renderRolesPollingSlotDayCheckboxes();
+
+if (rolesPollingSlotQuickselectBtn) {
+  rolesPollingSlotQuickselectBtn.addEventListener("click", () => {
+    const selectedDays = new Set(
+      Array.from(rolesPollingSlotDayCheckboxes.querySelectorAll(".roles-polling-slot-day-checkbox:checked")).map((c) => Number(c.value))
+    );
+    if (!selectedDays.size) {
+      rolesPollingSlotQuickselectResult.textContent = "Coche au moins un jour.";
+      return;
+    }
+    const startTime = rolesPollingSlotStartTime.value || null;
+    const endTime = rolesPollingSlotEndTime.value || null;
+    const startDateISO = rolesPollingSlotStartDate.value || null;
+    const endDateISO = rolesPollingSlotEndDate.value || null;
+
+    const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+    const times = Grid.buildTimeSlots();
+    let added = 0;
+    dates.forEach((date) => {
+      const dateISO = Grid.toISODate(date);
+      if (startDateISO && dateISO < startDateISO) return;
+      if (endDateISO && dateISO > endDateISO) return;
+      if (!selectedDays.has(date.getDay())) return;
+      times.forEach((timeLabel) => {
+        if (startTime && timeLabel < startTime) return;
+        if (endTime && timeLabel >= endTime) return;
+        const key = Grid.slotKey(dateISO, timeLabel);
+        if (!rolesPollingSlotSelection.has(key)) added++;
+        rolesPollingSlotSelection.add(key);
+      });
+    });
+
+    renderRolesPollingSlotGrid();
+    rolesPollingSlotQuickselectResult.textContent = added
+      ? `${added} créneau(x) ajouté(s) à la sélection — clique "Enregistrer les créneaux sondés" pour valider.`
+      : "Aucun nouveau créneau à ajouter (déjà tous sélectionnés).";
   });
 }
 
@@ -1683,6 +1747,7 @@ db.listenConfig((config) => {
   state.config = config;
   renderGrid();
   applyPublicTabsVisibility();
+  rolesPollingSlotSelection = new Set((state.config && state.config.pollingSlots) || []);
   if (state.activeTab === "roles") renderRolesPollingSlotGrid();
 });
 db.listenEvents((events) => {

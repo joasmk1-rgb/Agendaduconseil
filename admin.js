@@ -430,6 +430,13 @@ function runAdmin() {
   const pollingSlotSaveBtn = document.getElementById("polling-slot-save-btn");
   const pollingSlotClearBtn = document.getElementById("polling-slot-clear-btn");
   const pollingSlotResult = document.getElementById("polling-slot-result");
+  const pollingSlotDayCheckboxes = document.getElementById("polling-slot-day-checkboxes");
+  const pollingSlotStartTime = document.getElementById("polling-slot-start-time");
+  const pollingSlotEndTime = document.getElementById("polling-slot-end-time");
+  const pollingSlotStartDate = document.getElementById("polling-slot-start-date");
+  const pollingSlotEndDate = document.getElementById("polling-slot-end-date");
+  const pollingSlotQuickselectBtn = document.getElementById("polling-slot-quickselect-btn");
+  const pollingSlotQuickselectResult = document.getElementById("polling-slot-quickselect-result");
   const bulkFillOnlyEmpty = document.getElementById("bulk-fill-only-empty");
   const bulkFillApplyBtn = document.getElementById("bulk-fill-apply-btn");
   const bulkFillResult = document.getElementById("bulk-fill-result");
@@ -3153,6 +3160,63 @@ function runAdmin() {
         pollingSlotResult.textContent = "Échec, réessaie.";
       }
       pollingSlotClearBtn.disabled = false;
+    });
+  }
+
+  // ---------- Marquage rapide pour le sondage de créneaux (règle) ----------
+  const POLLING_SLOT_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lundi → dimanche
+
+  function renderPollingSlotDayCheckboxes() {
+    if (!pollingSlotDayCheckboxes || pollingSlotDayCheckboxes.childElementCount) return; // construit une seule fois
+    POLLING_SLOT_DAY_ORDER.forEach((dow) => {
+      const label = document.createElement("label");
+      label.className = "checkbox-group";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.className = "polling-slot-day-checkbox";
+      input.value = String(dow);
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(" " + Grid.WEEKDAYS_FULL[dow].slice(0, 3)));
+      pollingSlotDayCheckboxes.appendChild(label);
+    });
+  }
+  renderPollingSlotDayCheckboxes();
+
+  if (pollingSlotQuickselectBtn) {
+    pollingSlotQuickselectBtn.addEventListener("click", () => {
+      const selectedDays = new Set(
+        Array.from(pollingSlotDayCheckboxes.querySelectorAll(".polling-slot-day-checkbox:checked")).map((c) => Number(c.value))
+      );
+      if (!selectedDays.size) {
+        pollingSlotQuickselectResult.textContent = "Coche au moins un jour.";
+        return;
+      }
+      const startTime = pollingSlotStartTime.value || null;
+      const endTime = pollingSlotEndTime.value || null;
+      const startDateISO = pollingSlotStartDate.value || null;
+      const endDateISO = pollingSlotEndDate.value || null;
+
+      const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
+      const times = Grid.buildTimeSlots();
+      let added = 0;
+      dates.forEach((date) => {
+        const dateISO = Grid.toISODate(date);
+        if (startDateISO && dateISO < startDateISO) return;
+        if (endDateISO && dateISO > endDateISO) return;
+        if (!selectedDays.has(date.getDay())) return;
+        times.forEach((timeLabel) => {
+          if (startTime && timeLabel < startTime) return;
+          if (endTime && timeLabel >= endTime) return;
+          const key = Grid.slotKey(dateISO, timeLabel);
+          if (!pollingSlotSelection.has(key)) added++;
+          pollingSlotSelection.add(key);
+        });
+      });
+
+      renderPollingSlotGrid();
+      pollingSlotQuickselectResult.textContent = added
+        ? `${added} créneau(x) ajouté(s) à la sélection — clique "Enregistrer les créneaux sondés" pour valider.`
+        : "Aucun nouveau créneau à ajouter (déjà tous sélectionnés).";
     });
   }
 
