@@ -979,6 +979,14 @@ function runAdmin() {
     return results.slice(0, 8);
   }
 
+  // "Lun 01/10" plutôt que "2026-10-01" — plus lisible en un coup d'œil,
+  // tout en restant compact (abrégé volontairement).
+  function formatDateShortWithDay(dateISO) {
+    const [y, m, d] = dateISO.split("-");
+    const dow = new Date(`${dateISO}T12:00:00`).getDay();
+    return `${Grid.WEEKDAYS_FULL[dow].slice(0, 3)} ${d}/${m}`;
+  }
+
   function renderBestSlotResults(results) {
     if (!results.length) {
       bestSlotResult.innerHTML = "<p>Aucun créneau trouvé (vérifie la période et la durée par rapport aux heures de la grille).</p>";
@@ -987,7 +995,7 @@ function runAdmin() {
     bestSlotResult.innerHTML = results
       .map((r, i) => {
         const unavailText = r.unavailable.length ? `, ${r.unavailable.length} indispo` : "";
-        return `<p><strong>${i + 1}.</strong> ${r.dateISO} ${r.startTime}-${r.endTime} — ${r.available.length} dispo${unavailText} (${r.available.join(", ") || "—"}) <button type="button" class="btn btn-ghost btn-sm" data-usebest="${i}">Utiliser ce créneau</button></p>`;
+        return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo${unavailText} (${r.available.join(", ") || "—"}) <button type="button" class="btn btn-ghost btn-sm" data-usebest="${i}">Utiliser ce créneau</button></p>`;
       })
       .join("");
     bestSlotResult.querySelectorAll("[data-usebest]").forEach((btn) => {

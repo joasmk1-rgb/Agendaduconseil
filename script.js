@@ -1131,6 +1131,14 @@ function findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdM
   return results.slice(0, 8);
 }
 
+// "Lun 01/10" plutôt que "2026-10-01" — plus lisible en un coup d'œil dans
+// une liste de résultats, tout en restant compact (abrégé volontairement).
+function formatDateShortWithDay(dateISO) {
+  const [y, m, d] = dateISO.split("-");
+  const dow = new Date(`${dateISO}T12:00:00`).getDay();
+  return `${Grid.WEEKDAYS_FULL[dow].slice(0, 3)} ${d}/${m}`;
+}
+
 function renderRolesBestSlotResults(results) {
   if (!results.length) {
     rolesBestSlotResult.innerHTML = "<p>Aucun créneau trouvé (vérifie la période et la durée par rapport aux heures de la grille).</p>";
@@ -1139,7 +1147,7 @@ function renderRolesBestSlotResults(results) {
   rolesBestSlotResult.innerHTML = results
     .map((r, i) => {
       const unavailText = r.unavailable.length ? `, ${r.unavailable.length} indispo` : "";
-      return `<p><strong>${i + 1}.</strong> ${r.dateISO} ${r.startTime}-${r.endTime} — ${r.available.length} dispo${unavailText} (${r.available.join(", ") || "—"})</p>`;
+      return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo${unavailText} (${r.available.join(", ") || "—"})</p>`;
     })
     .join("");
 }
