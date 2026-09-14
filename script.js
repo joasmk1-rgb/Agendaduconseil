@@ -934,7 +934,9 @@ publicTabs.addEventListener("click", (e) => {
 function applyPublicTabsVisibility() {
   const agendaEnabled = !!(state.config && state.config.agendaTabEnabled);
   const tasksEnabled = !!(state.config && state.config.tasksTabEnabled);
-  const rolesEnabled = ROLES_WITH_AVAILABILITY_ACCESS.includes(state.role);
+  // L'admin voit toujours tout ce que verrait un conseiller avec un poste
+  // particulier — jamais moins d'accès qu'eux.
+  const rolesEnabled = state.isAdmin || ROLES_WITH_AVAILABILITY_ACCESS.includes(state.role);
   agendaTabBtn.classList.toggle("hidden", !agendaEnabled);
   tasksTabBtn.classList.toggle("hidden", !tasksEnabled);
   rolesTabBtn.classList.toggle("hidden", !rolesEnabled);
