@@ -964,8 +964,8 @@ function runAdmin() {
         if (endMin > dayEndMinutes) return;
         const endTime = minutesToTimeStr(endMin);
         const slotKeys = slotKeysForRange(dateISO, startTime, endTime);
-        const { available, unavailable } = classifyMembers(slotKeys, thresholdMinutes);
-        results.push({ dateISO, startTime, endTime, available, unavailable });
+        const { available, unavailable, unknown } = classifyMembers(slotKeys, thresholdMinutes);
+        results.push({ dateISO, startTime, endTime, available, unavailable, unknown });
       });
     });
 
@@ -994,8 +994,7 @@ function runAdmin() {
     }
     bestSlotResult.innerHTML = results
       .map((r, i) => {
-        const unavailText = r.unavailable.length ? `, ${r.unavailable.length} indispo` : "";
-        return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo${unavailText} (${r.available.join(", ") || "—"}) <button type="button" class="btn btn-ghost btn-sm" data-usebest="${i}">Utiliser ce créneau</button></p>`;
+        return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo (${r.available.join(", ") || "—"}), ${r.unknown.length} pas répondu (${r.unknown.join(", ") || "—"}), ${r.unavailable.length} indispo (${r.unavailable.join(", ") || "—"}) <button type="button" class="btn btn-ghost btn-sm" data-usebest="${i}">Utiliser ce créneau</button></p>`;
       })
       .join("");
     bestSlotResult.querySelectorAll("[data-usebest]").forEach((btn) => {

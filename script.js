@@ -1116,8 +1116,8 @@ function findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdM
       if (endMin > dayEndMinutes) return;
       const endTime = rolesMinutesToTimeStr(endMin);
       const slotKeys = times.filter((t) => t >= startTime && t < endTime).map((t) => Grid.slotKey(dateISO, t));
-      const { available, unavailable } = classifyMembersForRoles(slotKeys, thresholdMinutes);
-      results.push({ dateISO, startTime, endTime, available, unavailable });
+      const { available, unavailable, unknown } = classifyMembersForRoles(slotKeys, thresholdMinutes);
+      results.push({ dateISO, startTime, endTime, available, unavailable, unknown });
     });
   });
 
@@ -1146,8 +1146,7 @@ function renderRolesBestSlotResults(results) {
   }
   rolesBestSlotResult.innerHTML = results
     .map((r, i) => {
-      const unavailText = r.unavailable.length ? `, ${r.unavailable.length} indispo` : "";
-      return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo${unavailText} (${r.available.join(", ") || "—"})</p>`;
+      return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo (${r.available.join(", ") || "—"}), ${r.unknown.length} pas répondu (${r.unknown.join(", ") || "—"}), ${r.unavailable.length} indispo (${r.unavailable.join(", ") || "—"})</p>`;
     })
     .join("");
 }
