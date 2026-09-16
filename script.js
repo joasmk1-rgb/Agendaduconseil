@@ -111,6 +111,7 @@ const rolesBestSlotEndInput = document.getElementById("roles-bestslot-end-input"
 const rolesBestSlotDurationInput = document.getElementById("roles-bestslot-duration-input");
 const rolesBestSlotThresholdInput = document.getElementById("roles-bestslot-threshold-input");
 const rolesBestSlotResult = document.getElementById("roles-bestslot-result");
+const rolesBestSlotHeatmapEl = document.getElementById("roles-bestslot-heatmap");
 const ROLES_WITH_AVAILABILITY_ACCESS = ["presidente", "vice-presidente"];
 const agendaMeetingInfo = document.getElementById("agenda-meeting-info");
 const agendaItemListEl = document.getElementById("agenda-item-list");
@@ -1345,7 +1346,51 @@ function findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdM
     if (dcmp !== 0) return dcmp;
     return a.startTime.localeCompare(b.startTime);
   });
-  return results.slice(0, 8);
+  return { all: results, top: results.slice(0, 8), dates };
+}
+
+// ---------- Heatmap de la recherche "Trouver le meilleur créneau" (public) ----------
+// Même logique que côté admin (voir admin.js) : un cellule par créneau de
+// départ candidat, coloré par nombre de dispo, pour voir en un coup d'œil
+// l'effet d'un changement de durée sur le classement.
+function renderRolesBestSlotHeatmap(allResults, topResults, dateStrings) {
+  if (!rolesBestSlotHeatmapEl) return;
+  // dateStrings vient de buildInclusiveDateRange (chaînes "YYYY-MM-DD") —
+  // renderGridHeaders/renderHourRows attendent des objets Date (comme
+  // buildDateList), d'où la conversion ici.
+  const dates = dateStrings.map((d) => new Date(`${d}T00:00:00`));
+  const times = Grid.buildTimeSlots();
+  const counts = new Map();
+  allResults.forEach((r) => {
+    counts.set(Grid.slotKey(r.dateISO, r.startTime), { availCount: r.available.length, names: r.available });
+  });
+  const topKeys = new Set(topResults.map((r) => Grid.slotKey(r.dateISO, r.startTime)));
+  const rankByKey = new Map(topResults.map((r, i) => [Grid.slotKey(r.dateISO, r.startTime), i + 1]));
+
+  rolesBestSlotHeatmapEl.innerHTML = "";
+  rolesBestSlotHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
+  rolesBestSlotHeatmapEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
+  Grid.renderGridHeaders(rolesBestSlotHeatmapEl, dates, state.events);
+
+  const maxCount = (state.rolesMembers || []).length || 1;
+  Grid.renderHourRows(rolesBestSlotHeatmapEl, dates, times, state.events, (state.config && state.config.blockedSlots) || [], (cell, { dateISO, timeLabel, blocked }) => {
+    const key = Grid.slotKey(dateISO, timeLabel);
+    cell.dataset.key = key;
+    if (blocked) return;
+    const entry = counts.get(key);
+    if (!entry) return;
+    if (entry.availCount > 0) {
+      const ratio = entry.availCount / maxCount;
+      cell.style.background = `rgba(34, 197, 94, ${(0.15 + ratio * 0.75).toFixed(2)})`;
+      cell.textContent = String(entry.availCount);
+    }
+    if (topKeys.has(key)) {
+      cell.style.boxShadow = "inset 0 0 0 2px #d97706";
+      cell.title = `#${rankByKey.get(key)} meilleur créneau — ${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
+    } else {
+      cell.title = `${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
+    }
+  });
 }
 
 // "Lun 01/10" plutôt que "2026-10-01" — plus lisible en un coup d'œil dans
@@ -1376,8 +1421,9 @@ if (rolesBestSlotForm) {
     if (!startDate || !endDate) return;
     const durationMinutes = Number(rolesBestSlotDurationInput.value) || 60;
     const thresholdMinutes = Number(rolesBestSlotThresholdInput.value) || 45;
-    const results = findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes });
-    renderRolesBestSlotResults(results);
+    const { all, top, dates } = findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes });
+    renderRolesBestSlotResults(top);
+    renderRolesBestSlotHeatmap(all, top, dates);
   });
 }
 

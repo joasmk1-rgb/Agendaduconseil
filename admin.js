@@ -360,6 +360,7 @@ function runAdmin() {
   const eventAvailabilityResult = document.getElementById("event-availability-result");
 
   const bestSlotForm = document.getElementById("best-slot-form");
+  const bestSlotHeatmapEl = document.getElementById("best-slot-heatmap");
   const bestSlotStartInput = document.getElementById("best-slot-start-input");
   const bestSlotEndInput = document.getElementById("best-slot-end-input");
   const bestSlotDurationInput = document.getElementById("best-slot-duration-input");
@@ -986,7 +987,52 @@ function runAdmin() {
       if (dcmp !== 0) return dcmp;
       return a.startTime.localeCompare(b.startTime);
     });
-    return results.slice(0, 8);
+    return { all: results, top: results.slice(0, 8), dates };
+  }
+
+  // ---------- Heatmap de la recherche "Trouver le meilleur créneau" ----------
+  // Un cellule par créneau de départ candidat évalué (même durée que la
+  // recherche), coloré par nombre de dispo — permet de voir en un coup d'œil
+  // comment le classement change quand on ajuste la durée (ex: le meilleur
+  // créneau à 1h n'est plus forcément le meilleur à 2h).
+  function renderBestSlotHeatmap(allResults, topResults, dateStrings) {
+    if (!bestSlotHeatmapEl) return;
+    // dateStrings vient de buildInclusiveDateRange (chaînes "YYYY-MM-DD") —
+    // renderGridHeaders/renderHourRows attendent des objets Date (comme
+    // buildDateList), d'où la conversion ici.
+    const dates = dateStrings.map((d) => new Date(`${d}T00:00:00`));
+    const times = Grid.buildTimeSlots();
+    const counts = new Map(); // "date|heure" -> { availCount, names }
+    allResults.forEach((r) => {
+      counts.set(Grid.slotKey(r.dateISO, r.startTime), { availCount: r.available.length, names: r.available });
+    });
+    const topKeys = new Set(topResults.map((r) => Grid.slotKey(r.dateISO, r.startTime)));
+    const rankByKey = new Map(topResults.map((r, i) => [Grid.slotKey(r.dateISO, r.startTime), i + 1]));
+
+    bestSlotHeatmapEl.innerHTML = "";
+    bestSlotHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
+    bestSlotHeatmapEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
+    Grid.renderGridHeaders(bestSlotHeatmapEl, dates, currentEvents);
+
+    const maxCount = currentMembers.length || 1;
+    Grid.renderHourRows(bestSlotHeatmapEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel, blocked }) => {
+      const key = Grid.slotKey(dateISO, timeLabel);
+      cell.dataset.key = key;
+      if (blocked) return;
+      const entry = counts.get(key);
+      if (!entry) return; // pas un créneau de départ valide (dépasserait la fin de journée)
+      if (entry.availCount > 0) {
+        const ratio = entry.availCount / maxCount;
+        cell.style.background = `rgba(34, 197, 94, ${(0.15 + ratio * 0.75).toFixed(2)})`;
+        cell.textContent = String(entry.availCount);
+      }
+      if (topKeys.has(key)) {
+        cell.style.boxShadow = "inset 0 0 0 2px #d97706";
+        cell.title = `#${rankByKey.get(key)} meilleur créneau — ${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
+      } else {
+        cell.title = `${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
+      }
+    });
   }
 
   // "Lun 01/10" plutôt que "2026-10-01" — plus lisible en un coup d'œil,
@@ -1029,8 +1075,9 @@ function runAdmin() {
     if (!startDate || !endDate) return;
     const durationMinutes = Number(bestSlotDurationInput.value) || 60;
     const thresholdMinutes = Number(bestSlotThresholdInput.value) || 45;
-    const results = findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes });
-    renderBestSlotResults(results);
+    const { all, top, dates } = findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes });
+    renderBestSlotResults(top);
+    renderBestSlotHeatmap(all, top, dates);
   });
 
   // ---------- Export Excel des disponibilités pour un événement ----------
