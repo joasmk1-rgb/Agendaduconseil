@@ -557,6 +557,16 @@
           <label>Programme(s) concerné(s) (aucun coché = tous ceux qui correspondent aux filtres ci-dessus)</label>
           <div id="student-load-programme-checkboxes" class="checkbox-list"></div>
         </div>
+        <div class="control-group">
+          <label>Cours à afficher (décoche ceux à exclure, ex: monitorat, TP)</label>
+          <div class="control-group courses-filters">
+            <input type="text" id="student-load-course-search" placeholder="Chercher un cours (ex: monitorat, TP)...">
+            <button type="button" id="student-load-course-check-all-btn" class="btn btn-ghost btn-sm">Cocher les résultats affichés</button>
+            <button type="button" id="student-load-course-uncheck-all-btn" class="btn btn-ghost btn-sm">Décocher les résultats affichés</button>
+          </div>
+          <p class="hint">Pratique pour exclure une catégorie d'un coup : cherche "monitorat", "Décocher les résultats affichés", puis cherche "TP" et refais pareil — les décochés restent exclus même quand tu changes de recherche.</p>
+          <div id="student-load-course-checkboxes" class="checkbox-list courses-checkbox-list"></div>
+        </div>
         <p id="student-load-status" class="hint"></p>
       </section>
 

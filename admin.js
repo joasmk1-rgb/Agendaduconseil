@@ -373,6 +373,10 @@ function runAdmin() {
   const studentLoadSearchBtn = document.getElementById("student-load-search-btn");
   const studentLoadClearBtn = document.getElementById("student-load-clear-btn");
   const studentLoadProgCheckboxes = document.getElementById("student-load-programme-checkboxes");
+  const studentLoadCourseSearch = document.getElementById("student-load-course-search");
+  const studentLoadCourseCheckAllBtn = document.getElementById("student-load-course-check-all-btn");
+  const studentLoadCourseUncheckAllBtn = document.getElementById("student-load-course-uncheck-all-btn");
+  const studentLoadCourseCheckboxes = document.getElementById("student-load-course-checkboxes");
   const studentLoadStatus = document.getElementById("student-load-status");
 
   const responseCountEl = document.getElementById("response-count");
@@ -1104,6 +1108,10 @@ function runAdmin() {
   // Map slotKey -> [{ label (nom du programme), code, name (du cours) }],
   // ou null quand rien n'est affiché. Lu par renderHeatmap() plus bas.
   let studentLoadOverlay = null;
+  // Codes de cours explicitement décochés dans la liste "Cours à afficher"
+  // (ex: monitorats, TP) — persiste même quand on change la recherche dans
+  // cette liste, pour pouvoir exclure une catégorie puis une autre d'affilée.
+  let studentLoadExcludedCourses = new Set();
 
   function loadStudentLoadCatalogue() {
     if (studentLoadCatalogue) return Promise.resolve(studentLoadCatalogue);
@@ -1169,16 +1177,95 @@ function runAdmin() {
     );
   }
 
+  // Cours qui correspondent au filtre Faculté/Niveau/Programme(s) actuel —
+  // avant exclusion individuelle (voir studentLoadExcludedCourses) : c'est
+  // la liste affichée dans "Cours à afficher" pour pouvoir en décocher.
+  function computeMatchingStudentLoadCourses() {
+    const checkedProgs = studentLoadProgCheckboxes
+      ? Array.from(studentLoadProgCheckboxes.querySelectorAll("input:checked")).map((el) => el.value)
+      : [];
+    const effectiveProgs = effectiveStudentLoadPrograms(
+      studentLoadFaculteSelect.value,
+      studentLoadNiveauSelect.value,
+      checkedProgs
+    );
+    return (studentLoadCatalogue || []).filter((c) => (c.programs || []).some((prog) => effectiveProgs.has(prog)));
+  }
+
+  // Reconstruit la liste "Cours à afficher" (checkboxes), filtrée par la
+  // recherche en cours ; garde les exclusions déjà faites (même sur des
+  // cours qui ne sont plus affichés à cause de la recherche).
+  function refreshStudentLoadCourseList() {
+    if (!studentLoadCourseCheckboxes) return;
+    const query = (studentLoadCourseSearch.value || "").trim().toLowerCase();
+    const allCourses = computeMatchingStudentLoadCourses();
+    // Nettoie les exclusions qui ne concernent plus aucun cours du filtre
+    // courant, pour ne pas accumuler indéfiniment des codes obsolètes.
+    const currentCodes = new Set(allCourses.map((c) => c.code));
+    Array.from(studentLoadExcludedCourses).forEach((code) => {
+      if (!currentCodes.has(code)) studentLoadExcludedCourses.delete(code);
+    });
+
+    const filtered = query
+      ? allCourses.filter((c) => c.code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query))
+      : allCourses;
+
+    const MAX_SHOWN = 200;
+    studentLoadCourseCheckboxes.innerHTML = "";
+    filtered.slice(0, MAX_SHOWN).forEach((c) => {
+      const label = document.createElement("label");
+      label.className = "course-item";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = c.code;
+      checkbox.checked = !studentLoadExcludedCourses.has(c.code);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) studentLoadExcludedCourses.delete(c.code);
+        else studentLoadExcludedCourses.add(c.code);
+      });
+      const text = document.createElement("span");
+      text.textContent = `${c.code} — ${c.name}`;
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      studentLoadCourseCheckboxes.appendChild(label);
+    });
+    if (!filtered.length) {
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent = allCourses.length
+        ? "Aucun cours ne correspond à cette recherche."
+        : "Choisis une faculté/année/programme ci-dessus.";
+      studentLoadCourseCheckboxes.appendChild(hint);
+    } else if (filtered.length > MAX_SHOWN) {
+      const p = document.createElement("p");
+      p.className = "hint";
+      p.textContent = `... et ${filtered.length - MAX_SHOWN} autre(s), affine ta recherche.`;
+      studentLoadCourseCheckboxes.appendChild(p);
+    }
+  }
+
+  // Coche/décoche tous les cours actuellement affichés (donc filtrés par la
+  // recherche) — permet d'exclure une catégorie d'un coup : chercher
+  // "monitorat", décocher tout ce qui s'affiche, puis chercher "TP", etc.
+  function setStudentLoadCourseListChecked(checked) {
+    if (!studentLoadCourseCheckboxes) return;
+    studentLoadCourseCheckboxes.querySelectorAll('input[type="checkbox"]').forEach((el) => {
+      el.checked = checked;
+      if (checked) studentLoadExcludedCourses.delete(el.value);
+      else studentLoadExcludedCourses.add(el.value);
+    });
+  }
+
   // Balaie les VRAIES dates de la période affichée par le site (même liste
   // que renderHeatmap plus bas : Grid.buildDateList sur currentConfig), et
   // pour chaque créneau de la grille (pas une durée de réunion : la case
   // elle-même) construit la liste des cours en cours à ce moment-là, parmi
-  // les programmes sélectionnés — c'est cette Map qui devient la surcouche
-  // violette sur la grille de dispo.
+  // les programmes sélectionnés (moins les cours explicitement exclus) —
+  // c'est cette Map qui devient la surcouche violette sur la grille de dispo.
   function computeStudentLoadOverlay({ effectiveProgs }) {
     const programsByCode = new Map((studentLoadPrograms || []).map((p) => [p.prog, p]));
-    const matchingCourses = (studentLoadCatalogue || []).filter((c) =>
-      (c.programs || []).some((prog) => effectiveProgs.has(prog))
+    const matchingCourses = (studentLoadCatalogue || []).filter(
+      (c) => (c.programs || []).some((prog) => effectiveProgs.has(prog)) && !studentLoadExcludedCourses.has(c.code)
     );
     const sessionsByDow = new Map();
     matchingCourses.forEach((course) => {
@@ -1225,9 +1312,33 @@ function runAdmin() {
   }
 
   if (studentLoadFaculteSelect) {
-    loadStudentLoadCatalogue().then(() => refreshStudentLoadProgrammeCheckboxes());
-    studentLoadFaculteSelect.addEventListener("change", refreshStudentLoadProgrammeCheckboxes);
-    studentLoadNiveauSelect.addEventListener("change", refreshStudentLoadProgrammeCheckboxes);
+    loadStudentLoadCatalogue().then(() => {
+      refreshStudentLoadProgrammeCheckboxes();
+      refreshStudentLoadCourseList();
+    });
+    studentLoadFaculteSelect.addEventListener("change", () => {
+      refreshStudentLoadProgrammeCheckboxes();
+      refreshStudentLoadCourseList();
+    });
+    studentLoadNiveauSelect.addEventListener("change", () => {
+      refreshStudentLoadProgrammeCheckboxes();
+      refreshStudentLoadCourseList();
+    });
+    // Les cases "Programme(s)" sont reconstruites dynamiquement (voir
+    // refreshStudentLoadProgrammeCheckboxes) : délégation d'événement pour
+    // capter les clics sur des checkboxes qui n'existent pas encore ici.
+    if (studentLoadProgCheckboxes) {
+      studentLoadProgCheckboxes.addEventListener("change", refreshStudentLoadCourseList);
+    }
+    if (studentLoadCourseSearch) {
+      studentLoadCourseSearch.addEventListener("input", refreshStudentLoadCourseList);
+    }
+    if (studentLoadCourseCheckAllBtn) {
+      studentLoadCourseCheckAllBtn.addEventListener("click", () => setStudentLoadCourseListChecked(true));
+    }
+    if (studentLoadCourseUncheckAllBtn) {
+      studentLoadCourseUncheckAllBtn.addEventListener("click", () => setStudentLoadCourseListChecked(false));
+    }
     studentLoadSearchBtn.addEventListener("click", async () => {
       studentLoadStatus.textContent = "Chargement…";
       await loadStudentLoadCatalogue();
