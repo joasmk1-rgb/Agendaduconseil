@@ -2,6 +2,16 @@
  {
   "code": "EALHD2101",
   "name": "EALHD2101 - Séminaire d'intégration",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "EALHD2101",
@@ -29,6 +39,21 @@
  {
   "code": "LBIR2050",
   "name": "Enjeux du développement durable et de la transition",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LBIR2050 - Mons - Crédits complémentaires",
@@ -49,6 +74,10 @@
  {
   "code": "LEISS2207",
   "name": "Maîtrise de la langue française pour l'enseignement",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LEISS2207",
@@ -62,6 +91,20 @@
  {
   "code": "LLSMF2015",
   "name": "Strategic Innovation Management",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMF2015",
@@ -110,6 +153,20 @@
  {
   "code": "LLSMF2903",
   "name": "Digital Transformation Management",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2903-LLSMF2903 séances communes",
@@ -137,6 +194,20 @@
  {
   "code": "LLSMF2905",
   "name": "Ethics, responsibility and sustainability: Risk management",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2905-LLSMF2905 - présentations de groupe",
@@ -164,6 +235,20 @@
  {
   "code": "LLSMS2004",
   "name": "Big data/Data Mining Applied to Marketing",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2004",
@@ -191,6 +276,20 @@
  {
   "code": "LLSMS2005",
   "name": "Neuromarketing and experimental approach",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2005",
@@ -218,6 +317,20 @@
  {
   "code": "LLSMS2006",
   "name": "On-line and Off-line Communication Strategies",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2006",
@@ -245,6 +358,19 @@
  {
   "code": "LLSMS2032",
   "name": "Advanced Operations Management : Models and Applications",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2032",
@@ -272,6 +398,19 @@
  {
   "code": "LLSMS2034",
   "name": "Supply Chain Planning",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2034",
@@ -299,6 +438,19 @@
  {
   "code": "LLSMS2035",
   "name": "Supply Chain Coordination and Sourcing",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2035",
@@ -326,6 +478,20 @@
  {
   "code": "LLSMS2903",
   "name": "Digital Transformation Management",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2903-LLSMF2903 séances communes",
@@ -367,6 +533,20 @@
  {
   "code": "LLSMS2905",
   "name": "Ethics, responsibility and sustainability: Risk management",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "LLSMS2905 - sessions communes",
@@ -436,6 +616,11 @@
  {
   "code": "MADPU2101",
   "name": "Accompagnement de l'insertion professionnelle (partie1)",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MADPU2101-1",
@@ -447,21 +632,12 @@
   ]
  },
  {
-  "code": "MADPU2206",
-  "name": "Accompagnement de l'insertion professionnelle (partie2)",
-  "sessions": [
-   {
-    "event_code": "MADPU2206-1",
-    "weekday": 2,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "EduPlay Lab - Bât L (C009)"
-   }
-  ]
- },
- {
   "code": "MAGES2300",
   "name": "Ethique de l'éducation, neutralité et citoyenneté",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2300",
@@ -475,6 +651,10 @@
  {
   "code": "MAGES2301",
   "name": "Approches sociale, culturelle et politique de l'éducation",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2301",
@@ -488,6 +668,10 @@
  {
   "code": "MAGES2302",
   "name": "Psychologie du développement et des apprentissages",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2302",
@@ -499,28 +683,11 @@
   ]
  },
  {
-  "code": "MAGES2303",
-  "name": "Didactique des sciences sociales",
-  "sessions": [
-   {
-    "event_code": "MAGES2303 - TP",
-    "weekday": 6,
-    "start": "12:30",
-    "end": "15:30",
-    "location": "Local 15 - Bât D"
-   },
-   {
-    "event_code": "MAGES2303 - Cours magistral",
-    "weekday": 4,
-    "start": "18:00",
-    "end": "21:00",
-    "location": "Local 15 - Bât D"
-   }
-  ]
- },
- {
   "code": "MAGES2304",
   "name": "Didactique des sciences économiques",
+  "programs": [
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2304 - Cours magistral",
@@ -541,6 +708,9 @@
  {
   "code": "MAGES2305",
   "name": "Analyse socio-didactique des dispositifs d'enseignement",
+  "programs": [
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2305",
@@ -561,6 +731,9 @@
  {
   "code": "MAGES2308",
   "name": "Séminaire d'accompagnement du travail intégré et travail intégré",
+  "programs": [
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2308",
@@ -581,6 +754,9 @@
  {
   "code": "MAGES2309",
   "name": "Méthodologie des usages de la recherche",
+  "programs": [
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2309",
@@ -594,6 +770,10 @@
  {
   "code": "MAGES2402",
   "name": "Enseigner et apprendre les sciences humaines et sociales du tronc commun",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2402",
@@ -607,6 +787,10 @@
  {
   "code": "MAGES2403",
   "name": "Séminaire d'accompagnement du stage d'observation",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2403",
@@ -620,6 +804,10 @@
  {
   "code": "MAGES2500",
   "name": "Séminaire d'accompagnement des stages (long)",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAGES2500 - Q2",
@@ -668,6 +856,27 @@
  {
   "code": "MANGL1120",
   "name": "Anglais 1",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MANGL1120-1 Monitorat",
@@ -737,6 +946,27 @@
  {
   "code": "MANGL1235",
   "name": "Anglais 2",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MANGL1235-1 - Labos Gr2",
@@ -813,6 +1043,27 @@
  {
   "code": "MANGL1339",
   "name": "Anglais 3",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MANGL1339-1 Labos Gr3",
@@ -903,6 +1154,22 @@
  {
   "code": "MANGL2163",
   "name": "Advanced English 1",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MANGL2163-1 Labos Gr3",
@@ -951,6 +1218,22 @@
  {
   "code": "MANGL2236",
   "name": "Advanced English 2",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MANGL2236-1 Labos Gr2",
@@ -985,6 +1268,14 @@
  {
   "code": "MAPHD1301",
   "name": "Administration publique",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD1301",
@@ -998,6 +1289,14 @@
  {
   "code": "MAPHD2108",
   "name": "MAPHD2108 - Politiques régionales",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2108",
@@ -1011,6 +1310,14 @@
  {
   "code": "MAPHD2109",
   "name": "Union européenne et politique de cohésion : du programme au projet l",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2109",
@@ -1031,6 +1338,14 @@
  {
   "code": "MAPHD2122",
   "name": "Démocratie et action publique",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2122",
@@ -1065,6 +1380,12 @@
  {
   "code": "MAPHD2202",
   "name": "MAPHD2202 - Analyse et évaluation des politiques publiques",
+  "programs": [
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2202",
@@ -1078,6 +1399,12 @@
  {
   "code": "MAPHD2207",
   "name": "MAPHD2207 - Recrutement et marchés publics",
+  "programs": [
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2207",
@@ -1091,6 +1418,12 @@
  {
   "code": "MAPHD2221",
   "name": "Management public et gestion de projet",
+  "programs": [
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2221",
@@ -1104,6 +1437,12 @@
  {
   "code": "MAPHD2223",
   "name": "Comptabilité et finances publiques",
+  "programs": [
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MAPHD2223",
@@ -1117,6 +1456,16 @@
  {
   "code": "MCOHD2002",
   "name": "MCOHD2002 - Stratégies de communication",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOHD2002",
@@ -1130,6 +1479,17 @@
  {
   "code": "MCOHD2003",
   "name": "Internet & Communication",
+  "programs": [
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOHD2003",
@@ -1143,6 +1503,16 @@
  {
   "code": "MCOHD2007",
   "name": "MCOHD2007 - Digitalisation de la communication",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOHD2007",
@@ -1156,6 +1526,16 @@
  {
   "code": "MCOHD2008",
   "name": "Introduction aux sciences de l'information et de la communication",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOHD2008",
@@ -1176,6 +1556,25 @@
  {
   "code": "MCOMU1101",
   "name": "Information et communication",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1101-TP GroupeC",
@@ -1224,6 +1623,25 @@
  {
   "code": "MCOMU1211",
   "name": "Communication et organisation",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1211-2",
@@ -1237,6 +1655,25 @@
  {
   "code": "MCOMU1212",
   "name": "MCOMU1212 - Médias, journalisme et enjeux de société",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1212-1",
@@ -1250,6 +1687,25 @@
  {
   "code": "MCOMU1213",
   "name": "Médias, cultures et récits",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1213-2",
@@ -1263,6 +1719,24 @@
  {
   "code": "MCOMU1302",
   "name": "Séminaire de recherche en communication",
+  "programs": [
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1302-2",
@@ -1276,6 +1750,24 @@
  {
   "code": "MCOMU1303",
   "name": "Médiation culturelle",
+  "programs": [
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1303-2",
@@ -1296,6 +1788,24 @@
  {
   "code": "MCOMU1312",
   "name": "Ethique de la communication",
+  "programs": [
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1312-TP",
@@ -1330,6 +1840,24 @@
  {
   "code": "MCOMU1313",
   "name": "Cultures et usages du numérique",
+  "programs": [
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU1313-1",
@@ -1343,7 +1871,33 @@
  {
   "code": "MCOMU2104",
   "name": "Audit, évaluation et intervention en communication",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
+   {
+    "event_code": "MCOMU2104",
+    "weekday": 1,
+    "start": "18:00",
+    "end": "21:00",
+    "location": "Local 22 - Bât D"
+   },
+   {
+    "event_code": "MCOMU2104",
+    "weekday": 3,
+    "start": "18:00",
+    "end": "21:00",
+    "location": "Local 22 - Bât D"
+   },
    {
     "event_code": "MCOMU2104 -LLN",
     "weekday": 3,
@@ -1357,26 +1911,24 @@
     "start": "18:00",
     "end": "21:00",
     "location": "LECL 81 - APPA"
-   },
-   {
-    "event_code": "MCOMU2104",
-    "weekday": 1,
-    "start": "18:00",
-    "end": "21:00",
-    "location": "Local 22 - Bât D"
-   },
-   {
-    "event_code": "MCOMU2104",
-    "weekday": 3,
-    "start": "18:00",
-    "end": "21:00",
-    "location": "Local 22 - Bât D"
    }
   ]
  },
  {
   "code": "MCOMU2108",
   "name": "Sociologie et politique des cultures",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2108",
@@ -1390,6 +1942,18 @@
  {
   "code": "MCOMU2109",
   "name": "Pratiques de communication culturelle",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2109-2",
@@ -1403,6 +1967,18 @@
  {
   "code": "MCOMU2110",
   "name": "MCOMU2110 - Communication d'intérêt général et publics citoyens",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2110-2",
@@ -1416,6 +1992,18 @@
  {
   "code": "MCOMU2111",
   "name": "Villes et culture : analyse sociologique",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2111",
@@ -1429,26 +2017,50 @@
  {
   "code": "MCOMU2112",
   "name": "Stratégies de communication et communication de crise",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
-   {
-    "event_code": "MCOMU2112-1",
-    "weekday": 4,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 12 - Bât D"
-   },
    {
     "event_code": "MCOMU2112-1",
     "weekday": 5,
     "start": "13:45",
     "end": "15:45",
     "location": "Local 13 - Bât D"
+   },
+   {
+    "event_code": "MCOMU2112-1",
+    "weekday": 4,
+    "start": "13:45",
+    "end": "15:45",
+    "location": "Local 12 - Bât D"
    }
   ]
  },
  {
   "code": "MCOMU2113",
   "name": "Sémiotique du web",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2113-1",
@@ -1462,6 +2074,18 @@
  {
   "code": "MCOMU2114",
   "name": "Communication des organisations culturelles",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2114",
@@ -1475,6 +2099,18 @@
  {
   "code": "MCOMU2115",
   "name": "Projet de communication",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2115-2",
@@ -1488,6 +2124,22 @@
  {
   "code": "MCOMU2202",
   "name": "Communication Marketing",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2202-1",
@@ -1522,6 +2174,22 @@
  {
   "code": "MCOMU2203",
   "name": "Processus de création publicitaire",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2203-1",
@@ -1556,6 +2224,22 @@
  {
   "code": "MCOMU2204",
   "name": "Méthodologie de la communication marketing",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2204-1",
@@ -1576,6 +2260,18 @@
  {
   "code": "MCOMU2208",
   "name": "Stratégies d'audience et stratégies en médias digitaux",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2208-1",
@@ -1589,6 +2285,18 @@
  {
   "code": "MCOMU2210",
   "name": "Production éditoriale et production médiatique sur le web",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2210-2",
@@ -1602,6 +2310,18 @@
  {
   "code": "MCOMU2211",
   "name": "Design et évaluation de prototypes web",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2211-2",
@@ -1615,6 +2335,18 @@
  {
   "code": "MCOMU2213",
   "name": "Atelier de production communicationnelle",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2213-2",
@@ -1628,6 +2360,18 @@
  {
   "code": "MCOMU2701",
   "name": "Développement et gestion de projet Web créatif",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2701-1",
@@ -1641,6 +2385,18 @@
  {
   "code": "MCOMU2702",
   "name": "Communication et production événementielle",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2702",
@@ -1654,6 +2410,18 @@
  {
   "code": "MCOMU2703",
   "name": "Etudes culturelles",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2703",
@@ -1667,6 +2435,18 @@
  {
   "code": "MCOMU2910",
   "name": "Séminaire d'accompagnement au mémoire: concepts et méthodes",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MCOMU2910 - Séance cours du JOUR",
@@ -1715,6 +2495,14 @@
  {
   "code": "MDRHD1304",
   "name": "Droit public",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDRHD1304",
@@ -1742,6 +2530,14 @@
  {
   "code": "MDRHD2104",
   "name": "MDRHD2104 - Organisations internationales",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDRHD2104",
@@ -1762,6 +2558,12 @@
  {
   "code": "MDRHD2201",
   "name": "MDRHD2201 - Droit administratif",
+  "programs": [
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDRHD2201",
@@ -1775,6 +2577,25 @@
  {
   "code": "MDROI1103",
   "name": "Fondements du droit",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDROI1103-1",
@@ -1795,6 +2616,27 @@
  {
   "code": "MDROI1105",
   "name": "Sources et principes du droit",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDROI1105-1 Je8h30",
@@ -1815,6 +2657,25 @@
  {
   "code": "MDROI1208",
   "name": "Droit public",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDROI1208-1",
@@ -1828,6 +2689,27 @@
  {
   "code": "MDROI1210",
   "name": "Droit de l'entreprise",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDROI1210-1",
@@ -1841,6 +2723,18 @@
  {
   "code": "MDROI2201",
   "name": "Droit des médias et de la communication",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MDROI2201-1",
@@ -1854,6 +2748,21 @@
  {
   "code": "MECHD1305",
   "name": "Economie managériale",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MECHD1305 - Cours magistral",
@@ -1895,6 +2804,27 @@
  {
   "code": "MECON1104",
   "name": "Economie",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MECON1104-TP-GroupeD",
@@ -1964,6 +2894,27 @@
  {
   "code": "MECON1211",
   "name": "Macroéconomie",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MECON1211-2",
@@ -1977,6 +2928,27 @@
  {
   "code": "MECON1212",
   "name": "Microéconomie",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MECON1212-TP GroupeA",
@@ -2032,6 +3004,27 @@
  {
   "code": "MECON1312",
   "name": "Economie internationale",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MECON1312-1",
@@ -2045,6 +3038,27 @@
  {
   "code": "MECON1313",
   "name": "Economie industrielle",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MECON1313-2",
@@ -2058,6 +3072,10 @@
  {
   "code": "MEISS2103",
   "name": "Pédagogie générale",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MEISS2103",
@@ -2071,6 +3089,10 @@
  {
   "code": "MEISS2106",
   "name": "Communication en contexte scolaire",
+  "programs": [
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MEISS2106 - Cours magistal",
@@ -2105,6 +3127,27 @@
  {
   "code": "MESPA1122",
   "name": "MESPA1122 Espagnol 1",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Séance d'introduction",
@@ -2160,6 +3203,27 @@
  {
   "code": "MESPA1237",
   "name": "MESPA1237 - Espagnol 2",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MESPA1237-1 Labos Gr3",
@@ -2208,6 +3272,27 @@
  {
   "code": "MESPA1340",
   "name": "Espagnol 3",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MESPA1340-1 Labos Gr2",
@@ -2249,6 +3334,22 @@
  {
   "code": "MESPA2165",
   "name": "Español avanzado 1",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MESPA2165-1 Labos Gr2",
@@ -2269,6 +3370,22 @@
  {
   "code": "MESPA2237",
   "name": "Español avanzado 2",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MESPA2237-1 Labos Gr2",
@@ -2289,6 +3406,21 @@
  {
   "code": "MGEHC1313",
   "name": "Management humain",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1313/2013+MGEHC1313/2013",
@@ -2302,6 +3434,21 @@
  {
   "code": "MGEHC2013",
   "name": "Management humain",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1313/2013+MGEHC1313/2013",
@@ -2315,6 +3462,21 @@
  {
   "code": "MGEHD1312",
   "name": "MGEHD1312 - Finance",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1312 + MGEHD2012",
@@ -2335,6 +3497,21 @@
  {
   "code": "MGEHD1313",
   "name": "Management humain",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1313/2013+MGEHC1313/2013",
@@ -2362,6 +3539,21 @@
  {
   "code": "MGEHD1316",
   "name": "MGEHD1316 - Marketing",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1316 + MGEHD2016",
@@ -2375,6 +3567,21 @@
  {
   "code": "MGEHD1321",
   "name": "MGEHD1321 - Comptabilité et diagnostic financier",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1321 + MGEHD2021",
@@ -2388,6 +3595,21 @@
  {
   "code": "MGEHD1323",
   "name": "Production",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1323 + MGEHD2023",
@@ -2401,6 +3623,21 @@
  {
   "code": "MGEHD1330",
   "name": "Entreprendre",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1330 + MGEHD2030",
@@ -2421,6 +3658,21 @@
  {
   "code": "MGEHD1343",
   "name": "MGEHD2043 - Stratégie",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2043 + MGEHD1343",
@@ -2434,6 +3686,21 @@
  {
   "code": "MGEHD2012",
   "name": "MGEHD1312 - Finance",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1312 + MGEHD2012",
@@ -2454,6 +3721,21 @@
  {
   "code": "MGEHD2013",
   "name": "Management humain",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1313/2013+MGEHC1313/2013",
@@ -2481,6 +3763,21 @@
  {
   "code": "MGEHD2016",
   "name": "MGEHD1316 - Marketing",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1316 + MGEHD2016",
@@ -2494,6 +3791,21 @@
  {
   "code": "MGEHD2021",
   "name": "MGEHD1321 - Comptabilité et diagnostic financier",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1321 + MGEHD2021",
@@ -2507,6 +3819,21 @@
  {
   "code": "MGEHD2023",
   "name": "Production",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1323 + MGEHD2023",
@@ -2520,6 +3847,21 @@
  {
   "code": "MGEHD2030",
   "name": "Entreprendre",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD1330 + MGEHD2030",
@@ -2540,6 +3882,21 @@
  {
   "code": "MGEHD2043",
   "name": "MGEHD2043 - Stratégie",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2043 + MGEHD1343",
@@ -2553,6 +3910,21 @@
  {
   "code": "MGEHD2108",
   "name": "MGEHD2108 - Contrôle des performances",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2108",
@@ -2573,6 +3945,15 @@
  {
   "code": "MGEHD2133",
   "name": "MGEHD2133 - Compétences managériales",
+  "programs": [
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2133 - Séances plénières",
@@ -2593,6 +3974,21 @@
  {
   "code": "MGEHD2134",
   "name": "MGEHD2134 - Finance d'entreprise",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2134",
@@ -2606,6 +4002,21 @@
  {
   "code": "MGEHD2135",
   "name": "Comprendre son marché : concepts fondamentaux et applications pratiques",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2135",
@@ -2626,6 +4037,21 @@
  {
   "code": "MGEHD2140",
   "name": "MGEHD2140 - Strategic Marketing",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2140 - Site de MONS",
@@ -2639,6 +4065,21 @@
  {
   "code": "MGEHD2141",
   "name": "Gestion de projet",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2141",
@@ -2659,6 +4100,21 @@
  {
   "code": "MGEHD2144",
   "name": "MGEHD2144 - Séminaire de méthodes de recherche en gestion",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2144",
@@ -2672,6 +4128,21 @@
  {
   "code": "MGEHD2161",
   "name": "Responsabilité sociétale des entreprises  - Site de MONS",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2161",
@@ -2685,6 +4156,21 @@
  {
   "code": "MGEHD2209",
   "name": "Marchés financiers et comportement des investisseurs",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2209",
@@ -2698,6 +4184,21 @@
  {
   "code": "MGEHD2216",
   "name": "Création d'entreprise",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2216",
@@ -2711,6 +4212,21 @@
  {
   "code": "MGEHD2222",
   "name": "MGEHD2222 - Logistique et transport",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2222",
@@ -2724,6 +4240,21 @@
  {
   "code": "MGEHD2223",
   "name": "Supply Chain Management",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2223",
@@ -2737,6 +4268,21 @@
  {
   "code": "MGEHD2226",
   "name": "MGEHD2226 - Financement, croissance et transmission d'entreprise",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2226",
@@ -2750,6 +4296,21 @@
  {
   "code": "MGEHD2229",
   "name": "MGEHD2229 - Gestion des risques",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2229",
@@ -2763,6 +4324,21 @@
  {
   "code": "MGEHD2230",
   "name": "Méthodes et modèles en marketing avancés",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2230",
@@ -2776,6 +4352,21 @@
  {
   "code": "MGEHD2231",
   "name": "Expérience du consommateur",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEHD2231",
@@ -2789,6 +4380,27 @@
  {
   "code": "MGEST1103",
   "name": "Comptabilité et diagnostic financier",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1103-TP GroupeF",
@@ -2865,6 +4477,27 @@
  {
   "code": "MGEST1108",
   "name": "Marketing",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1108-2-Me",
@@ -2885,6 +4518,27 @@
  {
   "code": "MGEST1201",
   "name": "Stratégie d'entreprise",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1201-GroupeD",
@@ -2933,6 +4587,27 @@
  {
   "code": "MGEST1218",
   "name": "Comptabilité et états financiers",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1218-TP GroupeA",
@@ -2967,6 +4642,27 @@
  {
   "code": "MGEST1219",
   "name": "Finance",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1219-Ma",
@@ -2987,6 +4683,27 @@
  {
   "code": "MGEST1222",
   "name": "Production",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1222-2",
@@ -3000,6 +4717,27 @@
  {
   "code": "MGEST1302",
   "name": "Séminaire : Organisations et transformation digitale",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1302-2",
@@ -3013,6 +4751,27 @@
  {
   "code": "MGEST1323",
   "name": "Management humain",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1323-TP-A&B",
@@ -3047,6 +4806,27 @@
  {
   "code": "MGEST1324",
   "name": "Projet entrepreneurial",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1324-1",
@@ -3088,6 +4868,27 @@
  {
   "code": "MGEST1325",
   "name": "Comptabilité et contrôle de gestion",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1325-GroupeB",
@@ -3129,6 +4930,27 @@
  {
   "code": "MGEST1327",
   "name": "Marchés financiers",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1327-1",
@@ -3149,6 +4971,27 @@
  {
   "code": "MGEST1328",
   "name": "Etudes marketing",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1328-1",
@@ -3190,6 +5033,27 @@
  {
   "code": "MGEST1329",
   "name": "Projet de développement professionnel",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1329-1",
@@ -3203,6 +5067,27 @@
  {
   "code": "MGEST2001",
   "name": "Finance",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1219-Ma",
@@ -3223,6 +5108,27 @@
  {
   "code": "MGEST2002",
   "name": "Marketing",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1108-2-Me",
@@ -3243,6 +5149,27 @@
  {
   "code": "MGEST2003",
   "name": "Production",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MGEST1222-2",
@@ -3256,6 +5183,26 @@
  {
   "code": "MINFO1201",
   "name": "Informatique et algorithmique",
+  "programs": [
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MINFO1201-Me",
@@ -3276,6 +5223,27 @@
  {
   "code": "MINFO1301",
   "name": "Gestion de données",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MINFO1301-1",
@@ -3317,6 +5285,26 @@
  {
   "code": "MINFO1302",
   "name": "Coding Project",
+  "programs": [
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MINFO1302-TP GroupeA",
@@ -3344,6 +5332,22 @@
  {
   "code": "MLSMM2112",
   "name": "Finance et gouvernance",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2112-Ma",
@@ -3364,6 +5368,22 @@
  {
   "code": "MLSMM2113",
   "name": "Strategic Marketing",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2113-Quentin Zèques",
@@ -3391,6 +5411,22 @@
  {
   "code": "MLSMM2114",
   "name": "Ressources humaines & management des organisations",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2114-Ma",
@@ -3411,6 +5447,19 @@
  {
   "code": "MLSMM2116",
   "name": "Data Analytics",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2116-AM",
@@ -3438,6 +5487,19 @@
  {
   "code": "MLSMM2117",
   "name": "Projet quantitatif et gestion de projet",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2117-Lu",
@@ -3472,6 +5534,22 @@
  {
   "code": "MLSMM2121",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure Finance et transition Me",
@@ -3492,6 +5570,22 @@
  {
   "code": "MLSMM2122",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Finance et transition",
@@ -3512,6 +5606,22 @@
  {
   "code": "MLSMM2123",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Finance et transition",
@@ -3532,6 +5642,22 @@
  {
   "code": "MLSMM2124",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Finance et transition",
@@ -3552,6 +5678,22 @@
  {
   "code": "MLSMM2125",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure Finance et transition Me",
@@ -3572,6 +5714,22 @@
  {
   "code": "MLSMM2126",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure Finance et transition Me",
@@ -3592,6 +5750,22 @@
  {
   "code": "MLSMM2131",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Customer Value Creation",
@@ -3612,6 +5786,22 @@
  {
   "code": "MLSMM2132",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Customer Value Creation",
@@ -3632,6 +5822,22 @@
  {
   "code": "MLSMM2133",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Customer Value Creation",
@@ -3652,6 +5858,22 @@
  {
   "code": "MLSMM2134",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Customer Value Creation",
@@ -3672,6 +5894,22 @@
  {
   "code": "MLSMM2135",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Customer Value Creation",
@@ -3692,6 +5930,22 @@
  {
   "code": "MLSMM2136",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure/Option Customer Value Creation",
@@ -3712,6 +5966,22 @@
  {
   "code": "MLSMM2140",
   "name": "Déontologie et exigences légales du contrôle",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2140-Lu",
@@ -3732,6 +6002,22 @@
  {
   "code": "MLSMM2141",
   "name": "Contrôle interne et gestion des risques",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2141-Ma",
@@ -3752,6 +6038,22 @@
  {
   "code": "MLSMM2142",
   "name": "Droit comptable",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2142-PM",
@@ -3772,6 +6074,22 @@
  {
   "code": "MLSMM2143",
   "name": "Règles d'évaluation",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2143-Ma",
@@ -3792,6 +6110,22 @@
  {
   "code": "MLSMM2144",
   "name": "Droit des sociétés approfondi et gouvernance d'entreprise",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2144-Ma",
@@ -3812,6 +6146,22 @@
  {
   "code": "MLSMM2145",
   "name": "IAS et IFRS",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2145-Pm",
@@ -3832,6 +6182,22 @@
  {
   "code": "MLSMM2146",
   "name": "Normes comptables internationales de consolidation",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2146-Ma",
@@ -3852,6 +6218,20 @@
  {
   "code": "MLSMM2151",
   "name": "Data Science",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2151",
@@ -3879,6 +6259,20 @@
  {
   "code": "MLSMM2152",
   "name": "Nouvelles technologies et pratiques émergentes",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2152",
@@ -3892,6 +6286,20 @@
  {
   "code": "MLSMM2153",
   "name": "Web Mining",
+  "programs": [
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2153",
@@ -3940,6 +6348,19 @@
  {
   "code": "MLSMM2154",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure Business Analytics - Ma",
@@ -3960,6 +6381,19 @@
  {
   "code": "MLSMM2155",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure Business Analytics - Ma",
@@ -3980,6 +6414,19 @@
  {
   "code": "MLSMM2156",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure Business Analytics - Ma",
@@ -4000,6 +6447,22 @@
  {
   "code": "MLSMM2160",
   "name": "Projet managérial et gestion de projet",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2160-MaPM",
@@ -4048,6 +6511,22 @@
  {
   "code": "MLSMM2201",
   "name": "Research Design and Thesis Preparation",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2201",
@@ -4061,6 +6540,22 @@
  {
   "code": "MLSMM2202",
   "name": "Stage avec accompagnement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2202-1",
@@ -4074,6 +6569,22 @@
  {
   "code": "MLSMM2212",
   "name": "MLSMM2212 - Taxation",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2212-Je",
@@ -4101,6 +6612,19 @@
  {
   "code": "MLSMM2217",
   "name": "Integrated Information Systems",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2217-Lu",
@@ -4128,6 +6652,22 @@
  {
   "code": "MLSMM2218",
   "name": "Pilotage de la performance",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2218-Lu",
@@ -4155,6 +6695,19 @@
  {
   "code": "MLSMM2219",
   "name": "Pilotage stratégique de l'entreprise",
+  "programs": [
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2219-Je",
@@ -4175,6 +6728,22 @@
  {
   "code": "MLSMM2220",
   "name": "Seminar on Current Managerial Issues",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2220",
@@ -4195,6 +6764,22 @@
  {
   "code": "MLSMM2247",
   "name": "Audit et compétences professionnelles",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2247-Je",
@@ -4215,6 +6800,22 @@
  {
   "code": "MLSMM2248",
   "name": "Droit de l'entreprise en difficulté",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2248",
@@ -4228,6 +6829,22 @@
  {
   "code": "MLSMM2249",
   "name": "Normes d'audit internationales",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2249",
@@ -4241,6 +6858,22 @@
  {
   "code": "MLSMM2251",
   "name": "Transport et mobilite - Mod des syst de transports",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2253 + MLSMM2251",
@@ -4282,6 +6915,22 @@
  {
   "code": "MLSMM2252",
   "name": "Supply Chain Management",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2252-1",
@@ -4302,6 +6951,22 @@
  {
   "code": "MLSMM2253",
   "name": "Transport et mobilite - Mod des syst de transports",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MLSMM2253 + MLSMM2251",
@@ -4343,6 +7008,22 @@
  {
   "code": "MLSMM2261",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure ICarré - Option Entrepreneuriat",
@@ -4363,6 +7044,22 @@
  {
   "code": "MLSMM2262",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure ICarré - Option Entrepreneuriat",
@@ -4383,6 +7080,22 @@
  {
   "code": "MLSMM2263",
   "name": "Horaires détaillés des cours disponibles ultérieurement",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Majeure ICarré - Option Entrepreneuriat",
@@ -4403,6 +7116,25 @@
  {
   "code": "MMETH1101",
   "name": "Epistémologie",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1101-TP - GroupE-1",
@@ -4493,6 +7225,25 @@
  {
   "code": "MMETH1102",
   "name": "Séminaire d'actualité 1",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1102-1",
@@ -4527,6 +7278,25 @@
  {
   "code": "MMETH1201",
   "name": "Analyser le monde avec les statistiques",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1201-2",
@@ -4540,6 +7310,25 @@
  {
   "code": "MMETH1202",
   "name": "Journée d'études (Séminiare d'actualité 2)",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Journée d'études (Séminiare d'actualité 2)",
@@ -4616,6 +7405,25 @@
  {
   "code": "MMETH1203",
   "name": "Enquêter sur le monde d'aujourd'hui",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1203-1 Oral",
@@ -4678,6 +7486,25 @@
  {
   "code": "MMETH1301",
   "name": "Quantifier le monde d'aujourd'hui et de demain",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1301-TP GroupeB",
@@ -4726,6 +7553,25 @@
  {
   "code": "MMETH1302",
   "name": "Analyser les mondes numériques",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1302-Me",
@@ -4746,6 +7592,25 @@
  {
   "code": "MMETH1303",
   "name": "Pratique professionnelle",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMETH1303-TP B",
@@ -4773,6 +7638,14 @@
  {
   "code": "MMTHD1327",
   "name": "MMTHD1327 - Epistémologie et méthodologie universitaires",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMTHD1327",
@@ -4786,6 +7659,14 @@
  {
   "code": "MMTHD2101",
   "name": "Séminaire d'accompagnement du mémoire - Partie 1",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMTHD2101",
@@ -4799,6 +7680,21 @@
  {
   "code": "MMTHD2102",
   "name": "Projet et accompagnement pédagogiques",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMTHD2102",
@@ -4812,6 +7708,16 @@
  {
   "code": "MMTHD2103",
   "name": "Méthodes de recherche en sciences sociales",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMTHD2103",
@@ -4832,6 +7738,13 @@
  {
   "code": "MMTHD2204",
   "name": "Théorisation en sciences politiques et administratives",
+  "programs": [
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMTHD2204",
@@ -4845,6 +7758,13 @@
  {
   "code": "MMTHD2217",
   "name": "Séminaire d'accompagnement du mémoire - Partie 2",
+  "programs": [
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MMTHD2217",
@@ -4865,6 +7785,27 @@
  {
   "code": "MNEER1119",
   "name": "MNEER1119-MNEER1121 Monitorat",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MNEER1119-MNEER1121 Monitorat",
@@ -4892,6 +7833,27 @@
  {
   "code": "MNEER1121",
   "name": "MNEER1119-MNEER1121 Monitorat",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MNEER1119-MNEER1121 Monitorat",
@@ -4975,6 +7937,27 @@
  {
   "code": "MNEER1236",
   "name": "MNEER1236 - Néerlandais 2",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MNEER1236-1 - Labos Gr1",
@@ -5023,6 +8006,27 @@
  {
   "code": "MNEER1341",
   "name": "Néerlandais 3",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MNEER1341-1 Labos Gr4",
@@ -5085,6 +8089,22 @@
  {
   "code": "MNEER2164",
   "name": "Nederlands voor gevorderden 1",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MNEER2164-1 Labos Gr1",
@@ -5112,6 +8132,22 @@
  {
   "code": "MNEER2238",
   "name": "Nederlands voor gevorderden 2",
+  "programs": [
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MNEER2238-1 Labos Gr1",
@@ -5132,6 +8168,21 @@
  {
   "code": "MQAHC2130",
   "name": "Statistique de gestion",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQAHD2130/MQAHC2130",
@@ -5145,6 +8196,21 @@
  {
   "code": "MQAHD1328",
   "name": "Méthodes quantitatives de gestion",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQAHD1328 - TP",
@@ -5186,6 +8252,21 @@
  {
   "code": "MQAHD2130",
   "name": "Statistique de gestion",
+  "programs": [
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQAHD2130/MQAHC2130",
@@ -5206,6 +8287,27 @@
  {
   "code": "MQANT1109",
   "name": "Informatique et société numérique",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1109-2",
@@ -5219,6 +8321,27 @@
  {
   "code": "MQANT1110",
   "name": "Mathématiques de gestion 1",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1110-Je PM",
@@ -5351,6 +8474,27 @@
  {
   "code": "MQANT1113",
   "name": "Statistiques et probabilités",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1113-Ma",
@@ -5371,6 +8515,27 @@
  {
   "code": "MQANT1221",
   "name": "Inférence statistique",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1221-Ma",
@@ -5391,6 +8556,27 @@
  {
   "code": "MQANT1227",
   "name": "Mathématiques de gestion 2",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1227-TP C-D",
@@ -5432,6 +8618,27 @@
  {
   "code": "MQANT1324",
   "name": "Econométrie",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1324-Ve",
@@ -5452,6 +8659,26 @@
  {
   "code": "MQANT1328",
   "name": "Recherche opérationnelle",
+  "programs": [
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1328-2",
@@ -5465,6 +8692,26 @@
  {
   "code": "MQANT1329",
   "name": "Optimization",
+  "programs": [
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MQANT1329-TP Groupe A",
@@ -5492,6 +8739,14 @@
  {
   "code": "MSHHD1328",
   "name": "Sociologie",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHHD1328",
@@ -5519,6 +8774,16 @@
  {
   "code": "MSHHD2101",
   "name": "MSHHD2101 - Sociologie des organisations",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHHD2101",
@@ -5532,6 +8797,25 @@
  {
   "code": "MSHUM1114",
   "name": "Philosophie",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1114-2",
@@ -5545,6 +8829,25 @@
  {
   "code": "MSHUM1115",
   "name": "Psychologie",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1115-2",
@@ -5558,6 +8861,25 @@
  {
   "code": "MSHUM1116",
   "name": "Sociologie",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1116-1",
@@ -5571,6 +8893,25 @@
  {
   "code": "MSHUM1117",
   "name": "Anthropologie des mutations contemporaines",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1117-1",
@@ -5584,6 +8925,27 @@
  {
   "code": "MSHUM1118",
   "name": "Séminaire de travail universitaire - Initiation à la recherche documentaire",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1118-1-DOC Groupes 5 à 6",
@@ -5653,6 +9015,27 @@
  {
   "code": "MSHUM1122",
   "name": "Ethique et RSE",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1122-2",
@@ -5666,6 +9049,25 @@
  {
   "code": "MSHUM1201",
   "name": "Histoire des idées",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1201-1",
@@ -5679,6 +9081,27 @@
  {
   "code": "MSHUM1202",
   "name": "Psychologie économique",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1202-2",
@@ -5692,6 +9115,25 @@
  {
   "code": "MSHUM1203",
   "name": "Sociologie de l'action collective organisée",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1203-1",
@@ -5705,6 +9147,25 @@
  {
   "code": "MSHUM1204",
   "name": "Regards anthropologiques",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1204-2",
@@ -5718,6 +9179,25 @@
  {
   "code": "MSHUM1205",
   "name": "Regards sociologiques",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1205-1",
@@ -5731,6 +9211,25 @@
  {
   "code": "MSHUM1206",
   "name": "Diversité, altérité, minorité",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1206-2",
@@ -5744,6 +9243,27 @@
  {
   "code": "MSHUM1301",
   "name": "Questions de sciences religieuses",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1301-1",
@@ -5757,6 +9277,25 @@
  {
   "code": "MSHUM1302",
   "name": "Séminaire en sciences sociales et humaines",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1302-2",
@@ -5770,6 +9309,27 @@
  {
   "code": "MSHUM1303",
   "name": "Séminaire : Organisation et mutations sociales",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM1303-2",
@@ -5783,6 +9343,18 @@
  {
   "code": "MSHUM2201",
   "name": "Compétences relationnelles - Séances d'exercices",
+  "programs": [
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSHUM2201-TP Groupe 2",
@@ -5810,6 +9382,14 @@
  {
   "code": "MSPHD1332",
   "name": "Science politique",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD1332",
@@ -5823,6 +9403,14 @@
  {
   "code": "MSPHD1334",
   "name": "MSPHD1334 - Relations internationales",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD1334",
@@ -5836,6 +9424,14 @@
  {
   "code": "MSPHD2109",
   "name": "MSPHD2109 - L?Etat dans la globalisation",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2109",
@@ -5849,6 +9445,14 @@
  {
   "code": "MSPHD2136",
   "name": "MSPHD2136 - Régimes politiques comparés",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2136",
@@ -5869,6 +9473,14 @@
  {
   "code": "MSPHD2138",
   "name": "Système politique et administratif de la Belgique",
+  "programs": [
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2138",
@@ -5882,6 +9494,13 @@
  {
   "code": "MSPHD2206",
   "name": "MSPHD2206 - Enjeux internationaux contemporains",
+  "programs": [
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2206",
@@ -5895,6 +9514,13 @@
  {
   "code": "MSPHD2207",
   "name": "MSPHD2207 - Géopolitique et géoéconomie",
+  "programs": [
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2207",
@@ -5908,6 +9534,13 @@
  {
   "code": "MSPHD2208",
   "name": "Mur, migration, coopération :  la frontière et le transfrontalier",
+  "programs": [
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2208",
@@ -5921,6 +9554,13 @@
  {
   "code": "MSPHD2210",
   "name": "Théories de la politique mondiale",
+  "programs": [
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2210",
@@ -5934,6 +9574,16 @@
  {
   "code": "MSPHD2211",
   "name": "MSPHD2211 - Médias, politique et communication  : du local à l?international",
+  "programs": [
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPHD2211",
@@ -5947,6 +9597,25 @@
  {
   "code": "MSPOL1101",
   "name": "Economie",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1101-2",
@@ -5960,6 +9629,25 @@
  {
   "code": "MSPOL1102",
   "name": "Science politique",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1102-TP GroupeB",
@@ -6001,6 +9689,25 @@
  {
   "code": "MSPOL1201",
   "name": "Système politique européen",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1201-2",
@@ -6014,6 +9721,25 @@
  {
   "code": "MSPOL1202",
   "name": "Système politique de la Belgique",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1202-2",
@@ -6027,6 +9753,25 @@
  {
   "code": "MSPOL1203",
   "name": "Politique internationale",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1203-1",
@@ -6054,6 +9799,25 @@
  {
   "code": "MSPOL1205",
   "name": "Administration publique et management public",
+  "programs": [
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1205-1",
@@ -6067,6 +9831,23 @@
  {
   "code": "MSPOL1302",
   "name": "Régimes politiques comparés",
+  "programs": [
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1302-2",
@@ -6080,6 +9861,23 @@
  {
   "code": "MSPOL1303",
   "name": "Sociologie politique",
+  "programs": [
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1303-1",
@@ -6093,6 +9891,23 @@
  {
   "code": "MSPOL1304",
   "name": "Théories des relations internationales",
+  "programs": [
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1304-2",
@@ -6106,6 +9921,23 @@
  {
   "code": "MSPOL1305",
   "name": "Analyse des politiques publiques",
+  "programs": [
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL1305-1",
@@ -6126,6 +9958,11 @@
  {
   "code": "MSPOL2110",
   "name": "L'économie: du local au global",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL2110-2",
@@ -6139,6 +9976,11 @@
  {
   "code": "MSPOL2111",
   "name": "Stratégies de recherche pour le mémoire (Partie 1)",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL2111-1",
@@ -6152,6 +9994,11 @@
  {
   "code": "MSPOL2112",
   "name": "Enjeux démocratiques contemporains",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL2112-1",
@@ -6165,6 +10012,11 @@
  {
   "code": "MSPOL2113",
   "name": "Politiques publiques européennes dans un monde en évolution",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL2113-2",
@@ -6178,6 +10030,11 @@
  {
   "code": "MSPOL2114",
   "name": "Genre et développement durable",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL2114-2",
@@ -6191,6 +10048,11 @@
  {
   "code": "MSPOL2115",
   "name": "MSPOL2115 - Action publique appliquée: analyse, évaluation et enjeux éthiques",
+  "programs": [
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MSPOL2115-1",
@@ -6209,146 +10071,28 @@
   ]
  },
  {
-  "code": "MSPOL2211",
-  "name": "MSPOL2211 - Stratégies de recherche pour le mémoire (Partie 2)",
-  "sessions": [
-   {
-    "event_code": "MSPOL2211-1",
-    "weekday": 2,
-    "start": "16:00",
-    "end": "18:00",
-    "location": "Local 18 - Bât D"
-   },
-   {
-    "event_code": "MSPOL2211-1",
-    "weekday": 2,
-    "start": "18:00",
-    "end": "20:00",
-    "location": "Local 18 - Bât D"
-   }
-  ]
- },
- {
-  "code": "MSPRI2110",
-  "name": "MSPRI2110 - Droit international et défis humanitaires",
-  "sessions": [
-   {
-    "event_code": "MSPRI2110-1",
-    "weekday": 2,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 14 - Bât D"
-   }
-  ]
- },
- {
-  "code": "MSPRI2126",
-  "name": "Gouvernance globale et mondialisation",
-  "sessions": [
-   {
-    "event_code": "MSPRI2126-2",
-    "weekday": 2,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 23 - Bât D"
-   }
-  ]
- },
- {
-  "code": "MSPRI2144",
-  "name": "Les organisations internationales dans la gouvernance globale",
-  "sessions": [
-   {
-    "event_code": "MSPRI2144-1",
-    "weekday": 3,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 14 - Bât D"
-   }
-  ]
- },
- {
-  "code": "MSPRI2162",
-  "name": "The EU in global governance",
-  "sessions": [
-   {
-    "event_code": "MSPRI2162-1",
-    "weekday": 1,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 12 - Bât D"
-   }
-  ]
- },
- {
-  "code": "MSPRI2164",
-  "name": "MSPRI2164 - Science, droit et politiques des changements climatiques",
-  "sessions": [
-   {
-    "event_code": "MSPRI2164-2",
-    "weekday": 3,
-    "start": "14:00",
-    "end": "18:00",
-    "location": "Salle 116 (Les Ateliers)"
-   }
-  ]
- },
- {
-  "code": "MSPRI2210",
-  "name": "Trade and economic governance",
-  "sessions": [
-   {
-    "event_code": "MSPRI2210-1",
-    "weekday": 4,
-    "start": "10:45",
-    "end": "12:45",
-    "location": "Local 13 - Bât D"
-   },
-   {
-    "event_code": "MSPRI2210-1",
-    "weekday": 4,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 13 - Bât D"
-   }
-  ]
- },
- {
-  "code": "MSPRI2223",
-  "name": "La gestion des turbulences globales",
-  "sessions": [
-   {
-    "event_code": "MSPRI2223-1",
-    "weekday": 5,
-    "start": "10:45",
-    "end": "12:45",
-    "location": "Local 11 - Bât D"
-   },
-   {
-    "event_code": "MSPRI2223-1",
-    "weekday": 5,
-    "start": "10:45",
-    "end": "15:45",
-    "location": "Salle de réunion - Grande du Bât A (A302)"
-   }
-  ]
- },
- {
-  "code": "MSPRI2225",
-  "name": "Geopolitics and diplomacy in crises and conflicts",
-  "sessions": [
-   {
-    "event_code": "MSPRI2225-1",
-    "weekday": 2,
-    "start": "13:45",
-    "end": "15:45",
-    "location": "Local 24 - Bât D"
-   }
-  ]
- },
- {
   "code": "MTECH1201",
   "name": "Technologies industrielles",
+  "programs": [
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "MTECH1201-1",
@@ -6362,6 +10106,27 @@
  {
   "code": "Other",
   "name": "En ligne de chez toi ou en salle info 6",
+  "programs": [
+   "GESM1BA",
+   "INGM1BA",
+   "HUSM1BA",
+   "COMM1BA",
+   "SPOM1BA",
+   "GESM2M",
+   "GEHM2M",
+   "GESA2M",
+   "INGM2M",
+   "COMM2M",
+   "COMM2M1",
+   "COAM2M",
+   "COHM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "APHM2MSG",
+   "ADPM21MSIP",
+   "ECOM2M4",
+   "ECOM2M5"
+  ],
   "sessions": [
    {
     "event_code": "Test de prérequis en Français",

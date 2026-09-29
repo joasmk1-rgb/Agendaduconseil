@@ -67,6 +67,9 @@ const icsFileInput = document.getElementById("ics-file-input");
 const icsStatus = document.getElementById("ics-status");
 const coursesBtn = document.getElementById("courses-btn");
 const coursesPanel = document.getElementById("courses-panel");
+const coursesFilterFaculte = document.getElementById("courses-filter-faculte");
+const coursesFilterNiveau = document.getElementById("courses-filter-niveau");
+const coursesFilterProgramme = document.getElementById("courses-filter-programme");
 const coursesSearch = document.getElementById("courses-search");
 const coursesList = document.getElementById("courses-list");
 const coursesSelectedCount = document.getElementById("courses-selected-count");
@@ -1668,42 +1671,88 @@ icsFileInput.addEventListener("change", async () => {
 // (computeUnavailableSlots), pour ne jamais dupliquer cette logique.
 let coursesCatalogue = null; // chargé à la demande (fetch), une seule fois
 let coursesCatalogueLoading = null;
+let coursesPrograms = null; // data/mons-programs.json : [{prog, faculte, niveau, label}]
 
 async function loadCoursesCatalogue() {
   if (coursesCatalogue) return coursesCatalogue;
   if (coursesCatalogueLoading) return coursesCatalogueLoading;
-  coursesCatalogueLoading = fetch("data/mons-courses-catalogue.json")
-    .then((r) => r.json())
-    .then((data) => {
-      coursesCatalogue = data;
-      return data;
+  coursesCatalogueLoading = Promise.all([
+    fetch("data/mons-courses-catalogue.json").then((r) => r.json()),
+    fetch("data/mons-programs.json").then((r) => r.json()),
+  ])
+    .then(([catalogue, programs]) => {
+      coursesCatalogue = catalogue;
+      coursesPrograms = programs;
+      return catalogue;
     })
     .catch((err) => {
       console.error("Échec du chargement du catalogue de cours :", err);
       coursesCatalogue = [];
+      coursesPrograms = [];
       return coursesCatalogue;
     });
   return coursesCatalogueLoading;
 }
 
+// Remplit le menu "Programme" en fonction des filtres Faculté/Niveau choisis.
+function refreshProgrammeOptions() {
+  const faculte = coursesFilterFaculte.value;
+  const niveau = coursesFilterNiveau.value;
+  const previousValue = coursesFilterProgramme.value;
+  const matching = (coursesPrograms || []).filter(
+    (p) => (!faculte || p.faculte === faculte) && (!niveau || p.niveau === niveau)
+  );
+  coursesFilterProgramme.innerHTML = '<option value="">Tous les programmes</option>';
+  matching.forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p.prog;
+    opt.textContent = p.label;
+    coursesFilterProgramme.appendChild(opt);
+  });
+  // Garde la sélection si elle reste valide après le changement de filtre.
+  if (matching.some((p) => p.prog === previousValue)) coursesFilterProgramme.value = previousValue;
+}
+
 function renderCoursesList() {
   const query = coursesSearch.value.trim().toLowerCase();
   const selected = new Set(state.selectedCourses);
+  const progFilter = coursesFilterProgramme.value;
+  const faculteFilter = coursesFilterFaculte.value;
+  const niveauFilter = coursesFilterNiveau.value;
+  const programsByCode = new Map((coursesPrograms || []).map((p) => [p.prog, p]));
   let items = coursesCatalogue || [];
+
+  if (progFilter) {
+    items = items.filter((c) => (c.programs || []).includes(progFilter));
+  } else if (faculteFilter || niveauFilter) {
+    items = items.filter((c) =>
+      (c.programs || []).some((prog) => {
+        const meta = programsByCode.get(prog);
+        if (!meta) return false;
+        return (!faculteFilter || meta.faculte === faculteFilter) && (!niveauFilter || meta.niveau === niveauFilter);
+      })
+    );
+  }
+
   if (query) {
     items = items.filter((c) => c.code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query));
-  } else {
-    // Sans recherche : on affiche d'abord les cours déjà sélectionnés (pour
-    // relire/décocher facilement), le reste seulement une fois qu'on tape.
+  } else if (!progFilter && !faculteFilter && !niveauFilter) {
+    // Aucun filtre ni recherche : on affiche seulement les cours déjà
+    // sélectionnés (pour relire/décocher facilement), pas les 266 d'un coup.
     items = items.filter((c) => selected.has(c.code));
   }
   const MAX_SHOWN = 150;
   const shown = items.slice(0, MAX_SHOWN);
   coursesList.innerHTML = "";
-  if (!query && shown.length === 0) {
+  if (!query && !progFilter && !faculteFilter && !niveauFilter && shown.length === 0) {
     const p = document.createElement("p");
     p.className = "hint";
-    p.textContent = "Tape un code ou un nom de cours ci-dessus pour le trouver (ex: \"MGEST\", \"comptabilité\").";
+    p.textContent = "Choisis une faculté/année ci-dessus, ou tape un code/nom de cours pour le trouver (ex: \"MGEST\", \"comptabilité\").";
+    coursesList.appendChild(p);
+  } else if (shown.length === 0) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = "Aucun cours ne correspond à ces filtres.";
     coursesList.appendChild(p);
   }
   shown.forEach((course) => {
@@ -1748,6 +1797,7 @@ coursesBtn.addEventListener("click", async () => {
   coursesStatus.textContent = "Chargement du catalogue…";
   await loadCoursesCatalogue();
   coursesStatus.textContent = "";
+  refreshProgrammeOptions();
   updateCoursesSelectedCount();
   renderCoursesList();
 });
@@ -1757,6 +1807,15 @@ coursesCloseBtn.addEventListener("click", () => {
 });
 
 coursesSearch.addEventListener("input", renderCoursesList);
+coursesFilterFaculte.addEventListener("change", () => {
+  refreshProgrammeOptions();
+  renderCoursesList();
+});
+coursesFilterNiveau.addEventListener("change", () => {
+  refreshProgrammeOptions();
+  renderCoursesList();
+});
+coursesFilterProgramme.addEventListener("change", renderCoursesList);
 
 coursesApplyBtn.addEventListener("click", async () => {
   if (!state.password || !state.config) return;

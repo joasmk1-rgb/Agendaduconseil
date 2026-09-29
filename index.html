@@ -74,8 +74,23 @@
       </form>
       <p id="password-change-status" class="hint"></p>
       <div id="courses-panel" class="courses-panel hidden">
-        <p class="hint">Coche les cours que tu suis vraiment (programmes LSM et ESPO du campus FUCaM Mons, de la bac1 au master) — leurs horaires seront automatiquement marqués "pas dispo" sur ton calendrier, sans toucher aux créneaux que tu as déjà marqués toi-même. Décoche un cours et clique "Appliquer" pour retirer ses créneaux.</p>
-        <input type="search" id="courses-search" placeholder="Rechercher un cours (code ou nom)…" autocomplete="off">
+        <p class="hint">Choisis ta faculté et ton année pour voir tes cours, ou cherche directement par code/nom. Coche ceux que tu suis vraiment — leurs horaires seront automatiquement marqués "pas dispo" sur ton calendrier, sans toucher aux créneaux que tu as déjà marqués toi-même. Décoche un cours et clique "Appliquer" pour retirer ses créneaux.</p>
+        <div class="courses-filters">
+          <select id="courses-filter-faculte">
+            <option value="">Toutes facultés</option>
+            <option value="LSM">LSM (gestion)</option>
+            <option value="ESPO">ESPO (sciences po/sociales/com)</option>
+          </select>
+          <select id="courses-filter-niveau">
+            <option value="">Tous niveaux</option>
+            <option value="Bac">Bac</option>
+            <option value="Master">Master</option>
+          </select>
+          <select id="courses-filter-programme">
+            <option value="">Tous les programmes</option>
+          </select>
+        </div>
+        <input type="search" id="courses-search" placeholder="Ou rechercher directement un cours (code ou nom)…" autocomplete="off">
         <p id="courses-selected-count" class="hint"></p>
         <div id="courses-list" class="courses-list"></div>
         <div class="courses-panel-actions">
