@@ -191,6 +191,11 @@ body {
 }
 .checkbox-group { flex-direction: row; align-items: center; gap: 6px; }
 .checkbox-list { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 0; }
+/* .courses-checkbox-list est aussi .checkbox-list (même poids CSS) : sans
+   cette règle plus spécifique, le "flex-wrap: wrap" ci-dessus l'emporte sur
+   le "flex-direction: column" voulu et casse le scroll vertical (les cours
+   s'étalent en colonnes au lieu de défiler dans la boîte). */
+.checkbox-list.courses-checkbox-list { flex-wrap: nowrap; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
 
 .meeting-list { display: flex; flex-direction: column; gap: 6px; max-height: none; overflow-y: visible; }
 .meeting-item { display: block; padding: 10px 12px; }
