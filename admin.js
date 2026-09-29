@@ -430,6 +430,8 @@ function runAdmin() {
   const fillModeAvailableBtn = document.getElementById("fill-mode-available");
   const fillModeUnavailableBtn = document.getElementById("fill-mode-unavailable");
   const fillFromProgramBtn = document.getElementById("fill-from-program-btn");
+  const fillFromProgramAllBtn = document.getElementById("fill-from-program-all-btn");
+  const fillAllStatus = document.getElementById("fill-all-status");
   const fillStatus = document.getElementById("fill-status");
   const fillGridEl = document.getElementById("fill-grid");
   const bulkFillMemberCheckboxes = document.getElementById("bulk-fill-member-checkboxes");
@@ -3534,6 +3536,49 @@ function runAdmin() {
   fillModeAvailableBtn.addEventListener("click", () => setFillMode("available"));
   fillModeUnavailableBtn.addEventListener("click", () => setFillMode("unavailable"));
 
+  // Calcule, pour un membre donné (déjà pourvu de son "programs"), les
+  // cours du catalogue qui correspondent et les clés de créneaux "pas dispo"
+  // en découlant — factorisé pour servir au bouton "un membre" ET au bouton
+  // "tous les membres" ci-dessous, sans dupliquer le calcul.
+  function computeProgramFillForMember(member) {
+    const programs = member && Array.isArray(member.programs) ? member.programs : [];
+    if (!programs.length) return { matchingCourses: [], desiredKeys: new Set() };
+    const programSet = new Set(programs);
+    const matchingCourses = (studentLoadCatalogue || []).filter((c) => (c.programs || []).some((p) => programSet.has(p)));
+    if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
+    const sessions = matchingCourses.flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
+    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
+    const desiredKeys = computeUnavailableSlots(
+      buildICSFromCourseSessions(sessions),
+      dates,
+      CONFIG.slotMinutes,
+      CONFIG.dayStartHour,
+      CONFIG.dayEndHour
+    );
+    return { matchingCourses, desiredKeys };
+  }
+
+  // Applique le remplissage à UN membre en base (marks + courses/courseMarkedKeys
+  // tenus synchronisés avec "Mes cours" côté public, union jamais destructive) —
+  // part de ses marks actuelles en base, pas de fillState (pour rester correct
+  // même quand ce n'est pas le membre affiché dans la grille au-dessus).
+  async function persistProgramFillForMember(member, matchingCourses, desiredKeys) {
+    const marks = await db.getMarks(member.id);
+    let added = 0;
+    desiredKeys.forEach((key) => {
+      if (!(key in marks)) {
+        marks[key] = "unavailable";
+        added++;
+      }
+    });
+    const existingCourses = new Set(member.courses || []);
+    matchingCourses.forEach((c) => existingCourses.add(c.code));
+    const mergedCourseMarkedKeys = new Set([...(member.courseMarkedKeys || []), ...desiredKeys]);
+    await db.saveMarks(member.id, member.name, marks);
+    await db.updateMemberCourses(member.id, Array.from(existingCourses), Array.from(mergedCourseMarkedKeys));
+    return added;
+  }
+
   // Bouton manuel "Remplir depuis son programme" — même pipeline que "Mes
   // cours" côté public (via ics.js), mais déclenché par l'admin à la place
   // du membre : marque "pas dispo" aux heures de cours du/des programme(s)
@@ -3547,52 +3592,69 @@ function runAdmin() {
       return;
     }
     const member = currentMembers.find((m) => m.id === fillState.password);
-    const programs = member && Array.isArray(member.programs) ? member.programs : [];
-    if (!programs.length) {
+    if (!member || !Array.isArray(member.programs) || !member.programs.length) {
       fillStatus.textContent = `${fillState.name} n'a pas de programme renseigné sur sa fiche (Membres → Modifier) — rien à remplir automatiquement.`;
       return;
     }
     fillStatus.textContent = "Chargement du catalogue de cours…";
     await loadStudentLoadCatalogue();
-    const programSet = new Set(programs);
-    const matchingCourses = (studentLoadCatalogue || []).filter((c) => (c.programs || []).some((p) => programSet.has(p)));
+    const { matchingCourses, desiredKeys } = computeProgramFillForMember(member);
     if (!matchingCourses.length) {
       fillStatus.textContent = `Aucun cours trouvé dans le catalogue pour le(s) programme(s) de ${fillState.name}.`;
       return;
     }
-    const sessions = matchingCourses.flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
-    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
-    const desiredKeys = computeUnavailableSlots(
-      buildICSFromCourseSessions(sessions),
-      dates,
-      CONFIG.slotMinutes,
-      CONFIG.dayStartHour,
-      CONFIG.dayEndHour
-    );
-    let added = 0;
-    desiredKeys.forEach((key) => {
-      if (!(key in fillState.marks)) {
-        fillState.marks[key] = "unavailable";
-        added++;
-      }
-    });
-    // Garde "courses"/"courseMarkedKeys" synchronisés avec "Mes cours" côté
-    // public (union, ne retire jamais un cours que le membre avait coché
-    // lui-même) — pour que la fonctionnalité reste cohérente quel que soit
-    // le côté (admin ou membre) qui a déclenché le dernier remplissage.
-    const existingCourses = new Set(member.courses || []);
-    matchingCourses.forEach((c) => existingCourses.add(c.code));
-    const mergedCourseMarkedKeys = new Set([...(member.courseMarkedKeys || []), ...desiredKeys]);
-
     fillStatus.textContent = "Enregistrement…";
     try {
-      await db.saveMarks(fillState.password, fillState.name, fillState.marks);
-      await db.updateMemberCourses(fillState.password, Array.from(existingCourses), Array.from(mergedCourseMarkedKeys));
+      const added = await persistProgramFillForMember(member, matchingCourses, desiredKeys);
+      const refreshed = await db.getMarks(fillState.password);
+      fillState = { ...fillState, marks: { ...refreshed } };
       renderFillGrid();
       fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (les créneaux déjà marqués à la main n'ont pas été touchés).`;
     } catch (err) {
       console.error(err);
       fillStatus.textContent = "Échec de l'enregistrement.";
+    }
+  });
+
+  // Même chose, mais pour tous les membres d'un coup — pratique en début
+  // d'année/quadrimestre une fois les programmes importés (import délégués),
+  // plutôt que de cliquer membre par membre. Ignore silencieusement (compté
+  // à part) ceux sans programme renseigné ou sans cours trouvé.
+  fillFromProgramAllBtn.addEventListener("click", async () => {
+    fillAllStatus.textContent = "Chargement du catalogue de cours…";
+    await loadStudentLoadCatalogue();
+    const eligible = currentMembers.filter((m) => Array.isArray(m.programs) && m.programs.length);
+    if (!eligible.length) {
+      fillAllStatus.textContent = "Aucun membre n'a de programme renseigné sur sa fiche pour l'instant.";
+      return;
+    }
+    fillAllStatus.textContent = `Traitement de ${eligible.length} membre(s)…`;
+    let membersUpdated = 0;
+    let totalAdded = 0;
+    let skipped = 0;
+    try {
+      for (const member of eligible) {
+        const { matchingCourses, desiredKeys } = computeProgramFillForMember(member);
+        if (!matchingCourses.length) {
+          skipped++;
+          continue;
+        }
+        const added = await persistProgramFillForMember(member, matchingCourses, desiredKeys);
+        totalAdded += added;
+        membersUpdated++;
+      }
+      // Si le membre affiché dans la grille juste au-dessus vient d'être
+      // modifié, on recharge pour que la grille reflète le nouvel état.
+      if (fillState.password && eligible.some((m) => m.id === fillState.password)) {
+        const refreshed = await db.getMarks(fillState.password);
+        fillState = { ...fillState, marks: { ...refreshed } };
+        renderFillGrid();
+      }
+      const skippedNote = skipped ? ` (${skipped} ignoré(s), aucun cours trouvé pour leur programme)` : "";
+      fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s)${skippedNote}.`;
+    } catch (err) {
+      console.error(err);
+      fillAllStatus.textContent = "Échec en cours de route, réessaie (les membres déjà traités sont enregistrés).";
     }
   });
 
