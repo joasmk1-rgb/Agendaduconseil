@@ -63,7 +63,7 @@ import * as db from "./db.js";
 // ces lectures/écritures à tout le monde) — juste pour ne pas encombrer/
 // perturber quelqu'un avec des sections qui ne le concernent pas.
 const ROLE_ADMIN_VIEWS = {
-  secretaire: ["meetings", "agenda-proposals", "import"],
+  secretaire: ["meetings", "agenda-proposals", "import", "availability"],
   tresorier: ["projects", "export"],
   communication: ["tasks", "projects"],
 };
@@ -1165,6 +1165,11 @@ function runAdmin() {
     );
   }
 
+  // Balaie les VRAIES dates de la période affichée par le site (même liste
+  // que renderHeatmap ci-dessous : Grid.buildDateList sur currentConfig),
+  // pas un simple "jour de semaine type" — pour que cette grille se
+  // superpose exactement aux dates de la grille de dispo des membres juste
+  // au-dessus, et que les deux soient directement comparables.
   function computeStudentLoad({ effectiveProgs, durationMinutes }) {
     const matchingCourses = (studentLoadCatalogue || []).filter((c) =>
       (c.programs || []).some((prog) => effectiveProgs.has(prog))
@@ -1181,13 +1186,14 @@ function runAdmin() {
       });
     });
 
-    const includeWeekends = currentConfig.includeWeekends;
-    const weekdays = [1, 2, 3, 4, 5, ...(includeWeekends ? [6, 0] : [])];
+    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
     const times = Grid.buildTimeSlots();
     const dayEndMinutes = CONFIG.dayEndHour * 60;
 
     const results = [];
-    weekdays.forEach((dow) => {
+    dates.forEach((date) => {
+      const dow = date.getDay();
+      const dateISO = Grid.toISODate(date);
       const daySessions = sessionsByDow.get(dow) || [];
       times.forEach((startTime) => {
         const startMin = timeStrToMinutes(startTime);
@@ -1198,7 +1204,7 @@ function runAdmin() {
           if (s.start < endMin && s.end > startMin) conflicting.add(s.code);
         });
         results.push({
-          dow,
+          dateISO,
           startTime,
           endTime: minutesToTimeStr(endMin),
           count: conflicting.size,
@@ -1209,10 +1215,11 @@ function runAdmin() {
 
     results.sort((a, b) => {
       if (a.count !== b.count) return a.count - b.count;
-      if (a.dow !== b.dow) return weekdays.indexOf(a.dow) - weekdays.indexOf(b.dow);
+      const dcmp = a.dateISO.localeCompare(b.dateISO);
+      if (dcmp !== 0) return dcmp;
       return a.startTime.localeCompare(b.startTime);
     });
-    return { all: results, top: results.slice(0, 10), weekdays, matchingCourseCount: matchingCourses.length };
+    return { all: results, top: results.slice(0, 10), dates, matchingCourseCount: matchingCourses.length };
   }
 
   function renderStudentLoadResults(top, matchingCourseCount) {
@@ -1229,84 +1236,53 @@ function runAdmin() {
       `<p class="hint">${matchingCourseCount} cours pris en compte pour ce filtre.</p>` +
       top
         .map((r, i) => {
-          const dayLabel = Grid.WEEKDAYS_FULL[r.dow];
           const conflictText = r.count
             ? `${r.count} cours concerné(s) (${r.courses.join(", ")})`
             : "aucun cours concerné 🎉";
-          return `<p><strong>${i + 1}.</strong> ${dayLabel} ${r.startTime}-${r.endTime} — ${conflictText}</p>`;
+          return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${conflictText}</p>`;
         })
         .join("");
   }
 
-  // Heatmap "1 semaine type" (jour de semaine × heure, pas de date précise) —
-  // même principe visuel que renderBestSlotHeatmap, mais rouge = plus de
-  // cours en conflit (inverse de la heatmap "dispo membres" en vert).
-  function renderStudentLoadHeatmap(allResults, topResults, weekdays) {
+  // Même grille que renderHeatmap (vraies dates de la période affichée par
+  // le site), mais rouge = plus de cours en conflit à ce créneau (inverse de
+  // la heatmap "dispo membres" en vert juste au-dessus) — pour que les deux
+  // grilles se lisent côte à côte sur exactement les mêmes dates.
+  function renderStudentLoadHeatmap(allResults, topResults, dates) {
     if (!studentLoadHeatmapEl) return;
     const times = Grid.buildTimeSlots();
-    const counts = new Map(); // "dow|heure" -> { count, courses }
+    const counts = new Map();
     allResults.forEach((r) => {
-      counts.set(`${r.dow}|${r.startTime}`, { count: r.count, courses: r.courses });
+      counts.set(Grid.slotKey(r.dateISO, r.startTime), { count: r.count, courses: r.courses });
     });
-    const topKeys = new Set(topResults.map((r) => `${r.dow}|${r.startTime}`));
-    const rankByKey = new Map(topResults.map((r, i) => [`${r.dow}|${r.startTime}`, i + 1]));
+    const topKeys = new Set(topResults.map((r) => Grid.slotKey(r.dateISO, r.startTime)));
+    const rankByKey = new Map(topResults.map((r, i) => [Grid.slotKey(r.dateISO, r.startTime), i + 1]));
 
     studentLoadHeatmapEl.innerHTML = "";
-    studentLoadHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(weekdays.length);
-    studentLoadHeatmapEl.style.gridTemplateRows = `${Grid.LAYOUT.dayRowHeight}px repeat(${times.length}, ${Grid.LAYOUT.hourRowHeight}px)`;
-
-    const corner = document.createElement("div");
-    corner.className = "cell corner";
-    corner.style.gridRow = "1";
-    corner.style.gridColumn = "1";
-    studentLoadHeatmapEl.appendChild(corner);
-
-    weekdays.forEach((dow, i) => {
-      const el = document.createElement("div");
-      el.className = "cell day-header";
-      el.style.gridRow = "1";
-      el.style.gridColumn = String(i + 2);
-      const weekdayLabel = document.createElement("span");
-      weekdayLabel.className = "weekday";
-      weekdayLabel.textContent = Grid.WEEKDAYS_FULL[dow];
-      el.appendChild(weekdayLabel);
-      studentLoadHeatmapEl.appendChild(el);
-    });
+    studentLoadHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
+    studentLoadHeatmapEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
+    Grid.renderGridHeaders(studentLoadHeatmapEl, dates, currentEvents);
 
     const maxCount = Math.max(1, ...allResults.map((r) => r.count));
-    times.forEach((timeLabel, r) => {
-      const isHourMark = timeLabel.endsWith(":00");
-      const labelEl = document.createElement("div");
-      labelEl.className = "cell time-label" + (isHourMark ? " hour-mark" : "");
-      labelEl.textContent = isHourMark ? timeLabel : `:${timeLabel.split(":")[1]}`;
-      labelEl.style.gridRow = String(r + 2);
-      labelEl.style.gridColumn = "1";
-      studentLoadHeatmapEl.appendChild(labelEl);
-
-      weekdays.forEach((dow, i) => {
-        const key = `${dow}|${timeLabel}`;
-        const cell = document.createElement("div");
-        cell.className = "cell slot" + (isHourMark ? " hour-mark" : "");
-        cell.style.gridRow = String(r + 2);
-        cell.style.gridColumn = String(i + 2);
-        const entry = counts.get(key);
-        if (entry) {
-          if (entry.count > 0) {
-            const ratio = entry.count / maxCount;
-            cell.style.background = `rgba(239, 68, 68, ${(0.12 + ratio * 0.7).toFixed(2)})`;
-            cell.textContent = String(entry.count);
-          } else {
-            cell.style.background = "rgba(34, 197, 94, 0.18)";
-          }
-          if (topKeys.has(key)) {
-            cell.style.boxShadow = "inset 0 0 0 2px #d97706";
-            cell.title = `#${rankByKey.get(key)} — ${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
-          } else {
-            cell.title = `${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
-          }
-        }
-        studentLoadHeatmapEl.appendChild(cell);
-      });
+    Grid.renderHourRows(studentLoadHeatmapEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel, blocked }) => {
+      const key = Grid.slotKey(dateISO, timeLabel);
+      cell.dataset.key = key;
+      if (blocked) return;
+      const entry = counts.get(key);
+      if (!entry) return;
+      if (entry.count > 0) {
+        const ratio = entry.count / maxCount;
+        cell.style.background = `rgba(239, 68, 68, ${(0.12 + ratio * 0.7).toFixed(2)})`;
+        cell.textContent = String(entry.count);
+      } else {
+        cell.style.background = "rgba(34, 197, 94, 0.18)";
+      }
+      if (topKeys.has(key)) {
+        cell.style.boxShadow = "inset 0 0 0 2px #d97706";
+        cell.title = `#${rankByKey.get(key)} — ${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
+      } else {
+        cell.title = `${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
+      }
     });
   }
 
@@ -1324,9 +1300,9 @@ function runAdmin() {
         studentLoadNiveauSelect.value,
         checkedProgs
       );
-      const { all, top, weekdays, matchingCourseCount } = computeStudentLoad({ effectiveProgs, durationMinutes });
+      const { all, top, dates, matchingCourseCount } = computeStudentLoad({ effectiveProgs, durationMinutes });
       renderStudentLoadResults(top, matchingCourseCount);
-      renderStudentLoadHeatmap(all, top, weekdays);
+      renderStudentLoadHeatmap(all, top, dates);
       studentLoadStatus.textContent = "";
     });
   }
