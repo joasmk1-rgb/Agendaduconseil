@@ -9982,5 +9982,1136 @@
     "location": "Local 22 - Bât D"
    }
   ]
+ },
+ {
+  "code": "EVT-test-de-prerequis-en-francais",
+  "name": "Test de prérequis en Français",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Test de prérequis en Français",
+    "weekday": 2,
+    "start": "08:30",
+    "end": "09:15",
+    "location": "Salle informatique n°6 - Bât D | Travail en ligne"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-de-coaching-methodologique",
+  "name": "Séance de coaching méthodologique",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance de coaching méthodologique",
+    "weekday": 1,
+    "start": "09:00",
+    "end": "10:15",
+    "location": "Auditoire A1 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-de-sensibilisation-aux-violenc",
+  "name": "Séminaire de sensibilisation aux violences sexistes et sexuelles",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire de sensibilisation aux violences sexistes et sexuelles",
+    "weekday": 5,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Auditoire A1 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-gestion-du-temps",
+  "name": "Séminaire gestion du temps",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire gestion du temps",
+    "weekday": 4,
+    "start": "13:45",
+    "end": "14:30",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-remediation-en-mathematiques",
+  "name": "Remédiation en Mathématiques",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Remédiation en Mathématiques",
+    "weekday": 1,
+    "start": "08:30",
+    "end": "09:45",
+    "location": "Local 12 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-barbecue-d-accueil",
+  "name": "Barbecue d'accueil",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Barbecue d'accueil",
+    "weekday": 1,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Salle d'animation (Bât J)"
+   }
+  ]
+ },
+ {
+  "code": "EVT-test-de-prerequis-en-math",
+  "name": "Test de prérequis en Math",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Test de prérequis en Math",
+    "weekday": 2,
+    "start": "09:30",
+    "end": "10:15",
+    "location": "Travail en ligne | Salle informatique n°6 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-s-adapter-a-la-vie-universitaire-comment",
+  "name": "S'adapter à la vie universitaire : comment faire de votre stresse un allié?",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "S'adapter à la vie universitaire : comment faire de votre stresse un allié?",
+    "weekday": 1,
+    "start": "13:45",
+    "end": "14:45",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-rencontre-avec-des-ancien-nes-etudiant-e",
+  "name": "Rencontre avec des ancien.nes étudiant.es de BAC1",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Rencontre avec des ancien.nes étudiant.es de BAC1",
+    "weekday": 1,
+    "start": "14:45",
+    "end": "15:30",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-sensibilisation-a-la-sante-mentale-l-fol",
+  "name": "Sensibilisation à la santé mentale (L. Folon)",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Sensibilisation à la santé mentale (L. Folon)",
+    "weekday": 4,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-d-information-sur-le-rgee",
+  "name": "Séance d'information sur le RGEE",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance d'information sur le RGEE",
+    "weekday": 4,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Auditoire A1 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-info-erasmus-bac-2-espo-lsm-maste",
+  "name": "Séance info Erasmus Bac 2 ESPO/LSM + Master 1 ESPO",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance info Erasmus Bac 2 ESPO/LSM + Master 1 ESPO",
+    "weekday": 2,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Local 25 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-remediation-en-francais",
+  "name": "Remédiation en Français",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Remédiation en Français",
+    "weekday": 5,
+    "start": "16:15",
+    "end": "17:45",
+    "location": "Auditoire A1 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-de-prise-de-notes",
+  "name": "Séminaire de prise de notes",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire de prise de notes",
+    "weekday": 5,
+    "start": "13:45",
+    "end": "15:45",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-bons-reflexes-du-guindailleur-",
+  "name": "Séminaire « Bons réflexes du guindailleur et de la guindailleuse »",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire « Bons réflexes du guindailleur et de la guindailleuse »",
+    "weekday": 2,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Auditoire A1 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-welcome-village-concert-rencontre-des-as",
+  "name": "Welcome Village + concert - Rencontre des associations et Buddies",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Welcome Village + concert - Rencontre des associations et Buddies",
+    "weekday": 2,
+    "start": "15:00",
+    "end": "20:00",
+    "location": "Exterieur"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-info-pour-les-locataires",
+  "name": "Séance info pour les locataires",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance info pour les locataires",
+    "weekday": 2,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-workshop-colruyt",
+  "name": "Workshop Colruyt",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Workshop Colruyt",
+    "weekday": 1,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Local 24 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-info-master-1-lsm-erasmus",
+  "name": "Séance info Master 1 LSM - Erasmus",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance info Master 1 LSM - Erasmus",
+    "weekday": 5,
+    "start": "12:45",
+    "end": "13:45",
+    "location": "Local 12 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-win-week-accueil-nouveaux-master-120",
+  "name": "Win Week Accueil Nouveaux Master 120",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Win Week Accueil Nouveaux Master 120",
+    "weekday": 4,
+    "start": "09:00",
+    "end": "10:30",
+    "location": "Local 25 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-d-accueil-horaire-decale-mons",
+  "name": "Séance d'accueil horaire décalé Mons",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance d'accueil horaire décalé Mons",
+    "weekday": 4,
+    "start": "18:00",
+    "end": "21:00",
+    "location": ""
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-de-prise-en-main-des-plateform",
+  "name": "Séminaire de prise en main des plateformes numériques + CEP - MONS",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire de prise en main des plateformes numériques + CEP - MONS",
+    "weekday": 2,
+    "start": "18:00",
+    "end": "20:00",
+    "location": "Local 19 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-d-aide-au-referencement-biblio",
+  "name": "Séminaire d'aide au référencement bibliographique",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire d'aide au référencement bibliographique",
+    "weekday": 5,
+    "start": "18:00",
+    "end": "21:00",
+    "location": "Auditoire A2 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-de-gestion-du-temps-mons-q1",
+  "name": "Séminaire de gestion du temps - Mons - Q1",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire de gestion du temps - Mons - Q1",
+    "weekday": 5,
+    "start": "18:00",
+    "end": "20:00",
+    "location": "Local 12 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-gesa-seminaire-d-accueil-m1-et-mc",
+  "name": "GESA - Séminaire d'accueil M1 et MC",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "GESA - Séminaire d'accueil M1 et MC",
+    "weekday": 5,
+    "start": "13:00",
+    "end": "15:00",
+    "location": "Local 15 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-gesa-lunch",
+  "name": "GESA - Lunch",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "GESA - Lunch",
+    "weekday": 5,
+    "start": "12:00",
+    "end": "13:00",
+    "location": "Local 17 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-gesa-seminaire-d-accueil-m2",
+  "name": "GESA - Séminaire d'accueil M2",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "GESA - Séminaire d'accueil M2",
+    "weekday": 5,
+    "start": "11:00",
+    "end": "12:00",
+    "location": "Local 18 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seance-d-information-master-en-communica",
+  "name": "Séance d'information Master en Communication",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séance d'information Master en Communication",
+    "weekday": 2,
+    "start": "10:45",
+    "end": "13:45",
+    "location": "Local 15 - Bât D"
+   }
+  ]
+ },
+ {
+  "code": "EVT-seminaire-d-accompagnement-hd-mons-q2",
+  "name": "Séminaire d'accompagnement HD - Mons - Q2",
+  "programs": [
+   "ADPM21MSIP",
+   "APHM2MSG",
+   "COAM2M",
+   "COHM2M",
+   "COMM1BA-B1",
+   "COMM1BA-B2",
+   "COMM2M",
+   "COMM2M1",
+   "ECOM2M4",
+   "ECOM2M5",
+   "GEHM2M",
+   "GESA2M",
+   "GESM1BA-B1",
+   "GESM1BA-B2",
+   "GESM2M",
+   "HUSM1BA-B1",
+   "HUSM1BA-B2",
+   "INGM1BA-B1",
+   "INGM1BA-B2",
+   "INGM2M",
+   "SPHM2M1",
+   "SPHM2MSG",
+   "SPOM1BA-B1",
+   "SPOM1BA-B2"
+  ],
+  "sessions": [
+   {
+    "event_code": "Séminaire d'accompagnement HD - Mons - Q2",
+    "weekday": 3,
+    "start": "18:00",
+    "end": "20:00",
+    "location": "Local 11 - Bât D"
+   }
+  ]
  }
 ]
