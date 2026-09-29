@@ -2,6 +2,7 @@
 import { ADMIN_PASSPHRASE, CONFIG } from "./config.js";
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
+import { computeUnavailableSlots, buildICSFromCourseSessions } from "./ics.js";
 
 // ---------- Navigation "mode application" (menu ☰ + une vue à la fois) ----------
 // Pure UI, ne dépend d'aucune donnée : tourne dès le chargement du script,
@@ -428,6 +429,7 @@ function runAdmin() {
   const fillMemberSelect = document.getElementById("fill-member-select");
   const fillModeAvailableBtn = document.getElementById("fill-mode-available");
   const fillModeUnavailableBtn = document.getElementById("fill-mode-unavailable");
+  const fillFromProgramBtn = document.getElementById("fill-from-program-btn");
   const fillStatus = document.getElementById("fill-status");
   const fillGridEl = document.getElementById("fill-grid");
   const bulkFillMemberCheckboxes = document.getElementById("bulk-fill-member-checkboxes");
@@ -2411,6 +2413,22 @@ function runAdmin() {
     return (name || "").trim().replace(/\s+/g, " ").toLowerCase();
   }
 
+  // Cherche un membre déjà présent qui correspond au nom importé : d'abord
+  // une correspondance exacte, sinon un repli sur un seul mot du nom (ex: un
+  // membre déjà enregistré juste comme "Elea", à l'ancienne, retrouvé dans
+  // l'import "MARONGIU Elea") — mais seulement si un SEUL membre existant
+  // correspond à ce mot, jamais un choix arbitraire entre plusieurs "Tom".
+  function findExistingMemberMatch(name, members) {
+    const normFull = normalizeNameForMatch(name);
+    const exact = members.find((m) => normalizeNameForMatch(m.name) === normFull);
+    if (exact) return { member: exact, matchedBy: "exact" };
+    const tokens = normFull.split(" ").filter(Boolean);
+    const candidates = members.filter((m) => tokens.includes(normalizeNameForMatch(m.name)));
+    if (candidates.length === 1) return { member: candidates[0], matchedBy: "partiel" };
+    if (candidates.length > 1) return { member: null, ambiguousCandidates: candidates };
+    return { member: null };
+  }
+
   function renderDelegateImportPreview() {
     if (!pendingDelegateRows.length) {
       delegateImportPreviewEl.innerHTML = "";
@@ -2431,7 +2449,8 @@ function runAdmin() {
         const unknownWarning = r.unknownCodes.length
           ? `<br>⚠️ code(s) de programme non reconnu(s), ignoré(s) : ${r.unknownCodes.join(", ")}`
           : "";
-        return `<li><label><input type="checkbox" class="delegate-import-row-checkbox" data-idx="${idx}" ${r.checked ? "checked" : ""}> <strong>${r.name}</strong> — ${statusLabel}<br>${programsText}${unknownWarning}</label></li>`;
+        const matchNoteHtml = r.matchNote ? `<br>ℹ️ ${r.matchNote}` : "";
+        return `<li><label><input type="checkbox" class="delegate-import-row-checkbox" data-idx="${idx}" ${r.checked ? "checked" : ""}> <strong>${r.name}</strong> — ${statusLabel}<br>${programsText}${unknownWarning}${matchNoteHtml}</label></li>`;
       })
       .join("");
     delegateImportPreviewEl.innerHTML = `<p><strong>Aperçu</strong> — ${nbNew} nouveau(x) membre(s), ${nbUpdate} mise(s) à jour si tu confirmes.</p><ul class="item-list">${rowsHtml}</ul>`;
@@ -2488,13 +2507,20 @@ function runAdmin() {
         const rawCodes = programsIdx !== -1 ? (row[programsIdx] || "").split(";").map((c) => c.trim()).filter(Boolean) : [];
         const programs = rawCodes.filter((c) => validCodes.has(c));
         const unknownCodes = rawCodes.filter((c) => !validCodes.has(c));
-        const existing = currentMembers.find((m) => normalizeNameForMatch(m.name) === normalizeNameForMatch(name));
+        const match = findExistingMemberMatch(name, currentMembers);
         let password;
         let isNew;
-        if (existing) {
-          password = existing.id;
+        let matchNote = "";
+        if (match.member) {
+          password = match.member.id;
           isNew = false;
+          if (match.matchedBy === "partiel") {
+            matchNote = `reconnu comme membre déjà présent "${match.member.name}" (correspondance sur le prénom/nom, pas le nom complet)`;
+          }
         } else {
+          if (match.ambiguousCandidates) {
+            matchNote = `⚠️ correspond peut-être à un membre déjà présent parmi : ${match.ambiguousCandidates.map((c) => c.name).join(", ")} — pas assez sûr pour deviner, créé comme nouveau membre ; vérifie et fusionne à la main si besoin (fiche du doublon → "Modifier" → change son mot de passe pour celui du bon membre)`;
+          }
           let base = slugify(name);
           password = base;
           let n = 2;
@@ -2505,7 +2531,7 @@ function runAdmin() {
           usedPasswords.add(password);
           isNew = true;
         }
-        pendingDelegateRows.push({ name, programs, unknownCodes, password, isNew, checked: true });
+        pendingDelegateRows.push({ name, programs, unknownCodes, password, isNew, matchNote, checked: true });
       });
       const summary = [`<p>${pendingDelegateRows.length} ligne(s) valide(s) sur ${dataRows.length} — relis l'aperçu ci-dessous puis confirme.</p>`];
       rejected.forEach((w) => summary.push(`<p>⚠️ ${w}</p>`));
@@ -3507,6 +3533,68 @@ function runAdmin() {
   }
   fillModeAvailableBtn.addEventListener("click", () => setFillMode("available"));
   fillModeUnavailableBtn.addEventListener("click", () => setFillMode("unavailable"));
+
+  // Bouton manuel "Remplir depuis son programme" — même pipeline que "Mes
+  // cours" côté public (via ics.js), mais déclenché par l'admin à la place
+  // du membre : marque "pas dispo" aux heures de cours du/des programme(s)
+  // renseigné(s) sur sa fiche, sans jamais toucher un créneau déjà marqué à
+  // la main (ni ici, ni par le membre lui-même depuis). Le membre reste
+  // ensuite libre de se marquer "dispo" ailleurs à la main, ou d'utiliser
+  // "Mes cours" de son côté (courses/courseMarkedKeys tenus synchronisés).
+  fillFromProgramBtn.addEventListener("click", async () => {
+    if (!fillState.password) {
+      fillStatus.textContent = "Choisis d'abord un membre.";
+      return;
+    }
+    const member = currentMembers.find((m) => m.id === fillState.password);
+    const programs = member && Array.isArray(member.programs) ? member.programs : [];
+    if (!programs.length) {
+      fillStatus.textContent = `${fillState.name} n'a pas de programme renseigné sur sa fiche (Membres → Modifier) — rien à remplir automatiquement.`;
+      return;
+    }
+    fillStatus.textContent = "Chargement du catalogue de cours…";
+    await loadStudentLoadCatalogue();
+    const programSet = new Set(programs);
+    const matchingCourses = (studentLoadCatalogue || []).filter((c) => (c.programs || []).some((p) => programSet.has(p)));
+    if (!matchingCourses.length) {
+      fillStatus.textContent = `Aucun cours trouvé dans le catalogue pour le(s) programme(s) de ${fillState.name}.`;
+      return;
+    }
+    const sessions = matchingCourses.flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
+    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
+    const desiredKeys = computeUnavailableSlots(
+      buildICSFromCourseSessions(sessions),
+      dates,
+      CONFIG.slotMinutes,
+      CONFIG.dayStartHour,
+      CONFIG.dayEndHour
+    );
+    let added = 0;
+    desiredKeys.forEach((key) => {
+      if (!(key in fillState.marks)) {
+        fillState.marks[key] = "unavailable";
+        added++;
+      }
+    });
+    // Garde "courses"/"courseMarkedKeys" synchronisés avec "Mes cours" côté
+    // public (union, ne retire jamais un cours que le membre avait coché
+    // lui-même) — pour que la fonctionnalité reste cohérente quel que soit
+    // le côté (admin ou membre) qui a déclenché le dernier remplissage.
+    const existingCourses = new Set(member.courses || []);
+    matchingCourses.forEach((c) => existingCourses.add(c.code));
+    const mergedCourseMarkedKeys = new Set([...(member.courseMarkedKeys || []), ...desiredKeys]);
+
+    fillStatus.textContent = "Enregistrement…";
+    try {
+      await db.saveMarks(fillState.password, fillState.name, fillState.marks);
+      await db.updateMemberCourses(fillState.password, Array.from(existingCourses), Array.from(mergedCourseMarkedKeys));
+      renderFillGrid();
+      fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (les créneaux déjà marqués à la main n'ont pas été touchés).`;
+    } catch (err) {
+      console.error(err);
+      fillStatus.textContent = "Échec de l'enregistrement.";
+    }
+  });
 
   function renderFillMemberOptions() {
     const previous = fillMemberSelect.value;

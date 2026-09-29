@@ -22,6 +22,7 @@ let state = {
   marks: {}, // "YYYY-MM-DD|HH:MM" -> "available" | "unavailable"
   selectedCourses: [], // codes de cours choisis dans "Mes cours"
   courseMarkedKeys: [], // dernières clés de créneaux posées par "Mes cours"
+  programs: [], // programme(s) renseigné(s) par l'admin sur la fiche (data/mons-programs.json)
   mode: "available",
   tasks: [],
   polls: [],
@@ -74,6 +75,7 @@ const coursesSearch = document.getElementById("courses-search");
 const coursesList = document.getElementById("courses-list");
 const coursesSelectedCount = document.getElementById("courses-selected-count");
 const coursesApplyBtn = document.getElementById("courses-apply-btn");
+const coursesFromProgramBtn = document.getElementById("courses-from-program-btn");
 const coursesCloseBtn = document.getElementById("courses-close-btn");
 const coursesStatus = document.getElementById("courses-status");
 const bulkMarkSection = document.getElementById("bulk-mark-section");
@@ -254,6 +256,7 @@ async function enterAsMember(member) {
   state.role = member.role || "";
   state.selectedCourses = Array.isArray(member.courses) ? member.courses : [];
   state.courseMarkedKeys = Array.isArray(member.courseMarkedKeys) ? member.courseMarkedKeys : [];
+  state.programs = Array.isArray(member.programs) ? member.programs : [];
   memberNameEl.textContent = member.name;
   adminLink.classList.toggle("hidden", !state.isAdmin);
   loginForm.classList.add("hidden");
@@ -1817,7 +1820,7 @@ coursesFilterNiveau.addEventListener("change", () => {
 });
 coursesFilterProgramme.addEventListener("change", renderCoursesList);
 
-coursesApplyBtn.addEventListener("click", async () => {
+async function applySelectedCourses() {
   if (!state.password || !state.config) return;
   coursesStatus.textContent = "Application en cours…";
   try {
@@ -1857,6 +1860,37 @@ coursesApplyBtn.addEventListener("click", async () => {
     console.error("Échec de l'application des cours :", err);
     coursesStatus.textContent = "Échec, réessaie.";
   }
+}
+
+coursesApplyBtn.addEventListener("click", applySelectedCourses);
+
+// Raccourci "Remplir depuis mon programme" : coche d'un coup tous les cours
+// du/des programme(s) renseigné(s) sur la fiche par l'admin (sans décocher
+// ce que le membre avait déjà choisi à la main), puis applique directement —
+// le membre reste ensuite libre de cocher/décocher d'autres cours, ou de
+// marquer "dispo" à la main par-dessus n'importe quel créneau resté libre.
+coursesFromProgramBtn.addEventListener("click", async () => {
+  if (!state.password) return;
+  coursesStatus.textContent = "Chargement du catalogue…";
+  await loadCoursesCatalogue();
+  if (!state.programs || !state.programs.length) {
+    coursesStatus.textContent = "Aucun programme renseigné sur ta fiche pour l'instant — demande à l'admin de l'ajouter (Membres → Modifier), ou choisis tes cours toi-même ci-dessous.";
+    return;
+  }
+  const programSet = new Set(state.programs);
+  const matchingCodes = (coursesCatalogue || [])
+    .filter((c) => (c.programs || []).some((p) => programSet.has(p)))
+    .map((c) => c.code);
+  const before = new Set(state.selectedCourses);
+  matchingCodes.forEach((code) => {
+    if (!before.has(code)) state.selectedCourses.push(code);
+  });
+  const addedCount = state.selectedCourses.length - before.size;
+  refreshProgrammeOptions();
+  renderCoursesList();
+  updateCoursesSelectedCount();
+  await applySelectedCourses();
+  coursesStatus.textContent = `${addedCount} cours de ton programme ajouté(s) à ta sélection. ` + coursesStatus.textContent;
 });
 
 // ===================== RENDU DE LA GRILLE =====================
