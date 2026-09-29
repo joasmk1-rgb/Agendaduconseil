@@ -368,6 +368,15 @@ function runAdmin() {
   const bestSlotThresholdInput = document.getElementById("best-slot-threshold-input");
   const bestSlotResult = document.getElementById("best-slot-result");
 
+  const studentLoadFaculteSelect = document.getElementById("student-load-faculte");
+  const studentLoadNiveauSelect = document.getElementById("student-load-niveau");
+  const studentLoadDurationInput = document.getElementById("student-load-duration-input");
+  const studentLoadSearchBtn = document.getElementById("student-load-search-btn");
+  const studentLoadProgCheckboxes = document.getElementById("student-load-programme-checkboxes");
+  const studentLoadStatus = document.getElementById("student-load-status");
+  const studentLoadResult = document.getElementById("student-load-result");
+  const studentLoadHeatmapEl = document.getElementById("student-load-heatmap");
+
   const responseCountEl = document.getElementById("response-count");
   const memberCountEl = document.getElementById("member-count");
   const responseRangeStart = document.getElementById("response-range-start");
@@ -1080,6 +1089,247 @@ function runAdmin() {
     renderBestSlotResults(top);
     renderBestSlotHeatmap(all, top, dates);
   });
+
+  // ---------- Créneau le moins contraignant pour les étudiants (cours) ----------
+  // Contrairement à "Trouver le meilleur créneau" ci-dessus (basé sur les
+  // dispos réelles cochées par les membres du conseil), ceci se base sur le
+  // catalogue de cours LSM/ESPO (data/mons-courses-catalogue.json) : des
+  // séances hebdomadaires récurrentes (jour de semaine + heure), sans date
+  // précise. Vivant dans la vue "meetings", donc visible aussi par le poste
+  // secretaire (voir ROLE_ADMIN_VIEWS), pas seulement par l'admin complet.
+  let studentLoadCatalogue = null;
+  let studentLoadPrograms = null;
+  let studentLoadCatalogueLoading = null;
+
+  function loadStudentLoadCatalogue() {
+    if (studentLoadCatalogue) return Promise.resolve(studentLoadCatalogue);
+    if (studentLoadCatalogueLoading) return studentLoadCatalogueLoading;
+    studentLoadCatalogueLoading = Promise.all([
+      fetch("data/mons-courses-catalogue.json").then((r) => r.json()),
+      fetch("data/mons-programs.json").then((r) => r.json()),
+    ])
+      .then(([catalogue, programs]) => {
+        studentLoadCatalogue = catalogue;
+        studentLoadPrograms = programs;
+        return catalogue;
+      })
+      .catch((err) => {
+        console.error("Échec du chargement du catalogue de cours :", err);
+        studentLoadCatalogue = [];
+        studentLoadPrograms = [];
+        return studentLoadCatalogue;
+      });
+    return studentLoadCatalogueLoading;
+  }
+
+  // Recalcule les cases "Programme(s)" affichées selon Faculté/Niveau,
+  // en gardant les cases déjà cochées si elles restent valides.
+  function refreshStudentLoadProgrammeCheckboxes() {
+    if (!studentLoadProgCheckboxes) return;
+    const faculte = studentLoadFaculteSelect.value;
+    const niveau = studentLoadNiveauSelect.value;
+    const previouslyChecked = new Set(
+      Array.from(studentLoadProgCheckboxes.querySelectorAll("input:checked")).map((el) => el.value)
+    );
+    const matching = (studentLoadPrograms || []).filter(
+      (p) => (!faculte || p.faculte === faculte) && (!niveau || p.niveau === niveau)
+    );
+    studentLoadProgCheckboxes.innerHTML = "";
+    matching.forEach((p) => {
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = p.prog;
+      checkbox.checked = previouslyChecked.has(p.prog);
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(" " + p.label));
+      studentLoadProgCheckboxes.appendChild(label);
+    });
+    if (!matching.length) {
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent = "Aucun programme pour ce filtre.";
+      studentLoadProgCheckboxes.appendChild(hint);
+    }
+  }
+
+  // Codes de programme effectivement pris en compte : ceux cochés, sinon
+  // tous ceux qui correspondent aux filtres Faculté/Niveau (pas besoin de
+  // tout cocher à la main pour une recherche large comme "tous les bac").
+  function effectiveStudentLoadPrograms(facultyFilter, niveauFilter, checkedProgs) {
+    if (checkedProgs.length) return new Set(checkedProgs);
+    return new Set(
+      (studentLoadPrograms || [])
+        .filter((p) => (!facultyFilter || p.faculte === facultyFilter) && (!niveauFilter || p.niveau === niveauFilter))
+        .map((p) => p.prog)
+    );
+  }
+
+  function computeStudentLoad({ effectiveProgs, durationMinutes }) {
+    const matchingCourses = (studentLoadCatalogue || []).filter((c) =>
+      (c.programs || []).some((prog) => effectiveProgs.has(prog))
+    );
+    // Séances groupées par jour de semaine, avec le code du cours (pour
+    // compter des cours distincts en conflit, pas des séances distinctes —
+    // un même cours peut avoir plusieurs séances qui se chevauchent).
+    const sessionsByDow = new Map();
+    matchingCourses.forEach((course) => {
+      (course.sessions || []).forEach((s) => {
+        const list = sessionsByDow.get(s.weekday) || [];
+        list.push({ start: timeStrToMinutes(s.start), end: timeStrToMinutes(s.end), code: course.code });
+        sessionsByDow.set(s.weekday, list);
+      });
+    });
+
+    const includeWeekends = currentConfig.includeWeekends;
+    const weekdays = [1, 2, 3, 4, 5, ...(includeWeekends ? [6, 0] : [])];
+    const times = Grid.buildTimeSlots();
+    const dayEndMinutes = CONFIG.dayEndHour * 60;
+
+    const results = [];
+    weekdays.forEach((dow) => {
+      const daySessions = sessionsByDow.get(dow) || [];
+      times.forEach((startTime) => {
+        const startMin = timeStrToMinutes(startTime);
+        const endMin = startMin + durationMinutes;
+        if (endMin > dayEndMinutes) return;
+        const conflicting = new Set();
+        daySessions.forEach((s) => {
+          if (s.start < endMin && s.end > startMin) conflicting.add(s.code);
+        });
+        results.push({
+          dow,
+          startTime,
+          endTime: minutesToTimeStr(endMin),
+          count: conflicting.size,
+          courses: Array.from(conflicting),
+        });
+      });
+    });
+
+    results.sort((a, b) => {
+      if (a.count !== b.count) return a.count - b.count;
+      if (a.dow !== b.dow) return weekdays.indexOf(a.dow) - weekdays.indexOf(b.dow);
+      return a.startTime.localeCompare(b.startTime);
+    });
+    return { all: results, top: results.slice(0, 10), weekdays, matchingCourseCount: matchingCourses.length };
+  }
+
+  function renderStudentLoadResults(top, matchingCourseCount) {
+    if (!studentLoadResult) return;
+    if (!matchingCourseCount) {
+      studentLoadResult.innerHTML = "<p>Aucun cours ne correspond à ce filtre (vérifie faculté/niveau/programme).</p>";
+      return;
+    }
+    if (!top.length) {
+      studentLoadResult.innerHTML = "<p>Aucun créneau trouvé (vérifie la durée par rapport aux heures de la grille).</p>";
+      return;
+    }
+    studentLoadResult.innerHTML =
+      `<p class="hint">${matchingCourseCount} cours pris en compte pour ce filtre.</p>` +
+      top
+        .map((r, i) => {
+          const dayLabel = Grid.WEEKDAYS_FULL[r.dow];
+          const conflictText = r.count
+            ? `${r.count} cours concerné(s) (${r.courses.join(", ")})`
+            : "aucun cours concerné 🎉";
+          return `<p><strong>${i + 1}.</strong> ${dayLabel} ${r.startTime}-${r.endTime} — ${conflictText}</p>`;
+        })
+        .join("");
+  }
+
+  // Heatmap "1 semaine type" (jour de semaine × heure, pas de date précise) —
+  // même principe visuel que renderBestSlotHeatmap, mais rouge = plus de
+  // cours en conflit (inverse de la heatmap "dispo membres" en vert).
+  function renderStudentLoadHeatmap(allResults, topResults, weekdays) {
+    if (!studentLoadHeatmapEl) return;
+    const times = Grid.buildTimeSlots();
+    const counts = new Map(); // "dow|heure" -> { count, courses }
+    allResults.forEach((r) => {
+      counts.set(`${r.dow}|${r.startTime}`, { count: r.count, courses: r.courses });
+    });
+    const topKeys = new Set(topResults.map((r) => `${r.dow}|${r.startTime}`));
+    const rankByKey = new Map(topResults.map((r, i) => [`${r.dow}|${r.startTime}`, i + 1]));
+
+    studentLoadHeatmapEl.innerHTML = "";
+    studentLoadHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(weekdays.length);
+    studentLoadHeatmapEl.style.gridTemplateRows = `${Grid.LAYOUT.dayRowHeight}px repeat(${times.length}, ${Grid.LAYOUT.hourRowHeight}px)`;
+
+    const corner = document.createElement("div");
+    corner.className = "cell corner";
+    corner.style.gridRow = "1";
+    corner.style.gridColumn = "1";
+    studentLoadHeatmapEl.appendChild(corner);
+
+    weekdays.forEach((dow, i) => {
+      const el = document.createElement("div");
+      el.className = "cell day-header";
+      el.style.gridRow = "1";
+      el.style.gridColumn = String(i + 2);
+      const weekdayLabel = document.createElement("span");
+      weekdayLabel.className = "weekday";
+      weekdayLabel.textContent = Grid.WEEKDAYS_FULL[dow];
+      el.appendChild(weekdayLabel);
+      studentLoadHeatmapEl.appendChild(el);
+    });
+
+    const maxCount = Math.max(1, ...allResults.map((r) => r.count));
+    times.forEach((timeLabel, r) => {
+      const isHourMark = timeLabel.endsWith(":00");
+      const labelEl = document.createElement("div");
+      labelEl.className = "cell time-label" + (isHourMark ? " hour-mark" : "");
+      labelEl.textContent = isHourMark ? timeLabel : `:${timeLabel.split(":")[1]}`;
+      labelEl.style.gridRow = String(r + 2);
+      labelEl.style.gridColumn = "1";
+      studentLoadHeatmapEl.appendChild(labelEl);
+
+      weekdays.forEach((dow, i) => {
+        const key = `${dow}|${timeLabel}`;
+        const cell = document.createElement("div");
+        cell.className = "cell slot" + (isHourMark ? " hour-mark" : "");
+        cell.style.gridRow = String(r + 2);
+        cell.style.gridColumn = String(i + 2);
+        const entry = counts.get(key);
+        if (entry) {
+          if (entry.count > 0) {
+            const ratio = entry.count / maxCount;
+            cell.style.background = `rgba(239, 68, 68, ${(0.12 + ratio * 0.7).toFixed(2)})`;
+            cell.textContent = String(entry.count);
+          } else {
+            cell.style.background = "rgba(34, 197, 94, 0.18)";
+          }
+          if (topKeys.has(key)) {
+            cell.style.boxShadow = "inset 0 0 0 2px #d97706";
+            cell.title = `#${rankByKey.get(key)} — ${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
+          } else {
+            cell.title = `${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
+          }
+        }
+        studentLoadHeatmapEl.appendChild(cell);
+      });
+    });
+  }
+
+  if (studentLoadFaculteSelect) {
+    loadStudentLoadCatalogue().then(() => refreshStudentLoadProgrammeCheckboxes());
+    studentLoadFaculteSelect.addEventListener("change", refreshStudentLoadProgrammeCheckboxes);
+    studentLoadNiveauSelect.addEventListener("change", refreshStudentLoadProgrammeCheckboxes);
+    studentLoadSearchBtn.addEventListener("click", async () => {
+      studentLoadStatus.textContent = "Recherche en cours…";
+      await loadStudentLoadCatalogue();
+      const checkedProgs = Array.from(studentLoadProgCheckboxes.querySelectorAll("input:checked")).map((el) => el.value);
+      const durationMinutes = Number(studentLoadDurationInput.value) || 60;
+      const effectiveProgs = effectiveStudentLoadPrograms(
+        studentLoadFaculteSelect.value,
+        studentLoadNiveauSelect.value,
+        checkedProgs
+      );
+      const { all, top, weekdays, matchingCourseCount } = computeStudentLoad({ effectiveProgs, durationMinutes });
+      renderStudentLoadResults(top, matchingCourseCount);
+      renderStudentLoadHeatmap(all, top, weekdays);
+      studentLoadStatus.textContent = "";
+    });
+  }
 
   // ---------- Export Excel des disponibilités pour un événement ----------
   function slugify(text) {

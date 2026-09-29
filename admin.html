@@ -439,6 +439,34 @@
     </div>
 
     <div class="view" data-view="meetings">
+      <section class="admin-panel full-width" aria-label="Créneau le moins contraignant pour les étudiants">
+        <h2>Créneau le moins contraignant pour les étudiants (cours)</h2>
+        <p class="hint">Cherche, à partir des horaires de cours (LSM/ESPO, pas des dispos cochées par les membres du conseil), les jours/heures de la semaine où le moins d'étudiants ont cours — pratique pour placer un événement qui dérange le moins de monde. Comme les cours se répètent chaque semaine, le résultat sort en "jour de semaine + heure" : choisis ensuite la vraie date qui tombe ce jour-là.</p>
+        <div class="control-group courses-filters">
+          <select id="student-load-faculte">
+            <option value="">Toutes facultés</option>
+            <option value="LSM">LSM</option>
+            <option value="ESPO">ESPO</option>
+          </select>
+          <select id="student-load-niveau">
+            <option value="">Tous niveaux</option>
+            <option value="Bac">Bac</option>
+            <option value="Master">Master</option>
+          </select>
+          <input type="number" id="student-load-duration-input" min="15" step="15" value="60" placeholder="Durée (min)" title="Durée de l'événement en minutes">
+          <button type="button" id="student-load-search-btn" class="btn btn-primary btn-sm">Chercher</button>
+        </div>
+        <div class="control-group">
+          <label>Programme(s) concerné(s) (aucun coché = tous ceux qui correspondent aux filtres ci-dessus)</label>
+          <div id="student-load-programme-checkboxes" class="checkbox-list"></div>
+        </div>
+        <p id="student-load-status" class="hint"></p>
+        <div id="student-load-result" class="hint"></div>
+        <div class="grid-scroll">
+          <div id="student-load-heatmap" class="grid"></div>
+        </div>
+      </section>
+
       <section class="admin-panel full-width" aria-label="Réunions">
         <h2>Réunions</h2>
         <p class="hint">Une réunion se crée à partir d'un événement déjà présent au calendrier. Les présences sont pré-remplies automatiquement d'après les disponibilités marquées sur ce créneau (seuil de l'événement, 45 min par défaut) — modifiable ensuite librement.</p>
