@@ -3612,7 +3612,7 @@ function runAdmin() {
       fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (les créneaux déjà marqués à la main n'ont pas été touchés).`;
     } catch (err) {
       console.error(err);
-      fillStatus.textContent = "Échec de l'enregistrement.";
+      fillStatus.textContent = `Échec de l'enregistrement — ${err && err.message ? err.message : "réessaie."}`;
     }
   });
 
@@ -3632,8 +3632,13 @@ function runAdmin() {
     let membersUpdated = 0;
     let totalAdded = 0;
     let skipped = 0;
-    try {
-      for (const member of eligible) {
+    const failed = [];
+    // Chaque membre est traité indépendamment : l'échec d'un seul (ex: son
+    // programme génère plus de créneaux que ce que les règles Firestore
+    // autorisent pour l'instant) ne doit pas empêcher de traiter les
+    // suivants — sinon un seul cas problématique bloque tout le monde.
+    for (const member of eligible) {
+      try {
         const { matchingCourses, desiredKeys } = computeProgramFillForMember(member);
         if (!matchingCourses.length) {
           skipped++;
@@ -3642,20 +3647,21 @@ function runAdmin() {
         const added = await persistProgramFillForMember(member, matchingCourses, desiredKeys);
         totalAdded += added;
         membersUpdated++;
+      } catch (err) {
+        console.error(`Échec pour ${member.name} :`, err);
+        failed.push(member.name);
       }
-      // Si le membre affiché dans la grille juste au-dessus vient d'être
-      // modifié, on recharge pour que la grille reflète le nouvel état.
-      if (fillState.password && eligible.some((m) => m.id === fillState.password)) {
-        const refreshed = await db.getMarks(fillState.password);
-        fillState = { ...fillState, marks: { ...refreshed } };
-        renderFillGrid();
-      }
-      const skippedNote = skipped ? ` (${skipped} ignoré(s), aucun cours trouvé pour leur programme)` : "";
-      fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s)${skippedNote}.`;
-    } catch (err) {
-      console.error(err);
-      fillAllStatus.textContent = "Échec en cours de route, réessaie (les membres déjà traités sont enregistrés).";
     }
+    // Si le membre affiché dans la grille juste au-dessus vient d'être
+    // modifié, on recharge pour que la grille reflète le nouvel état.
+    if (fillState.password && eligible.some((m) => m.id === fillState.password)) {
+      const refreshed = await db.getMarks(fillState.password);
+      fillState = { ...fillState, marks: { ...refreshed } };
+      renderFillGrid();
+    }
+    const skippedNote = skipped ? ` ${skipped} ignoré(s) (aucun cours trouvé pour leur programme).` : "";
+    const failedNote = failed.length ? ` ⚠️ Échec pour : ${failed.join(", ")}.` : "";
+    fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s).${skippedNote}${failedNote}`;
   });
 
   function renderFillMemberOptions() {

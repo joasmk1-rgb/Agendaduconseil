@@ -11,7 +11,8 @@ service cloud.firestore {
                    && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin is bool)
                    && (!('role' in request.resource.data) || (request.resource.data.role is string && request.resource.data.role.size() < 50))
                    && (!('courses' in request.resource.data) || (request.resource.data.courses is list && request.resource.data.courses.size() < 100))
-                   && (!('courseMarkedKeys' in request.resource.data) || (request.resource.data.courseMarkedKeys is list && request.resource.data.courseMarkedKeys.size() < 2000));
+                   && (!('courseMarkedKeys' in request.resource.data) || (request.resource.data.courseMarkedKeys is list && request.resource.data.courseMarkedKeys.size() < 6000))
+                   && (!('programs' in request.resource.data) || (request.resource.data.programs is list && request.resource.data.programs.size() < 10));
       allow delete: if true;
     }
 
@@ -36,9 +37,15 @@ service cloud.firestore {
     // Disponibilités tri-état d'un membre. Doc id = même mot de passe que members.
     match /availability/{password} {
       allow read: if true;
+      // Plafond porté à 6000 (= le nombre maximum de cases que la grille peut
+      // contenir : 50 créneaux/jour à 8h30-21h/15min, jusqu'à 120 jours, le
+      // maximum autorisé par la règle "config/current" ci-dessus) — 1000
+      // était trop bas dès qu'on remplit un programme entier de cours d'un
+      // coup ("Remplir depuis mon/son programme"), qui peut générer plus de
+      // 1000 créneaux "pas dispo" pour une grosse charge de cours.
       allow create, update: if request.resource.data.keys().hasAll(['name', 'marks'])
                    && request.resource.data.name is string && request.resource.data.name.size() < 100
-                   && request.resource.data.marks is map && request.resource.data.marks.size() < 1000;
+                   && request.resource.data.marks is map && request.resource.data.marks.size() < 6000;
       allow delete: if true;
     }
 

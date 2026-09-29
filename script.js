@@ -1858,7 +1858,7 @@ async function applySelectedCourses() {
     coursesStatus.textContent = `Appliqué : ${added} créneau(x) ajouté(s), ${removed} retiré(s) (les créneaux modifiés à la main entre-temps n'ont pas été touchés).`;
   } catch (err) {
     console.error("Échec de l'application des cours :", err);
-    coursesStatus.textContent = "Échec, réessaie.";
+    coursesStatus.textContent = `Échec — ${err && err.message ? err.message : "réessaie."}`;
   }
 }
 
