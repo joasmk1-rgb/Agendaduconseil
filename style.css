@@ -88,7 +88,33 @@ body {
 }
 .nav-item:hover { background: var(--uc-navy-soft, #eef2fb); }
 .nav-item.active { background: var(--uc-navy-soft, #eef2fb); font-weight: 600; border-left: 3px solid var(--uc-navy); }
+.nav-item-link { text-decoration: none; border-top: 1px solid var(--color-border, #e5e7eb); margin-top: 4px; padding-top: 12px; }
 .nav-icon { font-size: 1.05rem; }
+
+/* Panneau "Mes cours" (choix des cours LSM/ESPO FUCaM Mons) */
+.courses-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  width: min(480px, 92vw);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius, 8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 14px;
+  margin-top: 6px;
+}
+.courses-panel .hint { padding: 0; margin: 4px 0; }
+#courses-search { width: 100%; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 0.9rem; font-family: inherit; margin: 6px 0; box-sizing: border-box; }
+.courses-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; margin: 8px 0; }
+.course-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; border-radius: var(--radius); font-size: 0.85rem; cursor: pointer; }
+.course-item:hover { background: var(--uc-navy-soft, #eef2fb); }
+.course-item input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+.course-schedule { color: var(--color-muted); font-size: 0.78rem; }
+.courses-panel-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 
 .view { display: none; }
 .view.active { display: block; }

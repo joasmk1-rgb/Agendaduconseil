@@ -9,7 +9,9 @@ service cloud.firestore {
                    && request.resource.data.name is string
                    && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100
                    && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin is bool)
-                   && (!('role' in request.resource.data) || (request.resource.data.role is string && request.resource.data.role.size() < 50));
+                   && (!('role' in request.resource.data) || (request.resource.data.role is string && request.resource.data.role.size() < 50))
+                   && (!('courses' in request.resource.data) || (request.resource.data.courses is list && request.resource.data.courses.size() < 100))
+                   && (!('courseMarkedKeys' in request.resource.data) || (request.resource.data.courseMarkedKeys is list && request.resource.data.courseMarkedKeys.size() < 2000));
       allow delete: if true;
     }
 

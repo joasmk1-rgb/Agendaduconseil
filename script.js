@@ -2,7 +2,7 @@
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
 import { CONFIG } from "./config.js";
-import { computeUnavailableSlots } from "./ics.js";
+import { computeUnavailableSlots, buildICSFromCourseSessions } from "./ics.js";
 
 const LOGIN_KEY = "agenda-conseil:password";
 const VIEW_WEEKS_KEY = "agenda-conseil:viewWeeks";
@@ -20,6 +20,8 @@ let state = {
   config: null,
   events: [],
   marks: {}, // "YYYY-MM-DD|HH:MM" -> "available" | "unavailable"
+  selectedCourses: [], // codes de cours choisis dans "Mes cours"
+  courseMarkedKeys: [], // dernières clés de créneaux posées par "Mes cours"
   mode: "available",
   tasks: [],
   polls: [],
@@ -63,6 +65,14 @@ const pollBanner = document.getElementById("poll-banner");
 const icsImportBtn = document.getElementById("ics-import-btn");
 const icsFileInput = document.getElementById("ics-file-input");
 const icsStatus = document.getElementById("ics-status");
+const coursesBtn = document.getElementById("courses-btn");
+const coursesPanel = document.getElementById("courses-panel");
+const coursesSearch = document.getElementById("courses-search");
+const coursesList = document.getElementById("courses-list");
+const coursesSelectedCount = document.getElementById("courses-selected-count");
+const coursesApplyBtn = document.getElementById("courses-apply-btn");
+const coursesCloseBtn = document.getElementById("courses-close-btn");
+const coursesStatus = document.getElementById("courses-status");
 const bulkMarkSection = document.getElementById("bulk-mark-section");
 const toggleColBulkBtn = document.getElementById("toggle-col-bulk");
 const toggleColGridBtn = document.getElementById("toggle-col-grid");
@@ -239,6 +249,8 @@ async function enterAsMember(member) {
   state.name = member.name;
   state.isAdmin = !!member.isAdmin;
   state.role = member.role || "";
+  state.selectedCourses = Array.isArray(member.courses) ? member.courses : [];
+  state.courseMarkedKeys = Array.isArray(member.courseMarkedKeys) ? member.courseMarkedKeys : [];
   memberNameEl.textContent = member.name;
   adminLink.classList.toggle("hidden", !state.isAdmin);
   loginForm.classList.add("hidden");
@@ -1645,6 +1657,147 @@ icsFileInput.addEventListener("change", async () => {
     icsStatus.textContent = "Fichier .ics illisible, réessaie avec un autre export.";
   }
   icsFileInput.value = "";
+});
+
+// ===================== "MES COURS" (catalogue LSM/ESPO FUCaM Mons) =====================
+// Catalogue statique construit une fois pour toutes à partir des horaires
+// publiés (monhoraire.uclouvain.be) pour les programmes LSM et ESPO de la
+// bac1 au master. Chaque cours a ses séances hebdomadaires (jour + heure).
+// Le membre coche ses cours ; on génère un .ics synthétique (buildICSFromCourseSessions)
+// et on le fait passer par le même calcul que l'import .ics classique
+// (computeUnavailableSlots), pour ne jamais dupliquer cette logique.
+let coursesCatalogue = null; // chargé à la demande (fetch), une seule fois
+let coursesCatalogueLoading = null;
+
+async function loadCoursesCatalogue() {
+  if (coursesCatalogue) return coursesCatalogue;
+  if (coursesCatalogueLoading) return coursesCatalogueLoading;
+  coursesCatalogueLoading = fetch("data/mons-courses-catalogue.json")
+    .then((r) => r.json())
+    .then((data) => {
+      coursesCatalogue = data;
+      return data;
+    })
+    .catch((err) => {
+      console.error("Échec du chargement du catalogue de cours :", err);
+      coursesCatalogue = [];
+      return coursesCatalogue;
+    });
+  return coursesCatalogueLoading;
+}
+
+function renderCoursesList() {
+  const query = coursesSearch.value.trim().toLowerCase();
+  const selected = new Set(state.selectedCourses);
+  let items = coursesCatalogue || [];
+  if (query) {
+    items = items.filter((c) => c.code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query));
+  } else {
+    // Sans recherche : on affiche d'abord les cours déjà sélectionnés (pour
+    // relire/décocher facilement), le reste seulement une fois qu'on tape.
+    items = items.filter((c) => selected.has(c.code));
+  }
+  const MAX_SHOWN = 150;
+  const shown = items.slice(0, MAX_SHOWN);
+  coursesList.innerHTML = "";
+  if (!query && shown.length === 0) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = "Tape un code ou un nom de cours ci-dessus pour le trouver (ex: \"MGEST\", \"comptabilité\").";
+    coursesList.appendChild(p);
+  }
+  shown.forEach((course) => {
+    const label = document.createElement("label");
+    label.className = "course-item";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = selected.has(course.code);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        if (!state.selectedCourses.includes(course.code)) state.selectedCourses.push(course.code);
+      } else {
+        state.selectedCourses = state.selectedCourses.filter((c) => c !== course.code);
+      }
+      updateCoursesSelectedCount();
+    });
+    const text = document.createElement("span");
+    const scheduleText = course.sessions
+      .map((s) => `${["dim", "lun", "mar", "mer", "jeu", "ven", "sam"][s.weekday]} ${s.start}-${s.end}`)
+      .join(", ");
+    text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleText}</span>`;
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    coursesList.appendChild(label);
+  });
+  if (items.length > MAX_SHOWN) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = `... et ${items.length - MAX_SHOWN} autre(s) résultat(s), affine ta recherche.`;
+    coursesList.appendChild(p);
+  }
+}
+
+function updateCoursesSelectedCount() {
+  coursesSelectedCount.textContent = state.selectedCourses.length
+    ? `${state.selectedCourses.length} cours sélectionné(s).`
+    : "Aucun cours sélectionné pour l'instant.";
+}
+
+coursesBtn.addEventListener("click", async () => {
+  coursesPanel.classList.remove("hidden");
+  coursesStatus.textContent = "Chargement du catalogue…";
+  await loadCoursesCatalogue();
+  coursesStatus.textContent = "";
+  updateCoursesSelectedCount();
+  renderCoursesList();
+});
+
+coursesCloseBtn.addEventListener("click", () => {
+  coursesPanel.classList.add("hidden");
+});
+
+coursesSearch.addEventListener("input", renderCoursesList);
+
+coursesApplyBtn.addEventListener("click", async () => {
+  if (!state.password || !state.config) return;
+  coursesStatus.textContent = "Application en cours…";
+  try {
+    const selectedSet = new Set(state.selectedCourses);
+    const sessions = (coursesCatalogue || [])
+      .filter((c) => selectedSet.has(c.code))
+      .flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
+
+    const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+    const desiredKeys = sessions.length
+      ? computeUnavailableSlots(buildICSFromCourseSessions(sessions), dates, CONFIG.slotMinutes, CONFIG.dayStartHour, CONFIG.dayEndHour)
+      : new Set();
+    const previousKeys = new Set(state.courseMarkedKeys || []);
+
+    let added = 0;
+    let removed = 0;
+    desiredKeys.forEach((key) => {
+      if (!(key in state.marks)) {
+        state.marks[key] = "unavailable";
+        added++;
+      }
+    });
+    previousKeys.forEach((key) => {
+      if (!desiredKeys.has(key) && state.marks[key] === "unavailable") {
+        delete state.marks[key];
+        removed++;
+      }
+    });
+
+    state.courseMarkedKeys = Array.from(desiredKeys);
+    await db.updateMemberCourses(state.password, state.selectedCourses, state.courseMarkedKeys);
+    await persistMarks();
+    renderGrid();
+
+    coursesStatus.textContent = `Appliqué : ${added} créneau(x) ajouté(s), ${removed} retiré(s) (les créneaux modifiés à la main entre-temps n'ont pas été touchés).`;
+  } catch (err) {
+    console.error("Échec de l'application des cours :", err);
+    coursesStatus.textContent = "Échec, réessaie.";
+  }
 });
 
 // ===================== RENDU DE LA GRILLE =====================

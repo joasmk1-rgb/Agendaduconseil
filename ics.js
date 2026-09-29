@@ -185,3 +185,52 @@ export function computeUnavailableSlots(icsText, dates, slotMinutes, dayStartHou
 
   return keys;
 }
+
+// ===================== GÉNÉRATION D'UN .ICS À PARTIR DU CATALOGUE DE COURS =====================
+// Construit un texte .ics minimal (RRULE hebdomadaire) à partir d'une liste
+// de séances { weekday, start, end } (weekday: 0=dimanche...6=samedi, comme
+// Date.prototype.getDay — même convention que le catalogue de cours et que
+// blockedSlots). Sert à réutiliser tel quel le pipeline d'import existant
+// (computeUnavailableSlots) pour la fonctionnalité "Mes cours" : on génère un
+// .ics synthétique puis on le fait passer par le même calcul que pour un
+// vrai fichier .ics importé, plutôt que de dupliquer la logique.
+// Référence : dimanche 2020-01-05, pour placer chaque séance sur le bon jour
+// de la semaine sans dépendre de la date du jour. UNTIL loin dans le futur
+// (2035) : les dates réellement marquées restent bornées par la période
+// affichée (voir computeUnavailableSlots), donc ça ne marque jamais plus
+// loin que la grille actuelle.
+const ICS_REF_SUNDAY = new Date(2020, 0, 5);
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function icsLocalDateTime(date, hh, mm) {
+  const y = date.getFullYear();
+  const mo = pad2(date.getMonth() + 1);
+  const d = pad2(date.getDate());
+  return `${y}${mo}${d}T${pad2(hh)}${pad2(mm)}00`;
+}
+
+export function buildICSFromCourseSessions(sessions) {
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Agenda Conseil//Mes cours//FR"];
+  sessions.forEach((s, idx) => {
+    const refDay = new Date(ICS_REF_SUNDAY);
+    refDay.setDate(refDay.getDate() + s.weekday);
+    const [startH, startM] = s.start.split(":").map(Number);
+    const [endH, endM] = s.end.split(":").map(Number);
+    const dtstart = icsLocalDateTime(refDay, startH, startM);
+    const dtend = icsLocalDateTime(refDay, endH, endM);
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:mes-cours-${idx}-${s.event_code || ""}@agenda-conseil`,
+      `SUMMARY:${s.title || s.event_code || "Cours"}`,
+      `DTSTART:${dtstart}`,
+      `DTEND:${dtend}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${DAY_CODES[s.weekday]};UNTIL=20350101T000000`,
+      "END:VEVENT"
+    );
+  });
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+}

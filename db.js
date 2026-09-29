@@ -97,6 +97,16 @@ export async function hasAnyAdmin() {
   return !snap.empty;
 }
 
+// ---------------------- Cours suivis (catalogue FUCaM Mons) ----------------------
+// members/{password}.courses = [code de cours, ...] sélectionnés par le
+// membre. .courseMarkedKeys = ["YYYY-MM-DD|HH:MM", ...] : les créneaux que la
+// fonctionnalité "Mes cours" a marqués "pas dispo" en dernier, pour pouvoir
+// les retirer proprement si le membre décoche un cours par la suite (sans
+// jamais toucher un créneau modifié à la main depuis).
+export async function updateMemberCourses(password, courses, courseMarkedKeys) {
+  await setDoc(doc(firestore, "members", password), { courses, courseMarkedKeys }, { merge: true });
+}
+
 // ---------------------- Changement de mot de passe (membre) ----------------------
 // Le mot de passe EST l'id du document members/availability : "changer de mot
 // de passe" = créer un nouveau doc sous le nouvel id, recopier les données,

@@ -110,6 +110,7 @@ function applyAdminPermissions(access) {
   if (access.isAdmin) return;
   const allowed = new Set(["dashboard", ...(ROLE_ADMIN_VIEWS[access.role] || [])]);
   document.querySelectorAll(".nav-item").forEach((btn) => {
+    if (!btn.dataset.view) return; // ex: le lien "Retour au site public", jamais restreint
     if (!allowed.has(btn.dataset.view)) btn.classList.add("hidden");
   });
 }

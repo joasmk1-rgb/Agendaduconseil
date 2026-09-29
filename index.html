@@ -60,6 +60,7 @@
         <span class="greeting">Bonjour, <strong id="member-name"></strong></span>
         <button type="button" id="ics-import-btn" class="btn btn-ghost btn-sm" title="Importe un fichier .ics (ex: export de ton horaire de cours) pour marquer automatiquement ces créneaux en pas dispo">📅 Importer mon calendrier</button>
         <input type="file" id="ics-file-input" accept=".ics,text/calendar" class="hidden">
+        <button type="button" id="courses-btn" class="btn btn-ghost btn-sm" title="Choisis tes cours (LSM/ESPO FUCaM Mons) pour bloquer automatiquement leurs horaires">🎓 Mes cours</button>
         <a id="admin-link" href="admin.html" class="btn btn-ghost btn-sm hidden">Panneau admin</a>
         <button type="button" id="password-change-btn" class="btn btn-ghost btn-sm hidden">🔑 Changer mon mot de passe</button>
         <button type="button" id="logout-btn" class="btn btn-ghost btn-sm">Se déconnecter</button>
@@ -72,6 +73,17 @@
         <button type="button" id="password-change-cancel-btn" class="btn btn-ghost btn-sm">Annuler</button>
       </form>
       <p id="password-change-status" class="hint"></p>
+      <div id="courses-panel" class="courses-panel hidden">
+        <p class="hint">Coche les cours que tu suis vraiment (programmes LSM et ESPO du campus FUCaM Mons, de la bac1 au master) — leurs horaires seront automatiquement marqués "pas dispo" sur ton calendrier, sans toucher aux créneaux que tu as déjà marqués toi-même. Décoche un cours et clique "Appliquer" pour retirer ses créneaux.</p>
+        <input type="search" id="courses-search" placeholder="Rechercher un cours (code ou nom)…" autocomplete="off">
+        <p id="courses-selected-count" class="hint"></p>
+        <div id="courses-list" class="courses-list"></div>
+        <div class="courses-panel-actions">
+          <button type="button" id="courses-apply-btn" class="btn btn-primary btn-sm">Appliquer à mon calendrier</button>
+          <button type="button" id="courses-close-btn" class="btn btn-ghost btn-sm">Fermer</button>
+        </div>
+        <p id="courses-status" class="hint"></p>
+      </div>
     </div>
   </section>
 
