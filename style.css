@@ -601,6 +601,12 @@ main.main-layout {
 .item-list li.editing { background: var(--uc-navy-soft); border-radius: var(--radius); padding: 6px; border-bottom: none; }
 .member-edit-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .member-edit-fields input[type="text"] { padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 0.8rem; font-family: inherit; width: 110px; }
+/* Le bloc "Programme(s) suivi(s)" (liste à cocher) doit toujours passer à la
+   ligne dans member-edit-fields (flex-wrap), jamais se retrouver coincé à
+   côté des petits champs texte/select. */
+.member-edit-fields .control-group { flex-basis: 100%; margin-top: 4px; }
+.checkbox-list.member-programs-checkboxes { max-height: 220px; }
+.member-programs-badge { color: var(--color-muted); font-size: 0.75rem; }
 .admin-badge {
   background: var(--uc-navy);
   color: #fff;

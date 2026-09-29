@@ -5,7 +5,8 @@
 //
 // Modèle de données :
 //   members/{motDePasse}          -> un membre du Conseil (doc id = son mot de passe = son identifiant)
-//                                     { name, isAdmin, addedAt }
+//                                     { name, isAdmin, addedAt, programs?, courses?, courseMarkedKeys? }
+//                                     programs = [code de data/mons-programs.json, ...] (0 à plusieurs)
 //   config/current                -> réglages de la fenêtre glissante (rangeDays, includeWeekends)
 //   availability/{motDePasse}     -> les marques dispo/pas dispo d'un membre (même doc id que members)
 //                                     { name, marks: { "2026-09-15|09:00": "available" | "unavailable" } }
@@ -70,7 +71,10 @@ export async function addMember(name, password, isAdmin = false, role = "") {
   // donnée sensible, donc pas de souci à la garder même vide ("" plutôt que
   // d'omettre le champ, pour écraser proprement un ancien poste retiré).
   payload.role = role || "";
-  await setDoc(doc(firestore, "members", trimmedPassword), payload);
+  // merge:true — sinon modifier juste le nom/poste d'un membre existant
+  // effacerait silencieusement ses champs "programs"/"courses"/"courseMarkedKeys"
+  // (setDoc sans merge remplace tout le document).
+  await setDoc(doc(firestore, "members", trimmedPassword), payload, { merge: true });
 }
 
 // Retire le membre ET ses disponibilités d'un coup (sinon elles resteraient
@@ -105,6 +109,35 @@ export async function hasAnyAdmin() {
 // jamais toucher un créneau modifié à la main depuis).
 export async function updateMemberCourses(password, courses, courseMarkedKeys) {
   await setDoc(doc(firestore, "members", password), { courses, courseMarkedKeys }, { merge: true });
+}
+
+// ---------------------- Programme(s) suivi(s) (délégués) ----------------------
+// members/{password}.programs = [code de programme, ...] (data/mons-programs.json),
+// un, deux ou trois si le membre est sur plusieurs blocs/années. Sert à
+// alimenter la superposition "cours" (vue Disponibilité) à partir de la
+// composition réelle du conseil, sans re-sélectionner les programmes à la main.
+export async function updateMemberPrograms(password, programs) {
+  await setDoc(doc(firestore, "members", password), { programs }, { merge: true });
+}
+
+// Import en masse (voir "Import délégués", vue Import) : chaque entrée met à
+// jour un membre existant (par mot de passe déjà connu, ex: déjà présent
+// dans currentMembers) OU en crée un nouveau. Un seul batch Firestore pour
+// tout écrire d'un coup (soit tout réussit, soit rien n'est écrit).
+// entries: [{ password, name, programs, isNew }]
+export async function bulkUpsertMembersWithPrograms(entries) {
+  const batch = writeBatch(firestore);
+  entries.forEach((e) => {
+    const ref = doc(firestore, "members", e.password);
+    const payload = { name: e.name, programs: e.programs || [] };
+    if (e.isNew) {
+      payload.isAdmin = false;
+      payload.role = "";
+      payload.addedAt = serverTimestamp();
+    }
+    batch.set(ref, payload, { merge: true });
+  });
+  await batch.commit();
 }
 
 // ---------------------- Changement de mot de passe (membre) ----------------------

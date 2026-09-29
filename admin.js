@@ -574,6 +574,15 @@ function runAdmin() {
 
   let memberEditingId = null; // mot de passe (id) du membre en cours d'édition, ou null
 
+  // Libellé court "GESM1BA-B1" -> "Bac Sciences de gestion - Bloc 1", pour
+  // afficher les programmes d'un membre sans redemander le catalogue complet
+  // (réutilise le chargement déjà fait pour la superposition "cours" dans la
+  // vue Disponibilité — voir loadStudentLoadCatalogue plus bas).
+  function programLabel(progCode) {
+    const meta = (studentLoadPrograms || []).find((p) => p.prog === progCode);
+    return meta ? meta.label : progCode;
+  }
+
   function updateBulkDeleteButton() {
     const checked = memberList.querySelectorAll(".member-select:checked");
     memberBulkDeleteBtn.textContent = `Supprimer la sélection (${checked.length})`;
@@ -600,6 +609,12 @@ function runAdmin() {
   });
 
   function renderMembers() {
+    // Précharge la liste des programmes une fois pour que les badges "🎓"
+    // affichent un vrai libellé dès le premier rendu (sinon code brut tant
+    // que rien n'a encore déclenché ce chargement — voir programLabel).
+    if (!studentLoadPrograms && !studentLoadCatalogueLoading) {
+      loadStudentLoadCatalogue().then(() => renderMembers());
+    }
     memberList.innerHTML = "";
     currentMembers
       .slice()
@@ -636,6 +651,40 @@ function runAdmin() {
           fields.appendChild(adminLabel);
           fields.appendChild(roleSelect);
 
+          // ---- Programme(s) suivi(s) (délégués) : un, deux ou trois si sur
+          // plusieurs blocs/années — voir data/mons-programs.json. ----
+          const programsWrap = document.createElement("div");
+          programsWrap.className = "control-group";
+          const programsLabel = document.createElement("label");
+          programsLabel.textContent = "Programme(s) suivi(s)";
+          programsWrap.appendChild(programsLabel);
+          const programsBox = document.createElement("div");
+          programsBox.className = "checkbox-list courses-checkbox-list member-programs-checkboxes";
+          const memberSelectedPrograms = new Set(m.programs || []);
+          if (!studentLoadPrograms) {
+            const loading = document.createElement("p");
+            loading.className = "hint";
+            loading.textContent = "Chargement de la liste des programmes…";
+            programsBox.appendChild(loading);
+          } else {
+            studentLoadPrograms
+              .slice()
+              .sort((a, b) => a.label.localeCompare(b.label))
+              .forEach((p) => {
+                const label = document.createElement("label");
+                label.className = "course-item";
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.value = p.prog;
+                checkbox.checked = memberSelectedPrograms.has(p.prog);
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(" " + p.label));
+                programsBox.appendChild(label);
+              });
+          }
+          programsWrap.appendChild(programsBox);
+          fields.appendChild(programsWrap);
+
           const actions = document.createElement("span");
           actions.className = "item-actions";
           const saveBtn = document.createElement("button");
@@ -656,11 +705,13 @@ function runAdmin() {
                 return;
               }
             }
+            const selectedPrograms = Array.from(programsBox.querySelectorAll("input:checked")).map((el) => el.value);
             saveBtn.disabled = true;
             try {
               if (newPassword === m.id) {
                 // même mot de passe : simple mise à jour sur place
                 await db.addMember(newName, m.id, adminCheckbox.checked, roleSelect.value);
+                await db.updateMemberPrograms(m.id, selectedPrograms);
               } else {
                 // mot de passe changé = nouvel identifiant en base : on migre
                 // le membre ET ses disponibilités déjà enregistrées vers le
@@ -668,6 +719,7 @@ function runAdmin() {
                 // (efface aussi son ancienne entrée de dispos, cf. phase 8).
                 const marks = await db.getMarks(m.id);
                 await db.addMember(newName, newPassword, adminCheckbox.checked, roleSelect.value);
+                await db.updateMemberPrograms(newPassword, selectedPrograms);
                 if (Object.keys(marks).length > 0) {
                   await db.saveMarks(newPassword, newName, marks);
                 }
@@ -704,7 +756,10 @@ function runAdmin() {
 
           const label = document.createElement("span");
           const roleBadge = m.role && ROLE_LABELS[m.role] ? ` <span class="admin-badge">${ROLE_LABELS[m.role]}</span>` : "";
-          label.innerHTML = `${m.name} <code>${m.id}</code>${m.isAdmin ? ' <span class="admin-badge">admin</span>' : ""}${roleBadge}`;
+          const programsBadge = (m.programs || []).length
+            ? `<br><span class="member-programs-badge">🎓 ${m.programs.map(programLabel).join(" · ")}</span>`
+            : "";
+          label.innerHTML = `${m.name} <code>${m.id}</code>${m.isAdmin ? ' <span class="admin-badge">admin</span>' : ""}${roleBadge}${programsBadge}`;
 
           const actions = document.createElement("span");
           actions.className = "item-actions";
@@ -714,6 +769,10 @@ function runAdmin() {
           editBtn.textContent = "Modifier";
           editBtn.addEventListener("click", () => {
             memberEditingId = m.id;
+            // Précharge la liste des programmes (data/mons-programs.json)
+            // avant d'afficher les cases à cocher, sinon la première ouverture
+            // affiche "Chargement..." (voir programsBox plus haut).
+            loadStudentLoadCatalogue().then(() => renderMembers());
             renderMembers();
           });
           const removeBtn = document.createElement("button");
@@ -2327,6 +2386,162 @@ function runAdmin() {
     } finally {
       importConfirmBtn.disabled = false;
       importCancelBtn.disabled = false;
+    }
+  });
+
+  // ---------- Import délégués (nom + programme(s)) ----------
+  // Indépendant de l'import CSV ci-dessus (tâches/événements/décisions) :
+  // celui-ci met à jour/crée des MEMBRES avec leur(s) programme(s) suivi(s).
+  // Même principe de sécurité : aperçu coché ligne par ligne, rien n'est
+  // écrit avant "Confirmer", un seul batch Firestore à la confirmation.
+  const delegateImportFileInput = document.getElementById("delegate-import-file-input");
+  const delegateImportPreviewBtn = document.getElementById("delegate-import-preview-btn");
+  const delegateImportResult = document.getElementById("delegate-import-result");
+  const delegateImportPreviewEl = document.getElementById("delegate-import-preview");
+  const delegateImportConfirmActions = document.getElementById("delegate-import-confirm-actions");
+  const delegateImportConfirmBtn = document.getElementById("delegate-import-confirm-btn");
+  const delegateImportCancelBtn = document.getElementById("delegate-import-cancel-btn");
+  let pendingDelegateRows = [];
+
+  // Comparaison de noms tolérante aux espaces multiples/en trop et à la
+  // casse — pas à l'ordre "Nom Prénom" vs "Prénom Nom", volontairement (une
+  // tentative de réordonnancement automatique risquerait de faire matcher
+  // deux personnes différentes).
+  function normalizeNameForMatch(name) {
+    return (name || "").trim().replace(/\s+/g, " ").toLowerCase();
+  }
+
+  function renderDelegateImportPreview() {
+    if (!pendingDelegateRows.length) {
+      delegateImportPreviewEl.innerHTML = "";
+      delegateImportConfirmActions.classList.add("hidden");
+      return;
+    }
+    delegateImportConfirmActions.classList.remove("hidden");
+    const nbNew = pendingDelegateRows.filter((r) => r.checked && r.isNew).length;
+    const nbUpdate = pendingDelegateRows.filter((r) => r.checked && !r.isNew).length;
+    const rowsHtml = pendingDelegateRows
+      .map((r, idx) => {
+        const statusLabel = r.isNew
+          ? `<span class="admin-badge">nouveau</span> mot de passe généré : <code>${r.password}</code>`
+          : `<span class="admin-badge">mise à jour</span> membre existant (mot de passe inchangé)`;
+        const programsText = r.programs.length
+          ? r.programs.map(programLabel).join(" · ")
+          : "<em>aucun programme</em>";
+        const unknownWarning = r.unknownCodes.length
+          ? `<br>⚠️ code(s) de programme non reconnu(s), ignoré(s) : ${r.unknownCodes.join(", ")}`
+          : "";
+        return `<li><label><input type="checkbox" class="delegate-import-row-checkbox" data-idx="${idx}" ${r.checked ? "checked" : ""}> <strong>${r.name}</strong> — ${statusLabel}<br>${programsText}${unknownWarning}</label></li>`;
+      })
+      .join("");
+    delegateImportPreviewEl.innerHTML = `<p><strong>Aperçu</strong> — ${nbNew} nouveau(x) membre(s), ${nbUpdate} mise(s) à jour si tu confirmes.</p><ul class="item-list">${rowsHtml}</ul>`;
+    delegateImportPreviewEl.querySelectorAll(".delegate-import-row-checkbox").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        pendingDelegateRows[Number(cb.dataset.idx)].checked = cb.checked;
+        renderDelegateImportPreview();
+      });
+    });
+  }
+
+  function resetDelegateImportUI() {
+    pendingDelegateRows = [];
+    delegateImportPreviewEl.innerHTML = "";
+    delegateImportConfirmActions.classList.add("hidden");
+    delegateImportFileInput.value = "";
+  }
+
+  delegateImportPreviewBtn.addEventListener("click", async () => {
+    const file = delegateImportFileInput.files[0];
+    if (!file) {
+      delegateImportResult.innerHTML = "<p>Choisis d'abord un fichier CSV.</p>";
+      return;
+    }
+    delegateImportResult.innerHTML = "<p>Lecture du fichier…</p>";
+    delegateImportPreviewEl.innerHTML = "";
+    delegateImportConfirmActions.classList.add("hidden");
+    try {
+      await loadStudentLoadCatalogue(); // pour connaître les codes de programme valides
+      const text = await file.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) {
+        delegateImportResult.innerHTML = "<p>Fichier vide ou sans ligne de données.</p>";
+        return;
+      }
+      const header = rows[0].map((h) => h.trim().toLowerCase());
+      const nameIdx = header.indexOf("nom");
+      const programsIdx = header.indexOf("programmes");
+      if (nameIdx === -1) {
+        delegateImportResult.innerHTML = '<p>Colonne "Nom" introuvable dans l\'en-tête.</p>';
+        return;
+      }
+      const validCodes = new Set((studentLoadPrograms || []).map((p) => p.prog));
+      const usedPasswords = new Set(currentMembers.map((m) => m.id));
+      const rejected = [];
+      pendingDelegateRows = [];
+      const dataRows = rows.slice(1);
+      dataRows.forEach((row, i) => {
+        const name = (row[nameIdx] || "").trim();
+        if (!name) {
+          rejected.push(`Ligne ${i + 2} — nom vide, ligne ignorée.`);
+          return;
+        }
+        const rawCodes = programsIdx !== -1 ? (row[programsIdx] || "").split(";").map((c) => c.trim()).filter(Boolean) : [];
+        const programs = rawCodes.filter((c) => validCodes.has(c));
+        const unknownCodes = rawCodes.filter((c) => !validCodes.has(c));
+        const existing = currentMembers.find((m) => normalizeNameForMatch(m.name) === normalizeNameForMatch(name));
+        let password;
+        let isNew;
+        if (existing) {
+          password = existing.id;
+          isNew = false;
+        } else {
+          let base = slugify(name);
+          password = base;
+          let n = 2;
+          while (usedPasswords.has(password)) {
+            password = `${base}-${n}`;
+            n++;
+          }
+          usedPasswords.add(password);
+          isNew = true;
+        }
+        pendingDelegateRows.push({ name, programs, unknownCodes, password, isNew, checked: true });
+      });
+      const summary = [`<p>${pendingDelegateRows.length} ligne(s) valide(s) sur ${dataRows.length} — relis l'aperçu ci-dessous puis confirme.</p>`];
+      rejected.forEach((w) => summary.push(`<p>⚠️ ${w}</p>`));
+      delegateImportResult.innerHTML = summary.join("");
+      renderDelegateImportPreview();
+    } catch (err) {
+      console.error(err);
+      delegateImportResult.innerHTML = "<p>Échec de la lecture du fichier — vérifie que c'est bien un CSV.</p>";
+    }
+  });
+
+  delegateImportCancelBtn.addEventListener("click", () => {
+    resetDelegateImportUI();
+    delegateImportResult.innerHTML = "<p>Import annulé — rien n'a été modifié.</p>";
+  });
+
+  delegateImportConfirmBtn.addEventListener("click", async () => {
+    const toCommit = pendingDelegateRows.filter((r) => r.checked);
+    if (!toCommit.length) {
+      delegateImportResult.innerHTML = "<p>Aucune ligne cochée — rien à faire.</p>";
+      return;
+    }
+    delegateImportConfirmBtn.disabled = true;
+    delegateImportCancelBtn.disabled = true;
+    try {
+      await db.bulkUpsertMembersWithPrograms(
+        toCommit.map((r) => ({ password: r.password, name: r.name, programs: r.programs, isNew: r.isNew }))
+      );
+      delegateImportResult.innerHTML = `<p><strong>${toCommit.length}</strong> membre(s) créé(s)/mis à jour avec succès.</p>`;
+      resetDelegateImportUI();
+    } catch (err) {
+      console.error(err);
+      delegateImportResult.innerHTML = "<p>Échec pendant l'écriture — vérifie ta connexion et réessaie (rien n'a été perdu, relance l'aperçu).</p>";
+    } finally {
+      delegateImportConfirmBtn.disabled = false;
+      delegateImportCancelBtn.disabled = false;
     }
   });
 

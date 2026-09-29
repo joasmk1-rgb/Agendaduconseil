@@ -62,6 +62,22 @@
           <button type="button" id="import-cancel-btn" class="btn btn-ghost btn-sm">Annuler</button>
         </div>
       </section>
+
+      <section class="admin-panel full-width" aria-label="Import délégués">
+        <h2>Import délégués — nom + programme(s)</h2>
+        <p class="hint">Colonnes attendues : <code>Nom, Programmes</code> ("Programmes" = un ou plusieurs codes séparés par des points-virgules, ex: <code>GESM1BA-B1</code> ou <code>GESM1BA-B1;COMM2M</code> ; laisse vide si pas encore connu). Pour chaque ligne : si le nom correspond à un membre déjà présent sur le site (comparaison insensible à la casse/espaces), ses programmes sont mis à jour SANS toucher à son mot de passe, son statut Admin ou son poste ; sinon un nouveau membre est créé avec un mot de passe généré à partir du nom (affiché dans l'aperçu, à communiquer à la personne).</p>
+        <p class="hint">Comme pour l'import ci-dessus, rien n'est écrit tant que tu n'as pas relu l'aperçu et cliqué "Confirmer".</p>
+        <div class="control-group actions">
+          <input type="file" id="delegate-import-file-input" accept=".csv">
+          <button type="button" id="delegate-import-preview-btn" class="btn btn-primary btn-sm">Aperçu</button>
+        </div>
+        <div id="delegate-import-result" class="hint"></div>
+        <div id="delegate-import-preview"></div>
+        <div id="delegate-import-confirm-actions" class="control-group actions hidden">
+          <button type="button" id="delegate-import-confirm-btn" class="btn btn-primary btn-sm">Confirmer</button>
+          <button type="button" id="delegate-import-cancel-btn" class="btn btn-ghost btn-sm">Annuler</button>
+        </div>
+      </section>
     </div>
 
     <div class="view" data-view="export">
