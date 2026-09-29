@@ -370,12 +370,10 @@ function runAdmin() {
 
   const studentLoadFaculteSelect = document.getElementById("student-load-faculte");
   const studentLoadNiveauSelect = document.getElementById("student-load-niveau");
-  const studentLoadDurationInput = document.getElementById("student-load-duration-input");
   const studentLoadSearchBtn = document.getElementById("student-load-search-btn");
+  const studentLoadClearBtn = document.getElementById("student-load-clear-btn");
   const studentLoadProgCheckboxes = document.getElementById("student-load-programme-checkboxes");
   const studentLoadStatus = document.getElementById("student-load-status");
-  const studentLoadResult = document.getElementById("student-load-result");
-  const studentLoadHeatmapEl = document.getElementById("student-load-heatmap");
 
   const responseCountEl = document.getElementById("response-count");
   const memberCountEl = document.getElementById("member-count");
@@ -1090,16 +1088,22 @@ function runAdmin() {
     renderBestSlotHeatmap(all, top, dates);
   });
 
-  // ---------- Créneau le moins contraignant pour les étudiants (cours) ----------
+  // ---------- Superposition "cours" sur la grille de dispo (vue Disponibilité) ----------
   // Contrairement à "Trouver le meilleur créneau" ci-dessus (basé sur les
   // dispos réelles cochées par les membres du conseil), ceci se base sur le
   // catalogue de cours LSM/ESPO (data/mons-courses-catalogue.json) : des
-  // séances hebdomadaires récurrentes (jour de semaine + heure), sans date
-  // précise. Vivant dans la vue "meetings", donc visible aussi par le poste
-  // secretaire (voir ROLE_ADMIN_VIEWS), pas seulement par l'admin complet.
+  // séances hebdomadaires récurrentes (jour de semaine + heure), projetées
+  // sur les vraies dates de la période affichée. Le résultat n'est pas une
+  // grille à part : c'est une surcouche (liseré violet + tooltip) sur la
+  // grille de dispo des membres existante (renderHeatmap), pour voir d'un
+  // coup d'œil "les bac1 sont en cours de X à ce moment-là". Visible aussi
+  // par le poste secretaire (vue "availability", voir ROLE_ADMIN_VIEWS).
   let studentLoadCatalogue = null;
   let studentLoadPrograms = null;
   let studentLoadCatalogueLoading = null;
+  // Map slotKey -> [{ label (nom du programme), code, name (du cours) }],
+  // ou null quand rien n'est affiché. Lu par renderHeatmap() plus bas.
+  let studentLoadOverlay = null;
 
   function loadStudentLoadCatalogue() {
     if (studentLoadCatalogue) return Promise.resolve(studentLoadCatalogue);
@@ -1166,124 +1170,58 @@ function runAdmin() {
   }
 
   // Balaie les VRAIES dates de la période affichée par le site (même liste
-  // que renderHeatmap ci-dessous : Grid.buildDateList sur currentConfig),
-  // pas un simple "jour de semaine type" — pour que cette grille se
-  // superpose exactement aux dates de la grille de dispo des membres juste
-  // au-dessus, et que les deux soient directement comparables.
-  function computeStudentLoad({ effectiveProgs, durationMinutes }) {
+  // que renderHeatmap plus bas : Grid.buildDateList sur currentConfig), et
+  // pour chaque créneau de la grille (pas une durée de réunion : la case
+  // elle-même) construit la liste des cours en cours à ce moment-là, parmi
+  // les programmes sélectionnés — c'est cette Map qui devient la surcouche
+  // violette sur la grille de dispo.
+  function computeStudentLoadOverlay({ effectiveProgs }) {
+    const programsByCode = new Map((studentLoadPrograms || []).map((p) => [p.prog, p]));
     const matchingCourses = (studentLoadCatalogue || []).filter((c) =>
       (c.programs || []).some((prog) => effectiveProgs.has(prog))
     );
-    // Séances groupées par jour de semaine, avec le code du cours (pour
-    // compter des cours distincts en conflit, pas des séances distinctes —
-    // un même cours peut avoir plusieurs séances qui se chevauchent).
     const sessionsByDow = new Map();
     matchingCourses.forEach((course) => {
+      const matchedProgs = (course.programs || []).filter((p) => effectiveProgs.has(p));
       (course.sessions || []).forEach((s) => {
         const list = sessionsByDow.get(s.weekday) || [];
-        list.push({ start: timeStrToMinutes(s.start), end: timeStrToMinutes(s.end), code: course.code });
+        list.push({
+          start: timeStrToMinutes(s.start),
+          end: timeStrToMinutes(s.end),
+          code: course.code,
+          name: course.name,
+          matchedProgs,
+        });
         sessionsByDow.set(s.weekday, list);
       });
     });
 
     const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
     const times = Grid.buildTimeSlots();
-    const dayEndMinutes = CONFIG.dayEndHour * 60;
+    const overlay = new Map();
 
-    const results = [];
     dates.forEach((date) => {
       const dow = date.getDay();
-      const dateISO = Grid.toISODate(date);
       const daySessions = sessionsByDow.get(dow) || [];
-      times.forEach((startTime) => {
-        const startMin = timeStrToMinutes(startTime);
-        const endMin = startMin + durationMinutes;
-        if (endMin > dayEndMinutes) return;
-        const conflicting = new Set();
+      if (!daySessions.length) return;
+      const dateISO = Grid.toISODate(date);
+      times.forEach((timeLabel) => {
+        const slotStart = timeStrToMinutes(timeLabel);
+        const slotEnd = slotStart + CONFIG.slotMinutes;
+        const hits = [];
         daySessions.forEach((s) => {
-          if (s.start < endMin && s.end > startMin) conflicting.add(s.code);
+          if (s.start < slotEnd && s.end > slotStart) {
+            (s.matchedProgs.length ? s.matchedProgs : [null]).forEach((progCode) => {
+              const meta = progCode ? programsByCode.get(progCode) : null;
+              hits.push({ label: meta ? meta.label : "Programme", code: s.code, name: s.name });
+            });
+          }
         });
-        results.push({
-          dateISO,
-          startTime,
-          endTime: minutesToTimeStr(endMin),
-          count: conflicting.size,
-          courses: Array.from(conflicting),
-        });
+        if (hits.length) overlay.set(Grid.slotKey(dateISO, timeLabel), hits);
       });
     });
 
-    results.sort((a, b) => {
-      if (a.count !== b.count) return a.count - b.count;
-      const dcmp = a.dateISO.localeCompare(b.dateISO);
-      if (dcmp !== 0) return dcmp;
-      return a.startTime.localeCompare(b.startTime);
-    });
-    return { all: results, top: results.slice(0, 10), dates, matchingCourseCount: matchingCourses.length };
-  }
-
-  function renderStudentLoadResults(top, matchingCourseCount) {
-    if (!studentLoadResult) return;
-    if (!matchingCourseCount) {
-      studentLoadResult.innerHTML = "<p>Aucun cours ne correspond à ce filtre (vérifie faculté/niveau/programme).</p>";
-      return;
-    }
-    if (!top.length) {
-      studentLoadResult.innerHTML = "<p>Aucun créneau trouvé (vérifie la durée par rapport aux heures de la grille).</p>";
-      return;
-    }
-    studentLoadResult.innerHTML =
-      `<p class="hint">${matchingCourseCount} cours pris en compte pour ce filtre.</p>` +
-      top
-        .map((r, i) => {
-          const conflictText = r.count
-            ? `${r.count} cours concerné(s) (${r.courses.join(", ")})`
-            : "aucun cours concerné 🎉";
-          return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${conflictText}</p>`;
-        })
-        .join("");
-  }
-
-  // Même grille que renderHeatmap (vraies dates de la période affichée par
-  // le site), mais rouge = plus de cours en conflit à ce créneau (inverse de
-  // la heatmap "dispo membres" en vert juste au-dessus) — pour que les deux
-  // grilles se lisent côte à côte sur exactement les mêmes dates.
-  function renderStudentLoadHeatmap(allResults, topResults, dates) {
-    if (!studentLoadHeatmapEl) return;
-    const times = Grid.buildTimeSlots();
-    const counts = new Map();
-    allResults.forEach((r) => {
-      counts.set(Grid.slotKey(r.dateISO, r.startTime), { count: r.count, courses: r.courses });
-    });
-    const topKeys = new Set(topResults.map((r) => Grid.slotKey(r.dateISO, r.startTime)));
-    const rankByKey = new Map(topResults.map((r, i) => [Grid.slotKey(r.dateISO, r.startTime), i + 1]));
-
-    studentLoadHeatmapEl.innerHTML = "";
-    studentLoadHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
-    studentLoadHeatmapEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
-    Grid.renderGridHeaders(studentLoadHeatmapEl, dates, currentEvents);
-
-    const maxCount = Math.max(1, ...allResults.map((r) => r.count));
-    Grid.renderHourRows(studentLoadHeatmapEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel, blocked }) => {
-      const key = Grid.slotKey(dateISO, timeLabel);
-      cell.dataset.key = key;
-      if (blocked) return;
-      const entry = counts.get(key);
-      if (!entry) return;
-      if (entry.count > 0) {
-        const ratio = entry.count / maxCount;
-        cell.style.background = `rgba(239, 68, 68, ${(0.12 + ratio * 0.7).toFixed(2)})`;
-        cell.textContent = String(entry.count);
-      } else {
-        cell.style.background = "rgba(34, 197, 94, 0.18)";
-      }
-      if (topKeys.has(key)) {
-        cell.style.boxShadow = "inset 0 0 0 2px #d97706";
-        cell.title = `#${rankByKey.get(key)} — ${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
-      } else {
-        cell.title = `${entry.count} cours concerné(s) : ${entry.courses.join(", ") || "—"}`;
-      }
-    });
+    return { overlay, matchingCourseCount: matchingCourses.length };
   }
 
   if (studentLoadFaculteSelect) {
@@ -1291,20 +1229,28 @@ function runAdmin() {
     studentLoadFaculteSelect.addEventListener("change", refreshStudentLoadProgrammeCheckboxes);
     studentLoadNiveauSelect.addEventListener("change", refreshStudentLoadProgrammeCheckboxes);
     studentLoadSearchBtn.addEventListener("click", async () => {
-      studentLoadStatus.textContent = "Recherche en cours…";
+      studentLoadStatus.textContent = "Chargement…";
       await loadStudentLoadCatalogue();
       const checkedProgs = Array.from(studentLoadProgCheckboxes.querySelectorAll("input:checked")).map((el) => el.value);
-      const durationMinutes = Number(studentLoadDurationInput.value) || 60;
       const effectiveProgs = effectiveStudentLoadPrograms(
         studentLoadFaculteSelect.value,
         studentLoadNiveauSelect.value,
         checkedProgs
       );
-      const { all, top, dates, matchingCourseCount } = computeStudentLoad({ effectiveProgs, durationMinutes });
-      renderStudentLoadResults(top, matchingCourseCount);
-      renderStudentLoadHeatmap(all, top, dates);
-      studentLoadStatus.textContent = "";
+      const { overlay, matchingCourseCount } = computeStudentLoadOverlay({ effectiveProgs });
+      studentLoadOverlay = overlay;
+      renderHeatmap();
+      studentLoadStatus.textContent = matchingCourseCount
+        ? `🎓 ${matchingCourseCount} cours affiché(s) (liseré violet sur la grille ci-dessous, survole une case pour le détail).`
+        : "Aucun cours ne correspond à ce filtre (vérifie faculté/niveau/programme).";
     });
+    if (studentLoadClearBtn) {
+      studentLoadClearBtn.addEventListener("click", () => {
+        studentLoadOverlay = null;
+        studentLoadStatus.textContent = "";
+        renderHeatmap();
+      });
+    }
   }
 
   // ---------- Export Excel des disponibilités pour un événement ----------
@@ -3163,20 +3109,30 @@ function runAdmin() {
       cell.dataset.key = key;
       if (blocked) return;
       const entry = counts.get(key);
-      if (!entry) return;
-      const availCount = entry.available.length;
-      const unavailCount = entry.unavailable.length;
-      if (availCount > 0) {
-        const ratio = availCount / maxCount;
-        cell.style.background = `rgba(34, 197, 94, ${(0.15 + ratio * 0.75).toFixed(2)})`;
-        cell.textContent = String(availCount);
-      }
-      if (unavailCount > 0) {
-        cell.classList.add("has-unavailable");
-      }
       const titleParts = [];
-      if (availCount) titleParts.push(`Dispo : ${entry.available.join(", ")}`);
-      if (unavailCount) titleParts.push(`Pas dispo : ${entry.unavailable.join(", ")}`);
+      if (entry) {
+        const availCount = entry.available.length;
+        const unavailCount = entry.unavailable.length;
+        if (availCount > 0) {
+          const ratio = availCount / maxCount;
+          cell.style.background = `rgba(34, 197, 94, ${(0.15 + ratio * 0.75).toFixed(2)})`;
+          cell.textContent = String(availCount);
+        }
+        if (unavailCount > 0) {
+          cell.classList.add("has-unavailable");
+        }
+        if (availCount) titleParts.push(`Dispo : ${entry.available.join(", ")}`);
+        if (unavailCount) titleParts.push(`Pas dispo : ${entry.unavailable.join(", ")}`);
+      }
+      // Surcouche "cours" (voir computeStudentLoadOverlay) : un liseré violet
+      // par-dessus, sans jamais toucher au fond vert des dispos ci-dessus.
+      if (studentLoadOverlay) {
+        const hits = studentLoadOverlay.get(key);
+        if (hits && hits.length) {
+          cell.classList.add("student-load-hit");
+          titleParts.push(`🎓 Cours en cours :\n${hits.map((h) => `${h.label} : ${h.name}`).join("\n")}`);
+        }
+      }
       if (titleParts.length) cell.title = titleParts.join("\n");
     });
 

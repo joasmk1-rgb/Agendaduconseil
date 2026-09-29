@@ -536,15 +536,9 @@
         <div id="ranking" class="ranking"></div>
       </section>
 
-      <section>
-        <div class="grid-scroll">
-          <div id="heatmap-grid" class="grid"></div>
-        </div>
-      </section>
-
-      <section class="admin-panel full-width" aria-label="Créneau le moins contraignant pour les étudiants">
-        <h2>Créneau le moins contraignant pour les étudiants (cours)</h2>
-        <p class="hint">Même grille que ci-dessus (mêmes dates), mais basée sur les horaires de cours LSM/ESPO plutôt que sur les dispos cochées par les membres du conseil — pratique pour comparer les deux et placer un événement qui dérange le moins de monde.</p>
+      <section class="admin-panel full-width" aria-label="Superposer les cours sur la grille de dispo">
+        <h2>Superposer les cours sur la grille de dispo</h2>
+        <p class="hint">Choisis une faculté/année/des programmes (ou coche des cours précis), puis "Afficher sur la grille" : les créneaux où ces cours ont lieu sont surlignés en violet sur la grille de dispo ci-dessous — survole une case pour voir le détail (ex: "Bac1 Gestion : Comptabilité", "Bac2 Gestion : ...").</p>
         <div class="control-group courses-filters">
           <select id="student-load-faculte">
             <option value="">Toutes facultés</option>
@@ -556,17 +550,19 @@
             <option value="Bac">Bac</option>
             <option value="Master">Master</option>
           </select>
-          <input type="number" id="student-load-duration-input" min="15" step="15" value="60" placeholder="Durée (min)" title="Durée de l'événement en minutes">
-          <button type="button" id="student-load-search-btn" class="btn btn-primary btn-sm">Chercher</button>
+          <button type="button" id="student-load-search-btn" class="btn btn-primary btn-sm">Afficher sur la grille</button>
+          <button type="button" id="student-load-clear-btn" class="btn btn-ghost btn-sm">Retirer l'affichage</button>
         </div>
         <div class="control-group">
           <label>Programme(s) concerné(s) (aucun coché = tous ceux qui correspondent aux filtres ci-dessus)</label>
           <div id="student-load-programme-checkboxes" class="checkbox-list"></div>
         </div>
         <p id="student-load-status" class="hint"></p>
-        <div id="student-load-result" class="hint"></div>
+      </section>
+
+      <section>
         <div class="grid-scroll">
-          <div id="student-load-heatmap" class="grid"></div>
+          <div id="heatmap-grid" class="grid"></div>
         </div>
       </section>
     </div>

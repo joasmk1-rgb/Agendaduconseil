@@ -498,6 +498,10 @@ main.main-layout {
 .cell.slot.has-event { box-shadow: inset 0 0 0 2px var(--color-event); }
 .cell.slot.has-unavailable { box-shadow: inset 0 -4px 0 var(--color-unavailable); }
 .cell.slot.has-event.has-unavailable { box-shadow: inset 0 0 0 2px var(--color-event), inset 0 -4px 0 var(--color-unavailable); }
+/* Superposition "cours" (admin, vue Disponibilité) : ne remplace jamais le
+   fond vert des dispos membres, juste un liseré violet par-dessus. */
+.cell.slot.student-load-hit { box-shadow: inset 0 0 0 2px #7c3aed; }
+.cell.slot.has-event.student-load-hit { box-shadow: inset 0 0 0 2px var(--color-event), inset 0 0 0 4px #7c3aed; }
 
 .bulk-mark-section { padding: 8px 20px; }
 .bulk-mark-panel {
