@@ -725,3 +725,35 @@ main.main-layout {
 .agenda-modal-close { position: absolute; top: 12px; right: 12px; }
 .agenda-modal-text { font-size: 0.95rem; margin: 8px 0 16px; }
 #agenda-modal-comments.item-list { max-height: 260px; }
+
+/* ---- Mon profil (formulaire guidé) ---- */
+.profile-modal { max-width: 620px; display: flex; flex-direction: column; }
+.profile-body { display: flex; flex-direction: column; gap: 14px; margin: 8px 0; }
+.profile-section { border-top: 1px solid var(--color-border, #e5e7eb); padding-top: 10px; }
+.profile-section h4 { margin: 0 0 6px; font-size: 0.98rem; }
+.profile-section > summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.profile-section details > summary { cursor: pointer; font-size: 0.85rem; color: var(--uc-navy, #1f3a68); margin-bottom: 6px; }
+.profile-select, .profile-search {
+  width: 100%; padding: 9px 10px; margin: 4px 0; box-sizing: border-box;
+  border: 1px solid var(--color-border, #d1d5db); border-radius: var(--radius, 8px);
+  font-size: 0.92rem; font-family: inherit; background: #fff;
+}
+.profile-row { display: grid; grid-template-columns: 1fr minmax(0, 1.4fr); gap: 8px; align-items: center; margin: 4px 0; }
+.profile-row .btn { justify-self: end; }
+.profile-row-label { font-size: 0.88rem; }
+.profile-check { display: flex; gap: 8px; align-items: flex-start; padding: 5px 2px; font-size: 0.88rem; cursor: pointer; }
+.profile-check input { margin-top: 3px; flex-shrink: 0; }
+.profile-check small { color: #6b7280; }
+.profile-warning { background: #fff7ed; border-left: 3px solid var(--color-event, #f59e0b); padding: 8px 10px; border-radius: 4px; }
+.profile-footer { position: sticky; bottom: -20px; background: var(--color-surface, #fff); padding: 10px 0 20px; margin-bottom: -20px; border-top: 1px solid var(--color-border, #e5e7eb); }
+.profile-footer-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.profile-footer .hint { margin: 6px 0 0; padding: 0; }
+.profile-modal .hint { padding-left: 0; padding-right: 0; }
+.courses-summary { padding: 4px 0; }
+.courses-summary-head { display: flex; justify-content: space-between; align-items: center; }
+@media (max-width: 640px) {
+  #profile-modal-overlay { padding: 0; }
+  .profile-modal { max-width: none; width: 100%; height: 100%; max-height: 100%; border-radius: 0; }
+  .profile-row { grid-template-columns: 1fr; gap: 2px; }
+  .profile-row .btn { justify-self: start; }
+}

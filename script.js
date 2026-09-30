@@ -67,20 +67,15 @@ const pollBanner = document.getElementById("poll-banner");
 const icsImportBtn = document.getElementById("ics-import-btn");
 const icsFileInput = document.getElementById("ics-file-input");
 const icsStatus = document.getElementById("ics-status");
-const coursesFilterFaculte = document.getElementById("courses-filter-faculte");
-const coursesFilterNiveau = document.getElementById("courses-filter-niveau");
-const coursesFilterProgramme = document.getElementById("courses-filter-programme");
-const coursesSearch = document.getElementById("courses-search");
-const coursesList = document.getElementById("courses-list");
-const coursesSelectedCount = document.getElementById("courses-selected-count");
-const coursesFromProgramBtn = document.getElementById("courses-from-program-btn");
-const coursesClearAllBtn = document.getElementById("courses-clear-all-btn");
 const coursesStatus = document.getElementById("courses-status");
+const coursesSummaryText = document.getElementById("courses-summary-text");
+const coursesEditBtn = document.getElementById("courses-edit-btn");
 const profileBtn = document.getElementById("profile-btn");
-const profilePanel = document.getElementById("profile-panel");
-const profileProgramsCheckboxes = document.getElementById("profile-programs-checkboxes");
+const profileModalOverlay = document.getElementById("profile-modal-overlay");
+const profileBody = document.getElementById("profile-body");
 const profileSaveBtn = document.getElementById("profile-save-btn");
 const profileCloseBtn = document.getElementById("profile-close-btn");
+const profileClearBtn = document.getElementById("profile-clear-btn");
 const profileStatus = document.getElementById("profile-status");
 const bulkMarkSection = document.getElementById("bulk-mark-section");
 const toggleColBulkBtn = document.getElementById("toggle-col-bulk");
@@ -246,8 +241,8 @@ logoutBtn.addEventListener("click", () => {
   bulkMarkSection.classList.add("hidden");
   passwordChangeForm.classList.add("hidden");
   passwordChangeStatus.textContent = "";
-  profilePanel.classList.add("hidden");
-  profileStatus.textContent = "";
+  closeProfile();
+  renderCoursesSummary();
   renderGrid();
   if (state.activeTab === "agenda") renderAgendaTab();
   if (state.openAgendaItemId) renderAgendaModal();
@@ -271,9 +266,13 @@ async function enterAsMember(member) {
   if (state.selectedCourses.length || state.groupSessions.length) {
     loadCoursesCatalogue().then(() => renderGrid());
   }
-  refreshCoursesSection();
-  profilePanel.classList.add("hidden");
-  profileStatus.textContent = "";
+  closeProfile();
+  loadCoursesCatalogue().then(() => {
+    renderCoursesSummary();
+    // Première connexion (aucun programme ni cours) : le profil s'ouvre tout
+    // seul, c'est la première chose à remplir.
+    if (!state.programs.length && !state.selectedCourses.length) openProfile();
+  });
   memberNameEl.textContent = member.name;
   adminLink.classList.toggle("hidden", !state.isAdmin);
   loginForm.classList.add("hidden");
@@ -344,100 +343,6 @@ passwordChangeForm.addEventListener("submit", async (e) => {
     passwordChangeStatus.textContent = err.message || "Échec du changement, réessaie.";
   }
   submitBtn.disabled = false;
-});
-
-// ===================== MON PROFIL (programme(s) suivi(s)) =====================
-// Permet à chaque membre connecté de choisir lui-même son/ses programme(s)
-// (data/mons-programs.json), sans dépendre de l'admin (Membres → Modifier).
-// Alimente la liste par défaut de "Mes cours" dans "⚡ Marquage rapide" (voir
-// renderCoursesList) et "Remplir depuis mon programme". Si un programme est
-// retiré, nettoie aussi les cours qui n'en dépendent plus (voir
-// computeOrphanedCourseCodes) — même logique que côté admin (admin.js).
-profileBtn.addEventListener("click", async () => {
-  profileStatus.textContent = "Chargement des programmes…";
-  profilePanel.classList.remove("hidden");
-  await loadCoursesCatalogue();
-  profileStatus.textContent = "";
-  renderProfileProgramsCheckboxes();
-});
-
-profileCloseBtn.addEventListener("click", () => {
-  profilePanel.classList.add("hidden");
-});
-
-function renderProfileProgramsCheckboxes() {
-  profileProgramsCheckboxes.innerHTML = "";
-  if (!coursesPrograms || !coursesPrograms.length) {
-    const p = document.createElement("p");
-    p.className = "hint";
-    p.textContent = "Liste des programmes indisponible pour l'instant, réessaie.";
-    profileProgramsCheckboxes.appendChild(p);
-    return;
-  }
-  const selectedPrograms = new Set(state.programs || []);
-  coursesPrograms
-    .slice()
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .forEach((p) => {
-      const label = document.createElement("label");
-      label.className = "course-item";
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.value = p.prog;
-      checkbox.checked = selectedPrograms.has(p.prog);
-      label.appendChild(checkbox);
-      label.appendChild(document.createTextNode(" " + p.label));
-      profileProgramsCheckboxes.appendChild(label);
-    });
-}
-
-// Cours dont AUCUN programme restant ne justifie plus la présence — un cours
-// commun à deux programmes suivis à la fois reste. Même logique que côté
-// admin (admin.js, computeOrphanedCourseCodes) — dupliquée ici côté public
-// puisque les deux fichiers tournent indépendamment, sans module partagé.
-function computeOrphanedCourseCodes(remainingPrograms) {
-  const remainingSet = new Set(remainingPrograms || []);
-  const selected = new Set(state.selectedCourses || []);
-  if (!selected.size || !coursesCatalogue) return new Set();
-  const orphaned = new Set();
-  selected.forEach((code) => {
-    const course = coursesCatalogue.find((c) => c.code === code);
-    if (!course) return; // cours introuvable au catalogue : on n'y touche pas
-    const stillMatches = (course.programs || []).some((p) => remainingSet.has(p));
-    if (!stillMatches) orphaned.add(code);
-  });
-  return orphaned;
-}
-
-profileSaveBtn.addEventListener("click", async () => {
-  if (!state.password) return;
-  const selectedPrograms = Array.from(profileProgramsCheckboxes.querySelectorAll("input:checked")).map((el) => el.value);
-  profileSaveBtn.disabled = true;
-  profileStatus.textContent = "Enregistrement…";
-  try {
-    await loadCoursesCatalogue();
-    // Retire les cours qui ne correspondent plus à AUCUN programme restant
-    // (ex: changement de bloc/année) — jamais un cours partagé avec un
-    // programme encore suivi, ni un créneau modifié à la main.
-    const orphaned = computeOrphanedCourseCodes(selectedPrograms);
-    if (orphaned.size) {
-      state.selectedCourses = state.selectedCourses.filter((c) => !orphaned.has(c));
-      state.groupSessions = (state.groupSessions || []).filter((key) => !orphaned.has(String(key).split("|")[0]));
-    }
-    state.programs = selectedPrograms;
-    await db.updateMemberPrograms(state.password, selectedPrograms);
-    if (orphaned.size) {
-      await applySelectedCourses();
-    }
-    renderCoursesList();
-    profileStatus.textContent = orphaned.size
-      ? `Profil enregistré ✓ (${orphaned.size} cours retiré(s), ils ne correspondaient plus à aucun programme restant).`
-      : "Profil enregistré ✓";
-  } catch (err) {
-    console.error(err);
-    profileStatus.textContent = "Échec de l'enregistrement, réessaie.";
-  }
-  profileSaveBtn.disabled = false;
 });
 
 async function tryAutoLogin() {
@@ -1952,196 +1857,25 @@ async function loadCoursesCatalogue() {
   return coursesCatalogueLoading;
 }
 
-// Remplit le menu "Programme" en fonction des filtres Faculté/Niveau choisis.
-function refreshProgrammeOptions() {
-  const faculte = coursesFilterFaculte.value;
-  const niveau = coursesFilterNiveau.value;
-  const previousValue = coursesFilterProgramme.value;
-  const matching = (coursesPrograms || []).filter(
-    (p) => (!faculte || p.faculte === faculte) && (!niveau || p.niveau === niveau)
-  );
-  coursesFilterProgramme.innerHTML = '<option value="">Tous les programmes</option>';
-  matching.forEach((p) => {
-    const opt = document.createElement("option");
-    opt.value = p.prog;
-    opt.textContent = p.label;
-    coursesFilterProgramme.appendChild(opt);
-  });
-  // Garde la sélection si elle reste valide après le changement de filtre.
-  if (matching.some((p) => p.prog === previousValue)) coursesFilterProgramme.value = previousValue;
-}
-
-// Charge le catalogue puis (re)affiche la liste — appelé à la connexion et à
-// chaque ouverture du panneau "⚡ Marquage rapide" (fusion de l'ancien "Mes
-// cours" et de l'ancienne liste "Cours de mon programme" : un seul endroit,
-// une seule liste, chaque coche s'applique tout de suite).
-async function refreshCoursesSection() {
-  coursesStatus.textContent = "Chargement du catalogue…";
-  await loadCoursesCatalogue();
-  coursesStatus.textContent = "";
-  refreshProgrammeOptions();
-  renderCoursesList();
-}
-
-function renderCoursesList() {
-  const query = coursesSearch.value.trim().toLowerCase();
-  const selected = new Set(state.selectedCourses);
-  const progFilter = coursesFilterProgramme.value;
-  const faculteFilter = coursesFilterFaculte.value;
-  const niveauFilter = coursesFilterNiveau.value;
-  const programsByCode = new Map((coursesPrograms || []).map((p) => [p.prog, p]));
-  let items = coursesCatalogue || [];
-
-  if (progFilter) {
-    items = items.filter((c) => (c.programs || []).includes(progFilter));
-  } else if (faculteFilter || niveauFilter) {
-    items = items.filter((c) =>
-      (c.programs || []).some((prog) => {
-        const meta = programsByCode.get(prog);
-        if (!meta) return false;
-        return (!faculteFilter || meta.faculte === faculteFilter) && (!niveauFilter || meta.niveau === niveauFilter);
-      })
-    );
-  }
-
-  const programSet = new Set(state.programs || []);
-  if (query) {
-    items = items.filter((c) => c.code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query));
-  } else if (!progFilter && !faculteFilter && !niveauFilter) {
-    // Aucun filtre ni recherche : par défaut, les cours de mon/mes
-    // programme(s) (voir "👤 Mon profil") — comme l'ancienne liste "Cours de
-    // mon programme" — plus ceux déjà cochés (utile si l'admin a coché un
-    // cours hors programme, ou si le profil a changé depuis), pour relire/
-    // décocher facilement sans devoir chercher. Si aucun programme réglé, on
-    // retombe sur les cours déjà cochés uniquement.
-    items = programSet.size
-      ? items.filter((c) => !c.code.startsWith("EVT-") && ((c.programs || []).some((p) => programSet.has(p)) || selected.has(c.code)))
-      : items.filter((c) => selected.has(c.code));
-  }
-  const MAX_SHOWN = 150;
-  const shown = items.slice(0, MAX_SHOWN);
-  coursesList.innerHTML = "";
-  if (!query && !progFilter && !faculteFilter && !niveauFilter && shown.length === 0) {
-    const p = document.createElement("p");
-    p.className = "hint";
-    p.textContent = programSet.size
-      ? "Aucun cours trouvé dans le catalogue pour ton/tes programme(s) — cherche directement un cours par code/nom ci-dessus."
-      : "Choisis ton programme dans \"👤 Mon profil\" pour voir direct tes cours, ou tape un code/nom de cours pour le trouver (ex: \"MGEST\", \"comptabilité\").";
-    coursesList.appendChild(p);
-  } else if (shown.length === 0) {
-    const p = document.createElement("p");
-    p.className = "hint";
-    p.textContent = "Aucun cours ne correspond à ces filtres.";
-    coursesList.appendChild(p);
-  }
-  shown.forEach((course) => {
-    const label = document.createElement("label");
-    label.className = "course-item";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = selected.has(course.code);
-    checkbox.addEventListener("change", async () => {
-      checkbox.disabled = true;
-      if (checkbox.checked) {
-        if (!state.selectedCourses.includes(course.code)) state.selectedCourses.push(course.code);
-      } else {
-        state.selectedCourses = state.selectedCourses.filter((c) => c !== course.code);
-      }
-      await applySelectedCourses();
-      renderCoursesList();
-    });
-    const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
-    const cmSessions = (course.sessions || []).filter((s) => isReliableCmSession(course, s));
-    const manualSess = (course.sessions || []).filter((s) => isManualChoiceSession(course, s));
-
-    const text = document.createElement("span");
-    const scheduleText = cmSessions.map((s) => `${dayNames[s.weekday]} ${s.start}-${s.end}`).join(", ");
-    const scheduleLine = scheduleText || (manualSess.length ? "aucune séance commune — à choisir toi-même ci-dessous" : "");
-    text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleLine}</span>`;
-    label.appendChild(checkbox);
-    label.appendChild(text);
-    coursesList.appendChild(label);
-
-    // Séances à choisir à part pour ce cours — groupe de TP/labo, OU séance
-    // spéciale par sous-groupe (ex: un séminaire d'accueil qui revient
-    // plusieurs fois dans la semaine mais où chaque membre ne va qu'à UNE
-    // occurrence). Toujours affichées, que le cours "magistral" soit coché
-    // ou non — c'est un choix indépendant, propre à chaque membre, jamais
-    // déduit automatiquement (voir isManualChoiceSession).
-    if (manualSess.length) {
-      const sub = document.createElement("div");
-      sub.className = "course-session-subpicker";
-      const hint = document.createElement("p");
-      hint.className = "hint";
-      hint.textContent = "Séance(s) à choisir toi-même pour ce cours (groupe de TP/labo, séance spéciale par sous-groupe, ou horaire qui chevauche un autre cours — option/groupe parallèle) — coche uniquement celle(s) qui te concernent :";
-      sub.appendChild(hint);
-      const manualSelectedSet = new Set(state.groupSessions);
-      manualSess.forEach((s) => {
-        const key = sessionKey(course.code, s);
-        const sLabel = document.createElement("label");
-        sLabel.className = "course-session-item";
-        const sCheckbox = document.createElement("input");
-        sCheckbox.type = "checkbox";
-        sCheckbox.checked = manualSelectedSet.has(key);
-        sCheckbox.addEventListener("change", async () => {
-          sCheckbox.disabled = true;
-          if (sCheckbox.checked) {
-            if (!state.groupSessions.includes(key)) state.groupSessions.push(key);
-          } else {
-            state.groupSessions = state.groupSessions.filter((k) => k !== key);
-          }
-          await applySelectedCourses();
-          renderCoursesList();
-        });
-        const sText = document.createElement("span");
-        sText.textContent = `${groupSessionLabel(course, s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
-        sLabel.appendChild(sCheckbox);
-        sLabel.appendChild(sText);
-        sub.appendChild(sLabel);
-      });
-      coursesList.appendChild(sub);
-    }
-  });
-  if (items.length > MAX_SHOWN) {
-    const p = document.createElement("p");
-    p.className = "hint";
-    p.textContent = `... et ${items.length - MAX_SHOWN} autre(s) résultat(s), affine ta recherche.`;
-    coursesList.appendChild(p);
-  }
-  updateCoursesSelectedCount();
-}
-
-function updateCoursesSelectedCount() {
-  coursesSelectedCount.textContent = state.selectedCourses.length
-    ? `${state.selectedCourses.length} cours sélectionné(s).`
-    : "Aucun cours sélectionné pour l'instant.";
-}
-
-coursesSearch.addEventListener("input", renderCoursesList);
-coursesFilterFaculte.addEventListener("change", () => {
-  refreshProgrammeOptions();
-  renderCoursesList();
-});
-coursesFilterNiveau.addEventListener("change", () => {
-  refreshProgrammeOptions();
-  renderCoursesList();
-});
-coursesFilterProgramme.addEventListener("change", renderCoursesList);
-
-async function applySelectedCourses() {
+// ===================== APPLICATION DES COURS AU CALENDRIER =====================
+// Transforme la sélection du membre (state.selectedCourses = cours suivis,
+// state.groupSessions = séances précises choisies : groupe de TP/labo, langue,
+// option, séance ponctuelle...) en créneaux "pas dispo". Ne touche jamais un
+// créneau marqué à la main, SAUF si askOverwrite est demandé et que le membre
+// accepte explicitement de passer en rouge des heures de cours qu'il avait
+// marquées en vert.
+async function applySelectedCourses({ askOverwrite = false } = {}) {
   if (!state.password || !state.config) return;
   coursesStatus.textContent = "Application en cours…";
   try {
     const selectedSet = new Set(state.selectedCourses);
-    // Cours cochés : uniquement leurs séances "cours magistral" (jamais les
-    // TP/labos, qui dépendent du groupe précis de chaque membre).
+    // Cours suivis : leurs séances "cours magistral" sûres. Jamais pour une
+    // langue : là, seules les séances choisies explicitement (cours + groupe
+    // de labo, dans state.groupSessions) comptent — le reste (rentrée, test
+    // de positionnement, monitorat...) est ponctuel ou facultatif.
     const cmSessions = (coursesCatalogue || [])
-      .filter((c) => selectedSet.has(c.code))
+      .filter((c) => selectedSet.has(c.code) && !isLanguageElectiveCourse(c))
       .flatMap((c) => (c.sessions || []).filter((s) => isReliableCmSession(c, s)).map((s) => ({ ...s, title: c.name })));
-    // Séances choisies à part par ce membre (groupe de TP/labo, ou séance
-    // spéciale par sous-groupe), quel que soit le cours "magistral"
-    // correspondant (coché ou non) — recherchées dans tout le catalogue par
-    // leur clé de séance.
     const groupKeySet = new Set(state.groupSessions || []);
     const manualSess = [];
     if (groupKeySet.size) {
@@ -2155,10 +1889,8 @@ async function applySelectedCourses() {
     }
     const sessions = cmSessions.concat(manualSess);
 
-    // Plafonné à 3 mois (90 jours) même si la période affichée du site est
-    // réglée plus large : un programme entier génère déjà beaucoup de
-    // créneaux par semaine, pas la peine de projeter ça sur 4 mois d'un
-    // coup — 3 mois suffit largement pour trouver un créneau de réunion.
+    // Plafonné à 3 mois (90 jours) : largement assez pour trouver un créneau
+    // de réunion, sans projeter tout un programme sur des mois.
     const coursesFillRangeDays = Math.min(state.config.rangeDays, 90);
     const dates = Grid.buildDateList(new Date(), coursesFillRangeDays, state.config.includeWeekends);
     const desiredKeys = sessions.length
@@ -2168,6 +1900,22 @@ async function applySelectedCourses() {
 
     let added = 0;
     let removed = 0;
+    let overwritten = 0;
+    if (askOverwrite) {
+      const greenCourseKeys = Array.from(desiredKeys).filter((key) => state.marks[key] === "available");
+      if (greenCourseKeys.length) {
+        const ok = confirm(
+          `${greenCourseKeys.length} créneau(x) de tes cours sont actuellement marqués "dispo" (vert).\n\n` +
+          `OK = les passer en "pas dispo" (rouge), c'est l'heure d'un cours.\nAnnuler = les garder en vert.`
+        );
+        if (ok) {
+          greenCourseKeys.forEach((key) => {
+            state.marks[key] = "unavailable";
+          });
+          overwritten = greenCourseKeys.length;
+        }
+      }
+    }
     desiredKeys.forEach((key) => {
       if (!(key in state.marks)) {
         state.marks[key] = "unavailable";
@@ -2191,87 +1939,626 @@ async function applySelectedCourses() {
     );
     await persistMarks();
     renderGrid();
+    renderCoursesSummary();
 
-    coursesStatus.textContent = `Appliqué : ${added} créneau(x) ajouté(s), ${removed} retiré(s) (les créneaux modifiés à la main entre-temps n'ont pas été touchés).`;
+    const parts = [`${added + overwritten} créneau(x) de cours ajouté(s)`, `${removed} retiré(s)`];
+    coursesStatus.textContent = `Appliqué ✓ — ${parts.join(", ")}.`;
   } catch (err) {
     console.error("Échec de l'application des cours :", err);
     coursesStatus.textContent = `Échec — ${err && err.message ? err.message : "réessaie."}`;
   }
 }
 
-// "🗑️ Retirer tous mes cours" : décoche tout (cours + groupes de TP/labo/
-// séances spéciales), puis applique directement — applySelectedCourses()
-// compare toujours desiredKeys (ici vide) à l'existant et ne retire QUE les
-// créneaux encore marqués "pas dispo" ET posés par un cours (jamais un
-// créneau modifié à la main entre-temps), donc pas de risque à tout vider
-// d'un coup ici.
-if (coursesClearAllBtn) {
-  coursesClearAllBtn.addEventListener("click", async () => {
-    if (!state.password) return;
-    if (!state.selectedCourses.length && !(state.groupSessions || []).length) {
-      coursesStatus.textContent = "Aucun cours coché pour l'instant.";
+// ===================== MON PROFIL (programme, langues, groupes) =====================
+// Un seul formulaire guidé, à base de listes déroulantes, qui remplace
+// l'ancienne liste "Mes cours" à cocher un par un : le membre dit qui il est
+// (programme(s), langues, groupes de TP/labo, options) et tout est appliqué
+// au calendrier d'un coup. Toujours construit à partir des mêmes données
+// (selectedCourses / groupSessions), donc compatible avec ce que l'admin voit.
+const DAY_SHORT = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+const MANY_SESSIONS_THRESHOLD = 5;
+
+// Nom de groupe lisible à partir de l'event_code d'une séance :
+// "MANGL1339-1 Labos Gr3" -> "Labos Gr3", "MINFO1301-TP GroupeB" -> "TP
+// GroupeB", "MGEST1324-2 (Atelier RTBF)" -> "2". Deux séances qui donnent le
+// même nom appartiennent au même groupe (ex: un labo deux fois par semaine).
+function sessionGroupLabel(course, session) {
+  let ec = (session.event_code || "").replace(/\(.*?\)/g, "").trim();
+  if (ec.startsWith(course.code)) ec = ec.slice(course.code.length);
+  ec = ec.replace(/^[\s\-–]+/, "").trim();
+  const m = ec.match(/^\d+\s*[-–]?\s+(.+)$/);
+  if (m) ec = m[1].trim();
+  return ec || "Séance";
+}
+
+function sessionShortTime(s) {
+  return `${DAY_SHORT[s.weekday]} ${s.start}-${s.end}`;
+}
+
+// Regroupe des séances par nom de groupe -> [{ label, display, keys }].
+function buildGroupChoices(course, sessions) {
+  const byLabel = new Map();
+  sessions.forEach((s) => {
+    const label = sessionGroupLabel(course, s);
+    const entry = byLabel.get(label) || { label, keys: [], times: [] };
+    entry.keys.push(sessionKey(course.code, s));
+    entry.times.push(sessionShortTime(s));
+    byLabel.set(label, entry);
+  });
+  return Array.from(byLabel.values())
+    .map((e) => ({
+      ...e,
+      display: `${/^\d+$/.test(e.label) ? "Groupe " + e.label : e.label} — ${Array.from(new Set(e.times)).join(", ")}`,
+    }))
+    .sort((a, b) => a.display.localeCompare(b.display, "fr", { numeric: true }));
+}
+
+// Analyse les cours du/des programme(s) choisis :
+//  - obligatory : cours à appliquer d'office (décochables si pas suivis)
+//  - options    : cours dont l'horaire chevauche celui d'un AUTRE cours du
+//                 même programme -> on ne peut pas deviner, le membre coche
+//  - languages  : cours de langue (2 sur 3 en général), choix du groupe
+//  - choices    : pour chaque cours, groupes de TP/labo ou groupes parallèles
+//  - oneOffs    : séances ponctuelles (séminaire d'une journée, horaire pas
+//                 encore connu) -> proposées à part, jamais cochées d'office
+// Les codes de programme "trop larges" (voir computeBroadProgramCodes) ne
+// permettent pas de retrouver les cours réellement suivis : signalés à part.
+function analyzeProfilePrograms(programCodes) {
+  const broad = computeBroadProgramCodes(coursesCatalogue || []);
+  const usable = programCodes.filter((p) => !broad.has(p));
+  const result = {
+    unreliablePrograms: programCodes.filter((p) => broad.has(p)),
+    courses: new Map(),
+    obligatory: [],
+    options: [],
+    languages: [],
+    oneOffs: [],
+  };
+  if (!usable.length) return result;
+  const usableSet = new Set(usable);
+  (coursesCatalogue || [])
+    .filter((c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => usableSet.has(p)))
+    .forEach((c) => {
+      const info = {
+        course: c,
+        isLanguage: isLanguageElectiveCourse(c),
+        candidates: [],
+        groupSess: [],
+        oneOffs: [],
+        parallelKeys: new Set(),
+        crossConflict: false,
+      };
+      (c.sessions || []).forEach((s) => {
+        if (isGroupSession(s)) info.groupSess.push(s);
+        else if (isUnreliableWeeklySession(c, s)) info.oneOffs.push(s);
+        else info.candidates.push(s);
+      });
+      result.courses.set(c.code, info);
+    });
+
+  // Chevauchements entre séances "cours magistral" des cours du programme
+  // (hors langues, gérées à part).
+  const cands = [];
+  result.courses.forEach((info) => {
+    if (!info.isLanguage) info.candidates.forEach((s) => cands.push({ info, s }));
+  });
+  for (let i = 0; i < cands.length; i++) {
+    for (let j = i + 1; j < cands.length; j++) {
+      const a = cands[i];
+      const b = cands[j];
+      if (a.s.weekday !== b.s.weekday) continue;
+      if (!(a.s.start < b.s.end && b.s.start < a.s.end)) continue;
+      if (a.info === b.info) {
+        // Même cours, deux groupes au même moment (ex: MGEST1324-1 / -2).
+        if (sessionGroupLabel(a.info.course, a.s) !== sessionGroupLabel(b.info.course, b.s)) {
+          a.info.parallelKeys.add(sessionKey(a.info.course.code, a.s));
+          a.info.parallelKeys.add(sessionKey(b.info.course.code, b.s));
+        }
+      } else {
+        // Un cours à très nombreuses séances hebdo (séminaire "d'actualité",
+        // journée d'études...) chevauche presque tout : c'est lui qui est à
+        // choisir, pas les cours normaux qu'il recoupe.
+        const aMany = a.info.candidates.length >= MANY_SESSIONS_THRESHOLD;
+        const bMany = b.info.candidates.length >= MANY_SESSIONS_THRESHOLD;
+        if (aMany || bMany) {
+          if (aMany) a.info.crossConflict = true;
+          if (bMany) b.info.crossConflict = true;
+        } else {
+          a.info.crossConflict = true;
+          b.info.crossConflict = true;
+        }
+      }
+    }
+  }
+
+  result.courses.forEach((info) => {
+    const code = info.course.code;
+    info.oneOffs.forEach((s) => result.oneOffs.push({ info, s, key: sessionKey(code, s) }));
+    if (info.isLanguage) {
+      info.coursKeys = info.candidates
+        .filter((s) => /\bCours\b/i.test(s.event_code || ""))
+        .map((s) => sessionKey(code, s));
+      info.choices = buildGroupChoices(info.course, info.groupSess);
+      result.languages.push(info);
       return;
     }
-    if (!confirm("Retirer tous tes cours et groupes de TP/labo (et les créneaux 'pas dispo' que ça avait posé) ?")) return;
-    coursesClearAllBtn.disabled = true;
-    try {
-      state.selectedCourses = [];
-      state.groupSessions = [];
-      await applySelectedCourses();
-      renderCoursesList();
-    } finally {
-      coursesClearAllBtn.disabled = false;
-    }
+    const parallel = info.candidates.filter((s) => info.parallelKeys.has(sessionKey(code, s)));
+    info.autoSessions = info.candidates.filter((s) => !info.parallelKeys.has(sessionKey(code, s)));
+    info.choices = buildGroupChoices(info.course, info.groupSess.concat(parallel));
+    if (info.crossConflict) result.options.push(info);
+    else if (info.autoSessions.length || info.choices.length) result.obligatory.push(info);
+  });
+  const byName = (a, b) => a.course.name.localeCompare(b.course.name, "fr");
+  result.obligatory.sort(byName);
+  result.options.sort(byName);
+  result.languages.sort(byName);
+  result.oneOffs.sort((a, b) => a.info.course.name.localeCompare(b.info.course.name, "fr"));
+  return result;
+}
+
+// Brouillon du formulaire : rien n'est enregistré avant "Enregistrer".
+let profileDraft = null;
+
+function draftRemoveCourseKeys(code) {
+  Array.from(profileDraft.group).forEach((key) => {
+    if (String(key).split("|")[0] === code) profileDraft.group.delete(key);
   });
 }
 
-// Raccourci "Remplir depuis mon programme" : coche d'un coup tous les cours
-// du/des programme(s) renseigné(s) sur la fiche par l'admin (sans décocher
-// ce que le membre avait déjà choisi à la main), puis applique directement —
-// sans risque, puisque seuls les cours magistraux sont concernés (jamais les
-// TP/labos, filtrés par applySelectedCourses). Le membre reste ensuite libre
-// d'ajouter son propre groupe de TP/labo à part (voir juste en dessous de
-// chaque cours concerné dans la liste), ou de cocher/décocher d'autres cours.
-coursesFromProgramBtn.addEventListener("click", async () => {
+function chosenLabelFor(choices) {
+  const found = choices.find((ch) => ch.keys.length && ch.keys.every((k) => profileDraft.group.has(k)));
+  return found ? found.label : "";
+}
+
+function openProfile() {
   if (!state.password) return;
-  coursesStatus.textContent = "Chargement du catalogue…";
-  await loadCoursesCatalogue();
-  if (!state.programs || !state.programs.length) {
-    coursesStatus.textContent = "Aucun programme renseigné sur ta fiche pour l'instant — demande à l'admin de l'ajouter (Membres → Modifier), ou choisis tes cours toi-même ci-dessous.";
+  profileModalOverlay.classList.remove("hidden");
+  profileStatus.textContent = "";
+  profileBody.innerHTML = '<p class="hint">Chargement…</p>';
+  loadCoursesCatalogue().then(() => {
+    const programs = (state.programs || []).slice();
+    const analysis = analyzeProfilePrograms(programs);
+    const contextCodes = new Set(analysis.courses.keys());
+    const selected = new Set(state.selectedCourses || []);
+    profileDraft = {
+      programs,
+      selected,
+      group: new Set(state.groupSessions || []),
+      extras: new Set(Array.from(selected).filter((code) => !contextCodes.has(code))),
+    };
+    // Programme renseigné (ex: par l'admin) mais cours jamais appliqués :
+    // on pré-coche les cours obligatoires, comme pour un nouveau programme.
+    if (!analysis.obligatory.concat(analysis.options, analysis.languages).some((i) => selected.has(i.course.code))) {
+      analysis.obligatory.forEach((info) => profileDraft.selected.add(info.course.code));
+    }
+    renderProfileForm();
+  });
+}
+
+function closeProfile() {
+  profileModalOverlay.classList.add("hidden");
+  profileDraft = null;
+}
+
+function setDraftPrograms(newPrograms) {
+  const before = analyzeProfilePrograms(profileDraft.programs);
+  const after = analyzeProfilePrograms(newPrograms);
+  const beforeCodes = new Set(before.courses.keys());
+  const afterCodes = new Set(after.courses.keys());
+  // Nouveau programme : ses cours obligatoires sont cochés d'office.
+  after.obligatory.forEach((info) => {
+    if (!beforeCodes.has(info.course.code)) profileDraft.selected.add(info.course.code);
+  });
+  // Programme retiré : ses cours partent aussi (sauf s'ils font partie d'un
+  // autre programme gardé, ou ont été ajoutés à la main hors programme).
+  beforeCodes.forEach((code) => {
+    if (afterCodes.has(code) || profileDraft.extras.has(code)) return;
+    profileDraft.selected.delete(code);
+    draftRemoveCourseKeys(code);
+  });
+  profileDraft.programs = newPrograms;
+  renderProfileForm();
+}
+
+function profileSection(title, hint) {
+  const section = document.createElement("section");
+  section.className = "profile-section";
+  const h = document.createElement("h4");
+  h.textContent = title;
+  section.appendChild(h);
+  if (hint) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = hint;
+    section.appendChild(p);
+  }
+  return section;
+}
+
+function profileSelect(options, value, onChange) {
+  const select = document.createElement("select");
+  select.className = "profile-select";
+  options.forEach(([v, label]) => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = label;
+    select.appendChild(opt);
+  });
+  select.value = value;
+  select.addEventListener("change", () => onChange(select.value));
+  return select;
+}
+
+function profileCheckRow(checked, labelText, detail, onChange) {
+  const label = document.createElement("label");
+  label.className = "profile-check";
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = checked;
+  cb.addEventListener("change", () => onChange(cb.checked));
+  const text = document.createElement("span");
+  text.textContent = labelText;
+  if (detail) {
+    const small = document.createElement("small");
+    small.textContent = detail;
+    text.appendChild(document.createElement("br"));
+    text.appendChild(small);
+  }
+  label.appendChild(cb);
+  label.appendChild(text);
+  return label;
+}
+
+function renderProfileForm() {
+  if (!profileDraft) return;
+  const scrollTop = profileBody.scrollTop;
+  profileBody.innerHTML = "";
+  const analysis = analyzeProfilePrograms(profileDraft.programs);
+
+  // ---- 1. Programme(s) ----
+  const progSection = profileSection("🎓 Ton programme", "Un deuxième programme seulement si tu suis des cours sur deux années/blocs.");
+  const sortedPrograms = (coursesPrograms || []).slice().sort((a, b) => a.label.localeCompare(b.label, "fr", { numeric: true }));
+  const programOptions = sortedPrograms.map((p) => [p.prog, p.label]);
+  const slots = Math.max(2, profileDraft.programs.length);
+  for (let i = 0; i < slots; i++) {
+    const first = i === 0;
+    const select = profileSelect(
+      [["", first ? "— Choisis ton programme —" : "— Pas de 2e programme —"], ...programOptions],
+      profileDraft.programs[i] || "",
+      (value) => {
+        const next = profileDraft.programs.slice();
+        next[i] = value;
+        setDraftPrograms(Array.from(new Set(next.filter(Boolean))));
+      }
+    );
+    progSection.appendChild(select);
+  }
+  profileBody.appendChild(progSection);
+
+  if (analysis.unreliablePrograms.length) {
+    const warn = document.createElement("p");
+    warn.className = "hint profile-warning";
+    warn.textContent =
+      "⚠️ Pour ce programme, la liste officielle des cours n'est pas fiable (elle contient presque tous les cours de la faculté) : ajoute tes cours toi-même dans \"Cours hors programme\" en bas.";
+    profileBody.appendChild(warn);
+  }
+
+  if (!profileDraft.programs.length) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = "Choisis ton programme pour voir tes cours.";
+    profileBody.appendChild(p);
+  }
+
+  // ---- 2. Cours appliqués d'office ----
+  if (analysis.obligatory.length) {
+    const count = analysis.obligatory.filter((i) => profileDraft.selected.has(i.course.code)).length;
+    const section = profileSection(`📚 Tes cours (${count}/${analysis.obligatory.length})`);
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Bloqués automatiquement — ouvre pour décocher un cours que tu ne suis pas";
+    details.appendChild(summary);
+    analysis.obligatory.forEach((info) => {
+      const code = info.course.code;
+      details.appendChild(
+        profileCheckRow(
+          profileDraft.selected.has(code),
+          info.course.name,
+          info.autoSessions.map(sessionShortTime).join(", "),
+          (checked) => {
+            if (checked) profileDraft.selected.add(code);
+            else {
+              profileDraft.selected.delete(code);
+              draftRemoveCourseKeys(code);
+            }
+            renderProfileForm();
+          }
+        )
+      );
+    });
+    section.appendChild(details);
+    profileBody.appendChild(section);
+  }
+
+  // ---- 3. Options (horaires qui se chevauchent) ----
+  if (analysis.options.length) {
+    const section = profileSection(
+      "🔀 Cours à option",
+      "Ils tombent à la même heure qu'un autre cours de ton programme (cours à option, ou cours d'un autre quadrimestre) : coche seulement ceux que tu suis."
+    );
+    analysis.options.forEach((info) => {
+      const code = info.course.code;
+      section.appendChild(
+        profileCheckRow(
+          profileDraft.selected.has(code),
+          info.course.name,
+          info.autoSessions.map(sessionShortTime).join(", "),
+          (checked) => {
+            if (checked) profileDraft.selected.add(code);
+            else {
+              profileDraft.selected.delete(code);
+              draftRemoveCourseKeys(code);
+            }
+            renderProfileForm();
+          }
+        )
+      );
+    });
+    profileBody.appendChild(section);
+  }
+
+  // ---- 4. Langues ----
+  if (analysis.languages.length) {
+    const section = profileSection("🗣️ Tes langues", "En général 2 langues sur 3. Choisis ton groupe de labo si tu le connais déjà.");
+    analysis.languages.forEach((info) => {
+      const code = info.course.code;
+      const followed = profileDraft.selected.has(code);
+      const chosen = chosenLabelFor(info.choices);
+      const value = !followed ? "" : chosen ? `g:${chosen}` : "follow";
+      const row = document.createElement("div");
+      row.className = "profile-row";
+      const label = document.createElement("span");
+      label.className = "profile-row-label";
+      label.textContent = info.course.name;
+      row.appendChild(label);
+      row.appendChild(
+        profileSelect(
+          [
+            ["", "Pas suivie"],
+            ["follow", info.choices.length ? "Suivie — groupe pas encore connu" : "Suivie"],
+            ...info.choices.map((ch) => [`g:${ch.label}`, ch.display]),
+          ],
+          value,
+          (v) => {
+            draftRemoveCourseKeys(code);
+            if (!v) {
+              profileDraft.selected.delete(code);
+            } else {
+              profileDraft.selected.add(code);
+              info.coursKeys.forEach((k) => profileDraft.group.add(k));
+              if (v.startsWith("g:")) {
+                const ch = info.choices.find((c) => c.label === v.slice(2));
+                if (ch) ch.keys.forEach((k) => profileDraft.group.add(k));
+              }
+            }
+            renderProfileForm();
+          }
+        )
+      );
+      section.appendChild(row);
+    });
+    profileBody.appendChild(section);
+  }
+
+  // ---- 5. Groupes de TP / labos ----
+  const withChoices = analysis.obligatory
+    .concat(analysis.options)
+    .filter((info) => info.choices.length && profileDraft.selected.has(info.course.code));
+  if (withChoices.length) {
+    const section = profileSection("👥 Tes groupes de TP / labo", "Laisse \"pas encore connu\" si tu ne sais pas encore — tu pourras revenir plus tard.");
+    withChoices.forEach((info) => {
+      const row = document.createElement("div");
+      row.className = "profile-row";
+      const label = document.createElement("span");
+      label.className = "profile-row-label";
+      label.textContent = info.course.name;
+      row.appendChild(label);
+      row.appendChild(
+        profileSelect(
+          [["", "— Pas encore connu / aucun —"], ...info.choices.map((ch) => [ch.label, ch.display])],
+          chosenLabelFor(info.choices),
+          (v) => {
+            info.choices.forEach((ch) => ch.keys.forEach((k) => profileDraft.group.delete(k)));
+            const ch = info.choices.find((c) => c.label === v);
+            if (ch) ch.keys.forEach((k) => profileDraft.group.add(k));
+            renderProfileForm();
+          }
+        )
+      );
+      section.appendChild(row);
+    });
+    profileBody.appendChild(section);
+  }
+
+  // ---- 6. Séances ponctuelles (repliées) ----
+  const oneOffs = analysis.oneOffs.filter((o) => profileDraft.selected.has(o.info.course.code));
+  if (oneOffs.length) {
+    const details = document.createElement("details");
+    details.className = "profile-section";
+    const summary = document.createElement("summary");
+    const n = oneOffs.filter((o) => profileDraft.group.has(o.key)).length;
+    summary.textContent = `📌 Séances ponctuelles (séminaires, journées spéciales)${n ? ` — ${n} cochée(s)` : ""}`;
+    details.appendChild(summary);
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "Pas des cours de chaque semaine : ne coche que celles où tu dois vraiment être (elles seront bloquées chaque semaine à cette heure-là).";
+    details.appendChild(hint);
+    oneOffs.forEach((o) => {
+      details.appendChild(
+        profileCheckRow(
+          profileDraft.group.has(o.key),
+          `${o.info.course.name} — ${sessionGroupLabel(o.info.course, o.s)}`,
+          sessionShortTime(o.s),
+          (checked) => {
+            if (checked) profileDraft.group.add(o.key);
+            else profileDraft.group.delete(o.key);
+          }
+        )
+      );
+    });
+    if (n) details.open = true;
+    profileBody.appendChild(details);
+  }
+
+  // ---- 7. Cours hors programme (replié) ----
+  const extraDetails = document.createElement("details");
+  extraDetails.className = "profile-section";
+  const extraSummary = document.createElement("summary");
+  extraSummary.textContent = `➕ Cours hors programme${profileDraft.extras.size ? ` (${profileDraft.extras.size})` : ""}`;
+  extraDetails.appendChild(extraSummary);
+  if (profileDraft.extras.size || analysis.unreliablePrograms.length) extraDetails.open = true;
+  const extraList = document.createElement("div");
+  Array.from(profileDraft.extras).forEach((code) => {
+    const course = (coursesCatalogue || []).find((c) => c.code === code);
+    const row = document.createElement("div");
+    row.className = "profile-row";
+    const label = document.createElement("span");
+    label.className = "profile-row-label";
+    label.textContent = course ? course.name : code;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "btn btn-ghost btn-sm";
+    remove.textContent = "Retirer";
+    remove.addEventListener("click", () => {
+      profileDraft.extras.delete(code);
+      profileDraft.selected.delete(code);
+      draftRemoveCourseKeys(code);
+      renderProfileForm();
+    });
+    row.appendChild(label);
+    row.appendChild(remove);
+    extraList.appendChild(row);
+  });
+  extraDetails.appendChild(extraList);
+  const search = document.createElement("input");
+  search.type = "search";
+  search.className = "profile-search";
+  search.placeholder = "Chercher un cours (code ou nom)…";
+  const results = document.createElement("div");
+  results.className = "profile-search-results";
+  search.addEventListener("input", () => {
+    const q = search.value.trim().toLowerCase();
+    results.innerHTML = "";
+    if (q.length < 2) return;
+    (coursesCatalogue || [])
+      .filter(
+        (c) =>
+          !c.code.startsWith("EVT-") &&
+          !profileDraft.selected.has(c.code) &&
+          (c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q))
+      )
+      .slice(0, 12)
+      .forEach((c) => {
+        const row = document.createElement("div");
+        row.className = "profile-row";
+        const label = document.createElement("span");
+        label.className = "profile-row-label";
+        label.textContent = `${c.name} (${c.code})`;
+        const add = document.createElement("button");
+        add.type = "button";
+        add.className = "btn btn-ghost btn-sm";
+        add.textContent = "Ajouter";
+        add.addEventListener("click", () => {
+          profileDraft.extras.add(c.code);
+          profileDraft.selected.add(c.code);
+          renderProfileForm();
+        });
+        row.appendChild(label);
+        row.appendChild(add);
+        results.appendChild(row);
+      });
+  });
+  extraDetails.appendChild(search);
+  extraDetails.appendChild(results);
+  profileBody.appendChild(extraDetails);
+
+  profileBody.scrollTop = scrollTop;
+}
+
+async function saveProfile() {
+  if (!profileDraft || !state.password) return;
+  if (!profileDraft.programs.length && !profileDraft.extras.size) {
+    profileStatus.textContent = "Choisis au moins ton programme.";
     return;
   }
-  const programSet = new Set(state.programs);
-  // Exclut les entrées "EVT-..." (événements ponctuels d'accueil : tests de
-  // prérequis, barbecue, séminaires...) : elles n'ont qu'un jour de semaine +
-  // une heure enregistrés (pas de vraie date), et buildICSFromCourseSessions
-  // génère toujours une récurrence HEBDOMADAIRE jusqu'en 2035 — correct pour
-  // un vrai cours, mais ça bloquerait à tort ce créneau chaque semaine pour
-  // un événement qui n'a lieu qu'une fois. Comme ces entrées sont rattachées
-  // à presque tous les programmes, il ne faut surtout pas les inclure ici.
-  // Exclut aussi les cours de langue (voir isLanguageElectiveCourse) : on
-  // n'en choisit que 2 sur les 3 proposées, impossible à deviner tout seul.
-  const matchingCodes = (coursesCatalogue || [])
-    .filter(
-      (c) =>
-        !c.code.startsWith("EVT-") &&
-        !isLanguageElectiveCourse(c) &&
-        (c.programs || []).some((p) => programSet.has(p)) &&
-        (c.sessions || []).some((s) => isReliableCmSession(c, s))
-    )
-    .map((c) => c.code);
-  const before = new Set(state.selectedCourses);
-  matchingCodes.forEach((code) => {
-    if (!before.has(code)) state.selectedCourses.push(code);
-  });
-  const addedCount = state.selectedCourses.length - before.size;
-  refreshProgrammeOptions();
-  renderCoursesList();
-  updateCoursesSelectedCount();
+  profileSaveBtn.disabled = true;
+  profileStatus.textContent = "Enregistrement…";
+  try {
+    const analysis = analyzeProfilePrograms(profileDraft.programs);
+    // Séances "cours magistral" d'un cours suivi que la détection globale
+    // mettrait de côté (ex: chevauchement avec un cours d'un AUTRE
+    // programme) : ici on sait qu'elles concernent ce membre -> ajoutées
+    // explicitement pour être bloquées quand même.
+    analysis.courses.forEach((info) => {
+      if (info.isLanguage) return;
+      info.autoSessions.forEach((s) => {
+        const key = sessionKey(info.course.code, s);
+        profileDraft.group.delete(key);
+        if (profileDraft.selected.has(info.course.code) && !isReliableCmSession(info.course, s)) {
+          profileDraft.group.add(key);
+        }
+      });
+    });
+    state.programs = profileDraft.programs.slice();
+    state.selectedCourses = Array.from(profileDraft.selected);
+    state.groupSessions = Array.from(profileDraft.group);
+    await db.updateMemberPrograms(state.password, state.programs);
+    await applySelectedCourses({ askOverwrite: true });
+    closeProfile();
+  } catch (err) {
+    console.error(err);
+    profileStatus.textContent = "Échec de l'enregistrement, réessaie.";
+  }
+  profileSaveBtn.disabled = false;
+}
+
+async function clearAllCourses() {
+  if (!state.password) return;
+  if (!confirm("Retirer tous tes cours (et les créneaux \"pas dispo\" qu'ils avaient posés) ? Tes créneaux marqués à la main ne bougent pas.")) return;
+  state.selectedCourses = [];
+  state.groupSessions = [];
   await applySelectedCourses();
-  coursesStatus.textContent =
-    `${addedCount} cours de ton programme ajouté(s) à ta sélection (hors langues, TP/labos, et cours à horaire qui se chevauche — options/groupes parallèles, à choisir toi-même juste en dessous d'eux). ` +
-    `N'oublie pas d'ajouter tes 2 langues toi-même (cherche "Anglais", "Espagnol" ou "Néerlandais" ci-dessous). ` +
-    coursesStatus.textContent;
+  closeProfile();
+}
+
+// Résumé affiché dans la colonne "Mon planning" (plus de liste à cocher ici :
+// tout se règle dans le profil).
+function renderCoursesSummary() {
+  if (!coursesSummaryText) return;
+  if (!state.password) {
+    coursesSummaryText.textContent = "";
+    return;
+  }
+  const labels = (state.programs || []).map((p) => {
+    const meta = (coursesPrograms || []).find((x) => x.prog === p);
+    return meta ? meta.label : p;
+  });
+  const n = (state.selectedCourses || []).length;
+  if (!labels.length && !n) {
+    coursesSummaryText.textContent = "Pas encore de programme — ouvre ton profil pour bloquer tes cours en un clic.";
+    return;
+  }
+  coursesSummaryText.textContent =
+    `${labels.join(" + ") || "Sans programme"} · ${n} cours suivi(s)`;
+}
+
+profileBtn.addEventListener("click", openProfile);
+coursesEditBtn.addEventListener("click", openProfile);
+profileCloseBtn.addEventListener("click", closeProfile);
+profileSaveBtn.addEventListener("click", saveProfile);
+profileClearBtn.addEventListener("click", clearAllCourses);
+profileModalOverlay.addEventListener("click", (e) => {
+  if (e.target === profileModalOverlay) closeProfile();
 });
 
 // ===================== RENDU DE LA GRILLE =====================
@@ -2294,12 +2581,11 @@ function computeSelectedCourseLabels() {
   coursesCatalogue.forEach((course) => {
     (course.sessions || []).forEach((s) => {
       const key = sessionKey(course.code, s);
-      const isManual = isManualChoiceSession(course, s);
       let name = null;
-      if (!isManual && selectedSet.has(course.code)) {
-        name = course.name;
-      } else if (isManual && groupKeySet.has(key)) {
+      if (groupKeySet.has(key)) {
         name = `${course.name} — ${groupSessionLabel(course, s)}`;
+      } else if (selectedSet.has(course.code) && !isLanguageElectiveCourse(course) && isReliableCmSession(course, s)) {
+        name = course.name;
       }
       if (!name) return;
       const list = sessionsByDow.get(s.weekday) || [];

@@ -3910,13 +3910,12 @@ function runAdmin() {
     studentLoadCatalogue.forEach((course) => {
       (course.sessions || []).forEach((s) => {
         const key = sessionKey(course.code, s);
-        const isManual = isManualChoiceSession(course, s);
         let name = null;
-        if (!isManual && selectedSet.has(course.code)) {
-          name = course.name;
-        } else if (isManual && groupKeySet.has(key)) {
+        if (groupKeySet.has(key)) {
           const ec = s.event_code;
           name = `${course.name} — ${ec && ec !== course.code ? ec : "Séance"}`;
+        } else if (selectedSet.has(course.code) && !isLanguageElectiveCourse(course) && isReliableCmSession(course, s)) {
+          name = course.name;
         }
         if (!name) return;
         const list = sessionsByDow.get(s.weekday) || [];
