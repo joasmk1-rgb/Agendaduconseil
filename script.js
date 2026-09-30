@@ -907,6 +907,52 @@ function searchCoversKey(search, key) {
   return true;
 }
 
+// Créneaux proposés dans les sondages de date publiés, numérotés comme dans
+// le sondage : dessinés en cadre bleu sur le calendrier du membre, par-dessus
+// ses propres cases (vert/rouge/vide restent visibles dessous).
+function openDatePollSlots() {
+  const todayISO = Grid.toISODate(new Date());
+  const list = [];
+  (state.polls || [])
+    .filter((p) => p.type === "date" && p.status === "open")
+    .forEach((p) => {
+      (p.slots || []).forEach((s, i) => {
+        if (s.date >= todayISO) list.push({ ...s, n: i + 1, pollId: p.id });
+      });
+    });
+  return list;
+}
+
+function pollSlotKeys(slot) {
+  return Grid.buildTimeSlots()
+    .filter((t) => t >= slot.start && t < slot.end)
+    .map((t) => Grid.slotKey(slot.date, t));
+}
+
+function pollSlotCellMap() {
+  const map = new Map();
+  openDatePollSlots().forEach((s) => {
+    const keys = pollSlotKeys(s);
+    keys.forEach((k, i) => {
+      if (!map.has(k)) map.set(k, { ...s, first: i === 0, last: i === keys.length - 1 });
+    });
+  });
+  return map;
+}
+
+// Situation perso du membre sur un créneau proposé, d'après son calendrier.
+function mySlotStatus(slot) {
+  const keys = pollSlotKeys(slot);
+  const marks = keys.map((k) => state.marks[k]);
+  if (marks.some((m) => m === "unavailable")) {
+    const hasCourse = state.courseSlotKeys && keys.some((k) => state.courseSlotKeys.has(k) && state.marks[k] === "unavailable");
+    return { code: "no", text: hasCourse ? "❌ tu as cours" : "❌ tu es indispo" };
+  }
+  if (keys.length && marks.every((m) => m === "available")) return { code: "yes", text: "✅ tu es dispo" };
+  if (marks.some((m) => m === "available")) return { code: "part", text: "🟡 dispo en partie" };
+  return { code: "unknown", text: "❔ pas encore rempli" };
+}
+
 function isKeyInCollectingSearch(key) {
   return collectingSearches().some((p) => searchCoversKey(p.search, key));
 }
@@ -1017,11 +1063,23 @@ function renderPollBanner() {
           return `<div class="avail-request-item done" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong> — tu as répondu ✅ (${picked.length ? picked.join(", ") : "aucun créneau ne te convient"}) <button type="button" class="btn btn-ghost btn-sm poll-edit-btn" data-poll="${poll.id}">Modifier</button> ${calBtn}</div>`;
         }
         const prev = new Set(mine ? (Array.isArray(mine.answer) ? mine.answer : [mine.answer]) : []);
-        const ck = (o) => (prev.has(o) ? " checked" : "");
+        const slotByLabel = new Map((poll.slots || []).map((s, i) => [s.label, { ...s, n: i + 1 }]));
+        // Pas encore répondu : on précoche les créneaux entièrement en vert.
+        const ck = (o) => {
+          if (mine) return prev.has(o) ? " checked" : "";
+          const s = slotByLabel.get(o);
+          return s && mySlotStatus(s).code === "yes" ? " checked" : "";
+        };
         fieldsHtml =
-          '<p class="hint">Coche tous les créneaux où tu peux venir :</p>' +
+          '<p class="hint">Coche tous les créneaux où tu peux venir. Ils sont aussi encadrés en bleu (🗳️ + numéro) sur ton calendrier, par-dessus tes dispos.</p>' +
           (poll.options || [])
-            .map((o) => `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="${o}"${ck(o)}> ${o}</label>`)
+            .map((o) => {
+              const s = slotByLabel.get(o);
+              const st = s ? mySlotStatus(s) : null;
+              const num = s ? `<span class="poll-num">${s.n}</span>` : "";
+              const me = st ? ` <span class="poll-me poll-me-${st.code}">${st.text}</span>` : "";
+              return `<label class="checkbox-group poll-date-option"><input type="checkbox" name="poll-${poll.id}" value="${o}"${ck(o)}> ${num}${o}${me}</label>`;
+            })
             .join("") +
           `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="Aucun"${ck("Aucun")}> Aucun ne me convient</label>`;
         return `<div class="avail-request-item poll-banner-item" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong><div class="poll-banner-fields">${fieldsHtml}</div><button type="button" class="btn btn-primary btn-sm poll-submit-btn" data-poll="${poll.id}">${mine ? "Mettre à jour" : "Répondre"}</button> ${calBtn}</div>`;
@@ -1992,6 +2050,7 @@ function renderGrid() {
   const times = Grid.buildTimeSlots();
   const blockedSlots = state.config.blockedSlots || [];
   const searchesForGrid = collectingSearches();
+  const pollCells = state.password ? pollSlotCellMap() : new Map();
   const courseLabels = computeSelectedCourseLabels();
 
   gridEl.innerHTML = "";
@@ -2032,6 +2091,17 @@ function renderGrid() {
       // sert par exemple à dire "je suis dispo quand même, je sèche ce
       // cours-là". Le cours reste visible en dessous (hachures grises), la
       // couleur dispo/pas dispo vient juste en anneau par-dessus (voir CSS).
+      const ps = pollCells.get(key);
+      if (ps) {
+        cell.classList.add("poll-slot");
+        if (ps.first) {
+          cell.classList.add("poll-slot-first");
+          cell.dataset.pollN = `🗳️${ps.n}`;
+        }
+        if (ps.last) cell.classList.add("poll-slot-last");
+        const t = `Proposé au sondage (n°${ps.n}) : ${ps.label}`;
+        cell.title = cell.title ? cell.title + "\n" + t : t;
+      }
       cell.addEventListener("mousedown", onCellMouseDown);
       cell.addEventListener("mouseenter", onCellMouseEnter);
       cell.addEventListener("touchstart", onCellTouchStart, { passive: true });

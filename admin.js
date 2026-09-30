@@ -3976,8 +3976,9 @@ function runAdmin() {
   const fdWeekends = document.getElementById("fd-weekends");
   const fdFormStatus = document.getElementById("fd-form-status");
   const fdList = document.getElementById("fd-list");
-  const FD_SLOT_COUNT = 10;
-  const FD_MAX_PER_DAY = 3;
+  const fdCount = document.getElementById("fd-count");
+  const FD_SLOT_COUNT = 15; // par défaut, si la recherche n'a pas de "count"
+  const FD_MAX_PER_DAY = 4;
   // Options décochées à la main dans un brouillon (par recherche), gardées
   // entre deux rafraîchissements en direct.
   const fdExcluded = new Map();
@@ -4052,7 +4053,7 @@ function runAdmin() {
     const picked = [];
     const perDay = new Map();
     for (const r of results) {
-      if (picked.length >= FD_SLOT_COUNT) break;
+      if (picked.length >= (search.count || FD_SLOT_COUNT)) break;
       if ((perDay.get(r.dateISO) || 0) >= FD_MAX_PER_DAY) continue;
       const overlaps = picked.some((p) => p.dateISO === r.dateISO && p.startTime < r.endTime && r.startTime < p.endTime);
       if (overlaps) continue;
@@ -4076,6 +4077,7 @@ function runAdmin() {
       start: fdStart.value,
       end: fdEnd.value,
       duration: Number(fdDuration.value) || 60,
+      count: Number(fdCount.value) || FD_SLOT_COUNT,
       from: fdFrom.value || "08:30",
       to: fdTo.value || "20:00",
       weekends: fdWeekends.checked,

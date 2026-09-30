@@ -776,3 +776,21 @@ label.fd-slot { justify-content: flex-start; cursor: pointer; }
 .profile-password { margin-top: 10px; font-size: 0.9rem; }
 .profile-password summary { cursor: pointer; color: var(--color-muted); }
 .profile-password form { margin-top: 8px; }
+
+/* Créneaux proposés au sondage, dessinés par-dessus le calendrier perso */
+.cell.slot.poll-slot { position: relative; overflow: visible; }
+.cell.slot.poll-slot::after {
+  content: ""; position: absolute; inset: 0 1px; pointer-events: none; z-index: 2;
+  border-left: 2px dashed #2563eb; border-right: 2px dashed #2563eb;
+}
+.cell.slot.poll-slot-first::after { border-top: 2px dashed #2563eb; }
+.cell.slot.poll-slot-last::after { border-bottom: 2px dashed #2563eb; }
+.cell.slot.poll-slot-first::before {
+  content: attr(data-poll-n); position: absolute; top: -1px; left: 2px; z-index: 3; pointer-events: none;
+  background: #2563eb; color: #fff; font-size: 0.6rem; font-weight: 700; line-height: 1; padding: 1px 3px; border-radius: 3px;
+}
+.poll-date-option { align-items: center; gap: 6px; flex-wrap: wrap; }
+.poll-num { display: inline-block; min-width: 1.4em; text-align: center; background: #2563eb; color: #fff; border-radius: 4px; font-size: 0.75rem; font-weight: 700; padding: 1px 4px; margin-right: 4px; }
+.poll-me { font-size: 0.8rem; color: var(--color-muted); }
+.poll-me-yes { color: #15803d; }
+.poll-me-no { color: #b42323; }
