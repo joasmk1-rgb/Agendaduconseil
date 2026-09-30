@@ -1835,6 +1835,83 @@ function isLanguageElectiveCourse(course) {
   return LANGUAGE_COURSE_CODE_PATTERN.test((course && course.code) || "");
 }
 
+// ---- Masters : découpage M1 / M2 et nettoyage des listes de cours ----
+// Dans le catalogue, les listes de cours des masters sont cumulatives
+// (chaque programme de master contient tous les cours des masters
+// "précédents" + tous les cours de bac) : inutilisables telles quelles.
+// On reconstruit une liste plausible : uniquement les cours de cycle master
+// (code "XXXX2…"), apparus d'abord dans un master de la même faculté (+ les
+// langues avancées), puis on sépare 1re / 2e année d'après le 2e chiffre du
+// code (21xx = M1, 22xx = M2, autres = transversaux, gardés dans les deux).
+// Un Master 120 se choisit donc en deux programmes "virtuels" : "<code>@M1"
+// et "<code>@M2" (enregistrés tels quels dans la fiche du membre).
+function expandProgramsWithMasterYears(programs) {
+  const out = [];
+  (programs || []).forEach((p) => {
+    if (p.niveau === "Master" && /^Master 120/.test(p.label) && !/bloc/i.test(p.label)) {
+      out.push({ ...p, prog: `${p.prog}@M1`, base: p.prog, label: `${p.label} — 1re année (M1)` });
+      out.push({ ...p, prog: `${p.prog}@M2`, base: p.prog, label: `${p.label} — 2e année (M2)` });
+    } else {
+      out.push({ ...p, base: p.prog });
+    }
+  });
+  return out;
+}
+
+function buildProgramCourseIndex(catalogue, rawPrograms) {
+  const courses = (catalogue || []).filter((c) => !c.code.startsWith("EVT-"));
+  const byCode = new Map(courses.map((c) => [c.code, c]));
+  const metaByProg = new Map((rawPrograms || []).map((p) => [p.prog, p]));
+  const setOf = (prog) => new Set(courses.filter((c) => (c.programs || []).includes(prog)).map((c) => c.code));
+  const masterProgs = (rawPrograms || []).filter((p) => p.niveau === "Master");
+  const masterSets = new Map(masterProgs.map((p) => [p.prog, setOf(p.prog)]));
+  const firstFaculte = new Map();
+  masterProgs
+    .filter((p) => masterSets.get(p.prog).size)
+    .sort((a, b) => masterSets.get(a.prog).size - masterSets.get(b.prog).size)
+    .forEach((p) => masterSets.get(p.prog).forEach((code) => {
+      if (!firstFaculte.has(code)) firstFaculte.set(code, p.faculte);
+    }));
+  const cache = new Map();
+  function coursesForProgram(progCode) {
+    if (cache.has(progCode)) return cache.get(progCode);
+    const [base, yearTag] = String(progCode).split("@");
+    const meta = metaByProg.get(base);
+    let result;
+    if (meta && meta.niveau === "Master") {
+      const year = yearTag === "M1" ? "1" : yearTag === "M2" ? "2" : null;
+      result = new Set(
+        Array.from(masterSets.get(base) || []).filter((code) => {
+          const m = code.match(/^[A-Z]+2(\d)/);
+          if (!m) return false; // cours de bac rattachés par erreur au master
+          if (!isLanguageElectiveCourse(byCode.get(code)) && firstFaculte.get(code) !== meta.faculte) return false;
+          if (year && (m[1] === "1" || m[1] === "2") && m[1] !== year) return false;
+          return true;
+        })
+      );
+    } else {
+      result = setOf(base);
+    }
+    cache.set(progCode, result);
+    return result;
+  }
+  coursesForProgram.isMaster = (progCode) => {
+    const meta = metaByProg.get(String(progCode).split("@")[0]);
+    return !!(meta && meta.niveau === "Master");
+  };
+  return coursesForProgram;
+}
+
+// Cours d'un programme (voir buildProgramCourseIndex) — vide tant que le
+// catalogue n'est pas chargé.
+let coursesForProgram = null;
+function programCourses(progCode) {
+  return coursesForProgram ? coursesForProgram(progCode) : new Set();
+}
+function isMasterProgram(progCode) {
+  return !!(coursesForProgram && coursesForProgram.isMaster(progCode));
+}
+
 async function loadCoursesCatalogue() {
   if (coursesCatalogue) return coursesCatalogue;
   if (coursesCatalogueLoading) return coursesCatalogueLoading;
@@ -1844,7 +1921,8 @@ async function loadCoursesCatalogue() {
   ])
     .then(([catalogue, programs]) => {
       coursesCatalogue = catalogue;
-      coursesPrograms = programs;
+      coursesPrograms = expandProgramsWithMasterYears(programs);
+      coursesForProgram = buildProgramCourseIndex(catalogue, programs);
       conflictingSessionKeys = computeConflictingSessionKeys(coursesCatalogue);
       return catalogue;
     })
@@ -2004,23 +2082,29 @@ function buildGroupChoices(course, sessions) {
 // Les codes de programme "trop larges" (voir computeBroadProgramCodes) ne
 // permettent pas de retrouver les cours réellement suivis : signalés à part.
 function analyzeProfilePrograms(programCodes) {
-  const broad = computeBroadProgramCodes(coursesCatalogue || []);
-  const usable = programCodes.filter((p) => !broad.has(p));
   const result = {
-    unreliablePrograms: programCodes.filter((p) => broad.has(p)),
+    unreliablePrograms: programCodes.filter((p) => !programCourses(p).size),
+    hasMaster: programCodes.some(isMasterProgram),
     courses: new Map(),
     obligatory: [],
     options: [],
     languages: [],
     oneOffs: [],
   };
-  if (!usable.length) return result;
-  const usableSet = new Set(usable);
+  const bacCodes = new Set();
+  const masterCodes = new Set();
+  programCodes.forEach((p) => {
+    const target = isMasterProgram(p) ? masterCodes : bacCodes;
+    programCourses(p).forEach((code) => target.add(code));
+  });
+  if (!bacCodes.size && !masterCodes.size) return result;
   (coursesCatalogue || [])
-    .filter((c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => usableSet.has(p)))
+    .filter((c) => bacCodes.has(c.code) || masterCodes.has(c.code))
     .forEach((c) => {
       const info = {
         course: c,
+        // En master, presque tout est option/finalité : rien d'office.
+        fromMaster: masterCodes.has(c.code) && !bacCodes.has(c.code),
         isLanguage: isLanguageElectiveCourse(c),
         candidates: [],
         groupSess: [],
@@ -2085,8 +2169,9 @@ function analyzeProfilePrograms(programCodes) {
     const parallel = info.candidates.filter((s) => info.parallelKeys.has(sessionKey(code, s)));
     info.autoSessions = info.candidates.filter((s) => !info.parallelKeys.has(sessionKey(code, s)));
     info.choices = buildGroupChoices(info.course, info.groupSess.concat(parallel));
-    if (info.crossConflict) result.options.push(info);
-    else if (info.autoSessions.length || info.choices.length) result.obligatory.push(info);
+    if (!info.autoSessions.length && !info.choices.length) return;
+    if (info.crossConflict || info.fromMaster) result.options.push(info);
+    else result.obligatory.push(info);
   });
   const byName = (a, b) => a.course.name.localeCompare(b.course.name, "fr");
   result.obligatory.sort(byName);
@@ -2219,6 +2304,13 @@ function renderProfileForm() {
   const progSection = profileSection("🎓 Ton programme", "Un deuxième programme seulement si tu suis des cours sur deux années/blocs.");
   const sortedPrograms = (coursesPrograms || []).slice().sort((a, b) => a.label.localeCompare(b.label, "fr", { numeric: true }));
   const programOptions = sortedPrograms.map((p) => [p.prog, p.label]);
+  // Ancien code encore sur la fiche (ex: Master 120 choisi avant le
+  // découpage M1/M2) : gardé sélectionnable pour ne pas le perdre en silence.
+  profileDraft.programs.forEach((code) => {
+    if (programOptions.some(([v]) => v === code)) return;
+    const base = (coursesPrograms || []).find((p) => p.base === code);
+    programOptions.push([code, base ? `${base.label.replace(/ — (1re|2e) année.*$/, "")} (toutes années — choisis plutôt M1 ou M2)` : code]);
+  });
   const slots = Math.max(2, profileDraft.programs.length);
   for (let i = 0; i < slots; i++) {
     const first = i === 0;
@@ -2239,7 +2331,7 @@ function renderProfileForm() {
     const warn = document.createElement("p");
     warn.className = "hint profile-warning";
     warn.textContent =
-      "⚠️ Pour ce programme, la liste officielle des cours n'est pas fiable (elle contient presque tous les cours de la faculté) : ajoute tes cours toi-même dans \"Cours hors programme\" en bas.";
+      "⚠️ Aucun cours trouvé pour ce programme dans le catalogue de l'université : ajoute tes cours toi-même dans \"Cours hors programme\" en bas.";
     profileBody.appendChild(warn);
   }
 
@@ -2283,8 +2375,10 @@ function renderProfileForm() {
   // ---- 3. Options (horaires qui se chevauchent) ----
   if (analysis.options.length) {
     const section = profileSection(
-      "🔀 Cours à option",
-      "Ils tombent à la même heure qu'un autre cours de ton programme (cours à option, ou cours d'un autre quadrimestre) : coche seulement ceux que tu suis."
+      analysis.hasMaster ? "🔀 Tes cours de master" : "🔀 Cours à option",
+      analysis.hasMaster
+        ? "En master, beaucoup de cours sont des options ou des finalités : rien n'est bloqué d'office, coche ceux que tu suis."
+        : "Ils tombent à la même heure qu'un autre cours de ton programme (cours à option, ou cours d'un autre quadrimestre) : coche seulement ceux que tu suis."
     );
     analysis.options.forEach((info) => {
       const code = info.course.code;
@@ -2540,7 +2634,7 @@ function renderCoursesSummary() {
     return;
   }
   const labels = (state.programs || []).map((p) => {
-    const meta = (coursesPrograms || []).find((x) => x.prog === p);
+    const meta = (coursesPrograms || []).find((x) => x.prog === p) || (coursesPrograms || []).find((x) => x.base === p);
     return meta ? meta.label : p;
   });
   const n = (state.selectedCourses || []).length;

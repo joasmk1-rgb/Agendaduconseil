@@ -599,7 +599,9 @@ function runAdmin() {
   // vue Disponibilité — voir loadStudentLoadCatalogue plus bas).
   function programLabel(progCode) {
     const meta = (studentLoadPrograms || []).find((p) => p.prog === progCode);
-    return meta ? meta.label : progCode;
+    if (meta) return meta.label;
+    const base = (studentLoadPrograms || []).find((p) => p.base === progCode);
+    return base ? `${base.label.replace(/ — (1re|2e) année.*$/, "")} (toutes années)` : progCode;
   }
 
   function updateBulkDeleteButton() {
@@ -686,8 +688,15 @@ function runAdmin() {
             loading.textContent = "Chargement de la liste des programmes…";
             programsBox.appendChild(loading);
           } else {
+            // + les codes déjà sur la fiche mais absents de la liste (ex: un
+            // Master 120 choisi avant le découpage M1/M2) : sinon ils
+            // disparaîtraient en silence à l'enregistrement.
             studentLoadPrograms
-              .slice()
+              .concat(
+                (m.programs || [])
+                  .filter((code) => !studentLoadPrograms.some((p) => p.prog === code))
+                  .map((code) => ({ prog: code, label: programLabel(code) }))
+              )
               .sort((a, b) => a.label.localeCompare(b.label))
               .forEach((p) => {
                 const label = document.createElement("label");
@@ -1231,6 +1240,85 @@ function runAdmin() {
   // cette liste, pour pouvoir exclure une catégorie puis une autre d'affilée.
   let studentLoadExcludedCourses = new Set();
 
+  // ---- Masters : découpage M1 / M2 et nettoyage des listes de cours ----
+  // Dans le catalogue, les listes de cours des masters sont cumulatives
+  // (chaque programme de master contient tous les cours des masters
+  // "précédents" + tous les cours de bac) : inutilisables telles quelles.
+  // On reconstruit une liste plausible : uniquement les cours de cycle master
+  // (code "XXXX2…"), apparus d'abord dans un master de la même faculté (+ les
+  // langues avancées), puis on sépare 1re / 2e année d'après le 2e chiffre du
+  // code (21xx = M1, 22xx = M2, autres = transversaux, gardés dans les deux).
+  // Un Master 120 se choisit donc en deux programmes "virtuels" : "<code>@M1"
+  // et "<code>@M2" (enregistrés tels quels dans la fiche du membre).
+  function expandProgramsWithMasterYears(programs) {
+    const out = [];
+    (programs || []).forEach((p) => {
+      if (p.niveau === "Master" && /^Master 120/.test(p.label) && !/bloc/i.test(p.label)) {
+        out.push({ ...p, prog: `${p.prog}@M1`, base: p.prog, label: `${p.label} — 1re année (M1)` });
+        out.push({ ...p, prog: `${p.prog}@M2`, base: p.prog, label: `${p.label} — 2e année (M2)` });
+      } else {
+        out.push({ ...p, base: p.prog });
+      }
+    });
+    return out;
+  }
+
+  function buildProgramCourseIndex(catalogue, rawPrograms) {
+    const courses = (catalogue || []).filter((c) => !c.code.startsWith("EVT-"));
+    const byCode = new Map(courses.map((c) => [c.code, c]));
+    const metaByProg = new Map((rawPrograms || []).map((p) => [p.prog, p]));
+    const setOf = (prog) => new Set(courses.filter((c) => (c.programs || []).includes(prog)).map((c) => c.code));
+    const masterProgs = (rawPrograms || []).filter((p) => p.niveau === "Master");
+    const masterSets = new Map(masterProgs.map((p) => [p.prog, setOf(p.prog)]));
+    const firstFaculte = new Map();
+    masterProgs
+      .filter((p) => masterSets.get(p.prog).size)
+      .sort((a, b) => masterSets.get(a.prog).size - masterSets.get(b.prog).size)
+      .forEach((p) => masterSets.get(p.prog).forEach((code) => {
+        if (!firstFaculte.has(code)) firstFaculte.set(code, p.faculte);
+      }));
+    const cache = new Map();
+    function coursesForProgram(progCode) {
+      if (cache.has(progCode)) return cache.get(progCode);
+      const [base, yearTag] = String(progCode).split("@");
+      const meta = metaByProg.get(base);
+      let result;
+      if (meta && meta.niveau === "Master") {
+        const year = yearTag === "M1" ? "1" : yearTag === "M2" ? "2" : null;
+        result = new Set(
+          Array.from(masterSets.get(base) || []).filter((code) => {
+            const m = code.match(/^[A-Z]+2(\d)/);
+            if (!m) return false; // cours de bac rattachés par erreur au master
+            if (!isLanguageElectiveCourse(byCode.get(code)) && firstFaculte.get(code) !== meta.faculte) return false;
+            if (year && (m[1] === "1" || m[1] === "2") && m[1] !== year) return false;
+            return true;
+          })
+        );
+      } else {
+        result = setOf(base);
+      }
+      cache.set(progCode, result);
+      return result;
+    }
+    coursesForProgram.isMaster = (progCode) => {
+      const meta = metaByProg.get(String(progCode).split("@")[0]);
+      return !!(meta && meta.niveau === "Master");
+    };
+    return coursesForProgram;
+  }
+
+  // Cours d'un programme (voir buildProgramCourseIndex) — gère les codes
+  // virtuels "@M1"/"@M2" des Masters 120 et nettoie les listes des masters.
+  let studentLoadCourseIndex = null;
+  function courseInPrograms(course, progSet) {
+    if (!studentLoadCourseIndex) return (course.programs || []).some((p) => progSet.has(p));
+    return Array.from(progSet).some((p) => studentLoadCourseIndex(p).has(course.code));
+  }
+  function matchedProgramsOf(course, progSet) {
+    if (!studentLoadCourseIndex) return (course.programs || []).filter((p) => progSet.has(p));
+    return Array.from(progSet).filter((p) => studentLoadCourseIndex(p).has(course.code));
+  }
+
   function loadStudentLoadCatalogue() {
     if (studentLoadCatalogue) return Promise.resolve(studentLoadCatalogue);
     if (studentLoadCatalogueLoading) return studentLoadCatalogueLoading;
@@ -1240,7 +1328,8 @@ function runAdmin() {
     ])
       .then(([catalogue, programs]) => {
         studentLoadCatalogue = catalogue;
-        studentLoadPrograms = programs;
+        studentLoadPrograms = expandProgramsWithMasterYears(programs);
+        studentLoadCourseIndex = buildProgramCourseIndex(catalogue, programs);
         conflictingSessionKeys = computeConflictingSessionKeys(studentLoadCatalogue);
         return catalogue;
       })
@@ -1308,7 +1397,7 @@ function runAdmin() {
       studentLoadNiveauSelect.value,
       checkedProgs
     );
-    return (studentLoadCatalogue || []).filter((c) => (c.programs || []).some((prog) => effectiveProgs.has(prog)));
+    return (studentLoadCatalogue || []).filter((c) => !c.code.startsWith("EVT-") && courseInPrograms(c, effectiveProgs));
   }
 
   // Reconstruit la liste "Cours à afficher" (checkboxes), filtrée par la
@@ -1384,11 +1473,11 @@ function runAdmin() {
   function computeStudentLoadOverlay({ effectiveProgs }) {
     const programsByCode = new Map((studentLoadPrograms || []).map((p) => [p.prog, p]));
     const matchingCourses = (studentLoadCatalogue || []).filter(
-      (c) => (c.programs || []).some((prog) => effectiveProgs.has(prog)) && !studentLoadExcludedCourses.has(c.code)
+      (c) => !c.code.startsWith("EVT-") && courseInPrograms(c, effectiveProgs) && !studentLoadExcludedCourses.has(c.code)
     );
     const sessionsByDow = new Map();
     matchingCourses.forEach((course) => {
-      const matchedProgs = (course.programs || []).filter((p) => effectiveProgs.has(p));
+      const matchedProgs = matchedProgramsOf(course, effectiveProgs);
       (course.sessions || []).forEach((s) => {
         const list = sessionsByDow.get(s.weekday) || [];
         list.push({
@@ -2551,7 +2640,7 @@ function runAdmin() {
         delegateImportResult.innerHTML = '<p>Colonne "Nom" introuvable dans l\'en-tête.</p>';
         return;
       }
-      const validCodes = new Set((studentLoadPrograms || []).map((p) => p.prog));
+      const validCodes = new Set((studentLoadPrograms || []).flatMap((p) => [p.prog, p.base]));
       const usedPasswords = new Set(currentMembers.map((m) => m.id));
       const rejected = [];
       pendingDelegateRows = [];
@@ -3749,7 +3838,9 @@ function runAdmin() {
   function computeProgramFillForMember(member) {
     const programs = member && Array.isArray(member.programs) ? member.programs : [];
     if (!programs.length) return { matchingCourses: [], desiredKeys: new Set() };
-    const programSet = new Set(programs);
+    // Masters exclus : presque tout y est option/finalité, l'admin ne peut
+    // pas deviner — le membre coche lui-même ses cours dans son profil.
+    const programSet = new Set(programs.filter((p) => !(studentLoadCourseIndex && studentLoadCourseIndex.isMaster(p))));
     // Exclut les entrées "EVT-..." (événements ponctuels d'accueil) : elles
     // n'ont qu'un jour de semaine + une heure enregistrés (pas de vraie
     // date), et buildICSFromCourseSessions génère toujours une récurrence
@@ -3764,7 +3855,7 @@ function runAdmin() {
       (c) =>
         !c.code.startsWith("EVT-") &&
         !isLanguageElectiveCourse(c) &&
-        (c.programs || []).some((p) => programSet.has(p)) &&
+        courseInPrograms(c, programSet) &&
         (c.sessions || []).some((s) => isReliableCmSession(c, s))
     );
     if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
@@ -3813,7 +3904,7 @@ function runAdmin() {
     selected.forEach((code) => {
       const course = studentLoadCatalogue.find((c) => c.code === code);
       if (!course) return; // cours introuvable au catalogue : on n'y touche pas
-      const stillMatches = (course.programs || []).some((p) => remainingSet.has(p));
+      const stillMatches = courseInPrograms(course, remainingSet);
       if (!stillMatches) orphaned.add(code);
     });
     return orphaned;
