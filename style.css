@@ -773,3 +773,6 @@ main.main-layout {
 label.fd-slot { justify-content: flex-start; cursor: pointer; }
 .fd-slot.fd-best { background: #e8f8ee; border-color: var(--color-available); }
 .fd-counts { color: var(--color-muted); font-size: 0.9rem; white-space: nowrap; }
+.profile-password { margin-top: 10px; font-size: 0.9rem; }
+.profile-password summary { cursor: pointer; color: var(--color-muted); }
+.profile-password form { margin-top: 8px; }

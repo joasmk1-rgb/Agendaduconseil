@@ -62,17 +62,9 @@
         <input type="file" id="ics-file-input" accept=".ics,text/calendar" class="hidden">
         <a id="admin-link" href="admin.html" class="btn btn-ghost btn-sm hidden">Panneau admin</a>
         <button type="button" id="profile-btn" class="btn btn-ghost btn-sm" title="Ton programme, tes langues, tes groupes de TP : tes cours se bloquent tout seuls">👤 Mon profil</button>
-        <button type="button" id="password-change-btn" class="btn btn-ghost btn-sm hidden">🔑 Changer mon mot de passe</button>
         <button type="button" id="logout-btn" class="btn btn-ghost btn-sm">Se déconnecter</button>
       </div>
       <p id="ics-status" class="hint hidden"></p>
-      <form id="password-change-form" class="inline-form hidden">
-        <input type="password" id="password-change-new-input" placeholder="Nouveau mot de passe" autocomplete="new-password">
-        <input type="password" id="password-change-confirm-input" placeholder="Confirme-le" autocomplete="new-password">
-        <button type="submit" class="btn btn-primary btn-sm">Valider</button>
-        <button type="button" id="password-change-cancel-btn" class="btn btn-ghost btn-sm">Annuler</button>
-      </form>
-      <p id="password-change-status" class="hint"></p>
     </div>
   </section>
 
@@ -187,8 +179,18 @@
         <div class="profile-footer-actions">
           <button type="button" id="profile-save-btn" class="btn btn-primary">Enregistrer</button>
           <button type="button" id="profile-clear-btn" class="btn btn-ghost btn-sm">Retirer tous mes cours</button>
+          <button type="button" id="profile-reset-btn" class="btn btn-ghost btn-sm">🔄 Tout effacer et recommencer</button>
         </div>
         <p id="profile-status" class="hint"></p>
+        <details class="profile-password">
+          <summary>🔑 Changer mon mot de passe</summary>
+          <form id="password-change-form" class="inline-form">
+            <input type="password" id="password-change-new-input" placeholder="Nouveau mot de passe" autocomplete="new-password">
+            <input type="password" id="password-change-confirm-input" placeholder="Confirme-le" autocomplete="new-password">
+            <button type="submit" class="btn btn-primary btn-sm">Valider</button>
+          </form>
+          <p id="password-change-status" class="hint"></p>
+        </details>
       </div>
     </div>
   </div>

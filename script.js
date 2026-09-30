@@ -56,11 +56,9 @@ const saveStatus = document.getElementById("save-status");
 const modeAvailableBtn = document.getElementById("mode-available");
 const modeUnavailableBtn = document.getElementById("mode-unavailable");
 const logoutBtn = document.getElementById("logout-btn");
-const passwordChangeBtn = document.getElementById("password-change-btn");
 const passwordChangeForm = document.getElementById("password-change-form");
 const passwordChangeNewInput = document.getElementById("password-change-new-input");
 const passwordChangeConfirmInput = document.getElementById("password-change-confirm-input");
-const passwordChangeCancelBtn = document.getElementById("password-change-cancel-btn");
 const passwordChangeStatus = document.getElementById("password-change-status");
 const viewRangeToggle = document.getElementById("view-range-toggle");
 const gridScrollEl = document.getElementById("grid-scroll");
@@ -226,7 +224,6 @@ logoutBtn.addEventListener("click", () => {
   sessionConnected.classList.add("hidden");
   memberControls.classList.add("hidden");
   bulkMarkSection.classList.add("hidden");
-  passwordChangeForm.classList.add("hidden");
   passwordChangeStatus.textContent = "";
   closeProfile();
   renderCoursesSummary();
@@ -295,23 +292,9 @@ function maybeAutoApplyCourses() {
 }
 
 // ===================== CHANGER SON MOT DE PASSE =====================
-// Visible uniquement si l'admin a activé "passwordChangeEnabled" (voir
-// applyPublicTabsVisibility). Le mot de passe étant l'id même du document en
+// Discret, dans "Mon profil" (volet replié). Le mot de passe étant l'id même du document en
 // base, db.changeMemberPassword() s'occupe de migrer proprement toutes les
 // références (tâches, réunions, commentaires, sondages...) — voir db.js.
-passwordChangeBtn.addEventListener("click", () => {
-  passwordChangeStatus.textContent = "";
-  passwordChangeForm.classList.remove("hidden");
-  passwordChangeNewInput.value = "";
-  passwordChangeConfirmInput.value = "";
-  passwordChangeNewInput.focus();
-});
-
-passwordChangeCancelBtn.addEventListener("click", () => {
-  passwordChangeForm.classList.add("hidden");
-  passwordChangeStatus.textContent = "";
-});
-
 passwordChangeForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const newPassword = passwordChangeNewInput.value.trim();
@@ -336,7 +319,8 @@ passwordChangeForm.addEventListener("submit", async (e) => {
     state.password = newPassword;
     localStorage.setItem(LOGIN_KEY, newPassword);
     state.marks = await db.getMarks(state.password);
-    passwordChangeForm.classList.add("hidden");
+    passwordChangeNewInput.value = "";
+    passwordChangeConfirmInput.value = "";
     passwordChangeStatus.textContent = "Mot de passe changé ✓ (garde-le bien en mémoire, il n'apparaît nulle part ailleurs)";
   } catch (err) {
     console.error(err);
@@ -908,7 +892,7 @@ function availabilityRequestStats(ev) {
 function collectingSearches() {
   const todayISO = Grid.toISODate(new Date());
   return (state.polls || []).filter(
-    (p) => p.type === "date" && p.status === "collecting" && p.search && p.search.end >= todayISO
+    (p) => p.type === "date" && (p.status === "collecting" || p.status === "open") && p.search && p.search.end >= todayISO
   );
 }
 
@@ -965,8 +949,12 @@ function renderAvailabilityBanner() {
   const pollingHtml = searches
     .map((p) => {
       const st = searchStats(p.search);
-      const done = st.total > 0 && st.answered >= st.total;
-      return `<div class="avail-request-item${done ? " done" : ""}">📆 Le conseil cherche une date pour <strong>${p.question}</strong> du ${formatShortFr(p.search.start)} au ${formatShortFr(p.search.end)} (entre ${p.search.from.replace(":", "h")} et ${p.search.to.replace(":", "h")}) — remplis tes dispos sur cette plage (cases en <span style="color:#e08a1e">orange</span>) : ${st.answered}/${st.total} créneaux remplis${done ? " ✅" : ""} <button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${p.search.start}">Y aller</button></div>`;
+      const voted = (p.responses || []).some((r) => r.password === state.password);
+      const done = (st.total > 0 && st.answered >= st.total) || voted;
+      const pollBtn = p.status === "open"
+        ? ` <button type="button" class="btn btn-ghost btn-sm poll-jump" data-poll="${p.id}">🗳️ ${voted ? "Modifier ma réponse au sondage" : "Pas le temps ? Réponds directement au sondage"}</button>`
+        : "";
+      return `<div class="avail-request-item${done ? " done" : ""}">📆 Le conseil cherche une date pour <strong>${p.question}</strong> du ${formatShortFr(p.search.start)} au ${formatShortFr(p.search.end)} (entre ${p.search.from.replace(":", "h")} et ${p.search.to.replace(":", "h")}) — remplis tes dispos sur cette plage (cases en <span style="color:#e08a1e">orange</span>) : ${st.answered}/${st.total} créneaux remplis${voted ? " · sondage répondu" : ""}${done ? " ✅" : ""} <button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${p.search.start}">📅 Y aller</button>${pollBtn}</div>`;
     })
     .join("");
   availRequestBanner.innerHTML = pollingHtml + requested
@@ -977,6 +965,13 @@ function renderAvailabilityBanner() {
       return `<div class="avail-request-item${done ? " done" : ""}">🙋 Ta dispo est demandée pour <strong>${ev.label}</strong> le ${ev.date}${ev.startTime ? " de " + ev.startTime + " à " + (ev.endTime || "") : ""}${progress}${done ? " ✅" : ""} <button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${ev.date}">Y aller</button></div>`;
     })
     .join("");
+  availRequestBanner.querySelectorAll(".poll-jump").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingPolls.add(btn.dataset.poll);
+      renderPollBanner();
+      pollBanner.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
   availRequestBanner.querySelectorAll(".avail-request-jump").forEach((btn) => {
     btn.addEventListener("click", () => {
       const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
@@ -990,6 +985,8 @@ function renderAvailabilityBanner() {
 // encore répondu, avec le formulaire de réponse directement dedans (pas de
 // page séparée). Les résultats ne sont jamais montrés ici : seul l'admin les
 // voit (côté admin.js).
+const editingPolls = new Set();
+
 function renderPollBanner() {
   if (!state.password) {
     pollBanner.classList.add("hidden");
@@ -997,7 +994,10 @@ function renderPollBanner() {
     return;
   }
   const open = (state.polls || []).filter((p) => p.status === "open");
-  const unanswered = open.filter((p) => !(p.responses || []).some((r) => r.password === state.password));
+  const myAnswer = (p) => (p.responses || []).find((r) => r.password === state.password);
+  // Les sondages de date restent visibles après réponse (réduits, avec
+  // "Modifier") : on peut changer d'avis ou passer au calendrier.
+  const unanswered = open.filter((p) => !myAnswer(p) || p.type === "date");
   if (!unanswered.length) {
     pollBanner.classList.add("hidden");
     pollBanner.innerHTML = "";
@@ -1008,12 +1008,23 @@ function renderPollBanner() {
     .map((poll) => {
       let fieldsHtml = "";
       if (poll.type === "date") {
+        const mine = myAnswer(poll);
+        const calBtn = poll.search
+          ? `<button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${poll.search.start}">📅 Je préfère remplir mon calendrier</button>`
+          : "";
+        if (mine && !editingPolls.has(poll.id)) {
+          const picked = (Array.isArray(mine.answer) ? mine.answer : [mine.answer]).filter((a) => a !== "Aucun");
+          return `<div class="avail-request-item done" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong> — tu as répondu ✅ (${picked.length ? picked.join(", ") : "aucun créneau ne te convient"}) <button type="button" class="btn btn-ghost btn-sm poll-edit-btn" data-poll="${poll.id}">Modifier</button> ${calBtn}</div>`;
+        }
+        const prev = new Set(mine ? (Array.isArray(mine.answer) ? mine.answer : [mine.answer]) : []);
+        const ck = (o) => (prev.has(o) ? " checked" : "");
         fieldsHtml =
           '<p class="hint">Coche tous les créneaux où tu peux venir :</p>' +
           (poll.options || [])
-            .map((o) => `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="${o}"> ${o}</label>`)
+            .map((o) => `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="${o}"${ck(o)}> ${o}</label>`)
             .join("") +
-          `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="Aucun"> Aucun ne me convient</label>`;
+          `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="Aucun"${ck("Aucun")}> Aucun ne me convient</label>`;
+        return `<div class="avail-request-item poll-banner-item" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong><div class="poll-banner-fields">${fieldsHtml}</div><button type="button" class="btn btn-primary btn-sm poll-submit-btn" data-poll="${poll.id}">${mine ? "Mettre à jour" : "Répondre"}</button> ${calBtn}</div>`;
       } else if (poll.type === "choice") {
         const inputType = poll.multiple ? "checkbox" : "radio";
         fieldsHtml = (poll.options || [])
@@ -1031,6 +1042,18 @@ function renderPollBanner() {
     })
     .join("");
 
+  pollBanner.querySelectorAll(".poll-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editingPolls.add(btn.dataset.poll);
+      renderPollBanner();
+    });
+  });
+  pollBanner.querySelectorAll(".avail-request-jump").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+      scrollGridToDate(dates, btn.dataset.date);
+    });
+  });
   pollBanner.querySelectorAll(".poll-submit-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const pollId = btn.dataset.poll;
@@ -1051,11 +1074,17 @@ function renderPollBanner() {
           alert("Choisis une réponse avant d'envoyer.");
           return;
         }
+        if (poll.type === "date" && checked.length > 1) {
+          const real = checked.filter((c) => c !== "Aucun");
+          checked.length = 0;
+          checked.push(...real);
+        }
         answer = (poll.type === "choice" && poll.multiple) || poll.type === "date" ? checked : checked[0];
       }
       btn.disabled = true;
       try {
         await db.submitPollResponse(pollId, state.password, state.name, answer);
+        editingPolls.delete(pollId);
       } catch (err) {
         alert(err.message || "Échec de l'envoi, réessaie.");
         btn.disabled = false;
@@ -1101,12 +1130,6 @@ function applyPublicTabsVisibility() {
   agendaTabBtn.classList.toggle("hidden", !agendaEnabled);
   tasksTabBtn.classList.toggle("hidden", !tasksEnabled);
   rolesTabBtn.classList.toggle("hidden", !rolesEnabled);
-  const passwordChangeEnabled = !!(state.config && state.config.passwordChangeEnabled);
-  passwordChangeBtn.classList.toggle("hidden", !state.password || !passwordChangeEnabled);
-  if (!passwordChangeEnabled) {
-    passwordChangeForm.classList.add("hidden");
-    passwordChangeStatus.textContent = "";
-  }
   if (rolesEnabled) ensureRolesDataLoaded();
   publicTabs.classList.toggle("hidden", !agendaEnabled && !tasksEnabled && !rolesEnabled);
   if (!agendaEnabled && state.activeTab === "agenda") switchTab("calendar");
@@ -1541,6 +1564,40 @@ function openProfile() {
   });
 }
 
+// "Tout effacer et recommencer" : programme, cours, groupes, créneaux
+// libérés ET toutes les cases vertes/rouges à venir (le passé est gardé).
+// Le profil se rouvre aussitôt, vide, pour rechoisir son programme.
+async function resetEverything() {
+  if (!state.password) return;
+  if (!confirm("Tout effacer ? Ton programme, tes cours et toutes tes cases vertes/rouges à partir d'aujourd'hui seront remis à zéro. Tu pourras tout rechoisir juste après (moins de 5 minutes).")) return;
+  const todayISO = Grid.toISODate(new Date());
+  const marks = {};
+  Object.entries(state.marks || {}).forEach(([k, v]) => {
+    if (k.split("|")[0] < todayISO) marks[k] = v;
+  });
+  state.marks = marks;
+  state.programs = [];
+  state.selectedCourses = [];
+  state.groupSessions = [];
+  state.courseSkips = [];
+  state.courseMarkedKeys = [];
+  profileStatus.textContent = "Effacement…";
+  try {
+    await db.saveMarks(state.password, state.name, state.marks);
+    await db.updateMemberPrograms(state.password, []);
+    await db.updateMemberCourses(state.password, state.name, [], [], [], []);
+  } catch (err) {
+    console.error(err);
+    profileStatus.textContent = "Échec de l'effacement, réessaie.";
+    return;
+  }
+  renderCoursesSummary();
+  renderGrid();
+  renderMemberDashboard();
+  openProfile();
+  profileStatus.textContent = "Tout est effacé ✓ — choisis ton programme ci-dessus puis Enregistrer.";
+}
+
 function closeProfile() {
   profileModalOverlay.classList.add("hidden");
   profileDraft = null;
@@ -1894,6 +1951,7 @@ coursesEditBtn.addEventListener("click", openProfile);
 profileCloseBtn.addEventListener("click", closeProfile);
 profileSaveBtn.addEventListener("click", saveProfile);
 profileClearBtn.addEventListener("click", clearAllCourses);
+document.getElementById("profile-reset-btn").addEventListener("click", resetEverything);
 profileModalOverlay.addEventListener("click", (e) => {
   if (e.target === profileModalOverlay) closeProfile();
 });

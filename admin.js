@@ -3999,15 +3999,16 @@ function runAdmin() {
 
   // "A rempli" = au moins une case marquée à la main sur la plage (les
   // heures de cours posées automatiquement ne comptent pas comme réponse).
-  function fdParticipation(search) {
+  function fdParticipation(search, poll) {
     const keys = fdRangeKeys(search);
+    const voters = new Set(((poll && poll.responses) || []).map((r) => r.password));
     const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
     const filled = [];
     const missing = [];
     currentMembers.forEach((m) => {
       const marks = marksByMember.get(m.id) || {};
       const auto = new Set(m.courseMarkedKeys || []);
-      const answered = keys.some((k) => marks[k] === "available" || (marks[k] === "unavailable" && !auto.has(k)));
+      const answered = voters.has(m.id) || keys.some((k) => marks[k] === "available" || (marks[k] === "unavailable" && !auto.has(k)));
       (answered ? filled : missing).push(m.name);
     });
     return { filled: filled.sort(), missing: missing.sort() };
@@ -4039,9 +4040,12 @@ function runAdmin() {
           results.push({ dateISO, startTime, endTime, green: greenCount(keys), ...c });
         });
     });
+    // Une case vide = dispo potentielle : on classe d'abord par le moins
+    // d'indispos (donc déjà utile avant que quiconque ait mis du vert), puis
+    // par le plus de dispos confirmées, puis par le plus de minutes en vert.
     results.sort((a, b) => {
-      if (b.available.length !== a.available.length) return b.available.length - a.available.length;
       if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
+      if (b.available.length !== a.available.length) return b.available.length - a.available.length;
       if (b.green !== a.green) return b.green - a.green;
       return (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime);
     });
@@ -4140,12 +4144,12 @@ function runAdmin() {
     card.innerHTML = `<div class="fd-card-head"><strong>${poll.question}</strong> <span class="hint">${fdRangeLabel(search)}</span><div class="fd-status">${statusLabel}</div></div>`;
 
     if (poll.status === "collecting" || poll.status === "open") {
-      const part = fdParticipation(search);
+      const part = fdParticipation(search, poll);
       const total = currentMembers.length || 1;
       const p = document.createElement("div");
       p.className = "fd-participation";
       const pct = Math.round((part.filled.length / total) * 100);
-      p.innerHTML = `<div><strong>${part.filled.length}/${currentMembers.length}</strong> membres ont rempli leurs dispos sur la plage</div>
+      p.innerHTML = `<div><strong>${part.filled.length}/${currentMembers.length}</strong> membres ont répondu (calendrier rempli sur la plage ou sondage)</div>
         <div class="fd-bar"><span style="width:${pct}%"></span></div>
         <details><summary>Qui manque ? (${part.missing.length})</summary><p class="hint">${part.missing.join(", ") || "Personne 🎉"}</p></details>`;
       card.appendChild(p);
@@ -4157,7 +4161,7 @@ function runAdmin() {
       fdExcluded.set(poll.id, excluded);
       const box = document.createElement("div");
       box.className = "fd-slots";
-      box.innerHTML = `<h4>Sondage prêt (brouillon) — ${slots.length} créneaux libres, mis à jour en direct</h4><p class="hint">Décoche ceux que tu ne veux pas proposer. ✅ dispo · ❌ pas dispo · ❔ pas encore répondu.</p>`;
+      box.innerHTML = `<h4>Sondage prêt (brouillon) — ${slots.length} créneaux libres, mis à jour en direct</h4><p class="hint">Classés par le moins d'indispos (une case vide compte comme dispo potentielle), puis le plus de dispos confirmées. Décoche ceux que tu ne veux pas proposer. ✅ dispo · ❌ pas dispo · ❔ pas encore répondu.</p>`;
       if (!slots.length) box.innerHTML += '<p class="hint">Aucun créneau possible : vérifie la plage, les heures et la durée.</p>';
       slots.forEach((s) => {
         const key = `${s.dateISO}|${s.startTime}`;
