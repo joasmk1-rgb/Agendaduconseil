@@ -3587,6 +3587,16 @@ function runAdmin() {
   function isReliableCmSession(course, session) {
     return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
   }
+  // Toute séance qu'on ne veut JAMAIS cocher automatiquement, mais que le
+  // membre peut quand même choisir à la main côté public (jamais
+  // silencieusement ignorée) : groupe de TP/labo, ou séance spéciale par
+  // sous-groupe / horaire pas encore connu. Sert ici uniquement à retrouver
+  // le bon libellé pour l'infobulle de la grille de remplissage (voir
+  // computeMemberCourseLabels) — l'admin ne coche jamais ce genre de séance
+  // lui-même, ce choix reste toujours celui du membre (voir script.js).
+  function isManualChoiceSession(course, session) {
+    return isGroupSession(session) || isUnreliableWeeklySession(course, session);
+  }
 
   // Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à
   // TOUT le programme (les 3 langues), alors qu'un·e étudiant·e n'en choisit
@@ -3677,12 +3687,13 @@ function runAdmin() {
     studentLoadCatalogue.forEach((course) => {
       (course.sessions || []).forEach((s) => {
         const key = sessionKey(course.code, s);
-        const isGroup = isGroupSession(s);
+        const isManual = isManualChoiceSession(course, s);
         let name = null;
-        if (!isGroup && selectedSet.has(course.code) && isReliableCmSession(course, s)) {
+        if (!isManual && selectedSet.has(course.code)) {
           name = course.name;
-        } else if (isGroup && groupKeySet.has(key)) {
-          name = `${course.name} — ${s.event_code || "groupe"}`;
+        } else if (isManual && groupKeySet.has(key)) {
+          const ec = s.event_code;
+          name = `${course.name} — ${ec && ec !== course.code ? ec : "Séance"}`;
         }
         if (!name) return;
         const list = sessionsByDow.get(s.weekday) || [];

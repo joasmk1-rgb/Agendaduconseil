@@ -1709,8 +1709,16 @@ function isGroupSession(session) {
   return GROUP_SESSION_PATTERN.test((session && session.event_code) || "");
 }
 
-function groupSessionLabel(session) {
-  return (session && session.event_code) || "groupe";
+// Nom affiché pour une séance à choisir à part (groupe de TP/labo OU séance
+// spéciale par sous-groupe, voir isUnreliableWeeklySession) : son event_code
+// quand il est vraiment descriptif (différent du code du cours, ex: "Labos
+// Gr3"), sinon un nom générique — beaucoup de séminaires par sous-groupe
+// n'ont que le code du cours en event_code, pas de vrai nom de groupe ; le
+// jour/l'heure affichés à côté suffisent alors à les distinguer.
+function groupSessionLabel(course, session) {
+  const ec = session && session.event_code;
+  if (ec && ec !== course.code) return ec;
+  return "Séance";
 }
 
 // Certaines séances du catalogue ne sont PAS de vrais horaires hebdomadaires
@@ -1719,10 +1727,14 @@ function groupSessionLabel(session) {
 // buildICSFromCourseSessions). Deux cas trouvés dans les données réelles :
 // le nom du cours est encore un espace réservé ("Horaires détaillés des
 // cours disponibles ultérieurement"), ou une séance couvre une bonne partie
-// de la journée (> 6h, ex: 08h30-18h) — jamais un vrai cours hebdomadaire,
-// plutôt une journée spéciale ponctuelle (séminaire d'accueil, journée
-// projet...) qui bloquerait à tort le même horaire chaque semaine jusqu'en
-// 2035 si on la traitait comme un cours classique. Même formule que admin.js.
+// de la journée (> 6h, ex: 08h30-18h). Ce deuxième cas correspond très
+// souvent à un séminaire (accueil, intégration...) organisé PAR SOUS-GROUPE :
+// le même séminaire apparaît plusieurs fois dans la semaine, une fois par
+// jour possible, mais chaque membre n'y va qu'UNE fois (son jour à lui),
+// jamais toutes les occurrences chaque semaine jusqu'en 2035 comme un cours
+// classique. Dans les deux cas, on ne devine jamais automatiquement — la
+// séance est proposée à part, à choisir à la main (comme un groupe de TP).
+// Même formule que admin.js.
 const PLACEHOLDER_COURSE_NAME = "Horaires détaillés des cours disponibles ultérieurement";
 const MAX_RELIABLE_SESSION_MINUTES = 360; // 6h
 function isUnreliableWeeklySession(course, session) {
@@ -1733,6 +1745,13 @@ function isUnreliableWeeklySession(course, session) {
 }
 function isReliableCmSession(course, session) {
   return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
+}
+// Toute séance qu'on ne veut JAMAIS cocher automatiquement, mais qu'on
+// propose quand même à choisir à la main (jamais silencieusement ignorée) :
+// groupe de TP/labo, ou séance spéciale par sous-groupe / horaire pas encore
+// connu (voir isUnreliableWeeklySession).
+function isManualChoiceSession(course, session) {
+  return isGroupSession(session) || isUnreliableWeeklySession(course, session);
 }
 
 // Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à TOUT
@@ -1844,34 +1863,37 @@ function renderCoursesList() {
     });
     const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
     const cmSessions = (course.sessions || []).filter((s) => isReliableCmSession(course, s));
-    const groupSess = (course.sessions || []).filter((s) => isGroupSession(s));
+    const manualSess = (course.sessions || []).filter((s) => isManualChoiceSession(course, s));
 
     const text = document.createElement("span");
     const scheduleText = cmSessions.map((s) => `${dayNames[s.weekday]} ${s.start}-${s.end}`).join(", ");
-    const scheduleLine = scheduleText || (groupSess.length ? "aucune séance commune — uniquement des groupes de TP/labo (voir ci-dessous)" : "");
+    const scheduleLine = scheduleText || (manualSess.length ? "aucune séance commune — à choisir toi-même ci-dessous" : "");
     text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleLine}</span>`;
     label.appendChild(checkbox);
     label.appendChild(text);
     coursesList.appendChild(label);
 
-    // Séances de TP/labo de ce cours : toujours affichées à part, que le
-    // cours "magistral" soit coché ou non — c'est un choix indépendant,
-    // propre à chaque membre (son groupe), jamais déduit automatiquement.
-    if (groupSess.length) {
+    // Séances à choisir à part pour ce cours — groupe de TP/labo, OU séance
+    // spéciale par sous-groupe (ex: un séminaire d'accueil qui revient
+    // plusieurs fois dans la semaine mais où chaque membre ne va qu'à UNE
+    // occurrence). Toujours affichées, que le cours "magistral" soit coché
+    // ou non — c'est un choix indépendant, propre à chaque membre, jamais
+    // déduit automatiquement (voir isManualChoiceSession).
+    if (manualSess.length) {
       const sub = document.createElement("div");
       sub.className = "course-session-subpicker";
       const hint = document.createElement("p");
       hint.className = "hint";
-      hint.textContent = "Groupe de TP/labo pour ce cours — coche uniquement le tien :";
+      hint.textContent = "Séance(s) à choisir toi-même pour ce cours (groupe de TP/labo, ou séance spéciale par sous-groupe) — coche uniquement celle(s) qui te concernent :";
       sub.appendChild(hint);
-      const groupSelectedSet = new Set(state.groupSessions);
-      groupSess.forEach((s) => {
+      const manualSelectedSet = new Set(state.groupSessions);
+      manualSess.forEach((s) => {
         const key = sessionKey(course.code, s);
         const sLabel = document.createElement("label");
         sLabel.className = "course-session-item";
         const sCheckbox = document.createElement("input");
         sCheckbox.type = "checkbox";
-        sCheckbox.checked = groupSelectedSet.has(key);
+        sCheckbox.checked = manualSelectedSet.has(key);
         sCheckbox.addEventListener("change", () => {
           if (sCheckbox.checked) {
             if (!state.groupSessions.includes(key)) state.groupSessions.push(key);
@@ -1880,7 +1902,7 @@ function renderCoursesList() {
           }
         });
         const sText = document.createElement("span");
-        sText.textContent = `${groupSessionLabel(s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
+        sText.textContent = `${groupSessionLabel(course, s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
         sLabel.appendChild(sCheckbox);
         sLabel.appendChild(sText);
         sub.appendChild(sLabel);
@@ -1937,21 +1959,22 @@ async function applySelectedCourses() {
     const cmSessions = (coursesCatalogue || [])
       .filter((c) => selectedSet.has(c.code))
       .flatMap((c) => (c.sessions || []).filter((s) => isReliableCmSession(c, s)).map((s) => ({ ...s, title: c.name })));
-    // Groupes de TP/labo choisis à part par ce membre, quel que soit le cours
-    // "magistral" correspondant (coché ou non) — recherchés dans tout le
-    // catalogue par leur clé de séance.
+    // Séances choisies à part par ce membre (groupe de TP/labo, ou séance
+    // spéciale par sous-groupe), quel que soit le cours "magistral"
+    // correspondant (coché ou non) — recherchées dans tout le catalogue par
+    // leur clé de séance.
     const groupKeySet = new Set(state.groupSessions || []);
-    const groupSess = [];
+    const manualSess = [];
     if (groupKeySet.size) {
       (coursesCatalogue || []).forEach((c) => {
         (c.sessions || []).forEach((s) => {
           if (groupKeySet.has(sessionKey(c.code, s))) {
-            groupSess.push({ ...s, title: `${c.name} — ${groupSessionLabel(s)}` });
+            manualSess.push({ ...s, title: `${c.name} — ${groupSessionLabel(c, s)}` });
           }
         });
       });
     }
-    const sessions = cmSessions.concat(groupSess);
+    const sessions = cmSessions.concat(manualSess);
 
     // Plafonné à 3 mois (90 jours) même si la période affichée du site est
     // réglée plus large : un programme entier génère déjà beaucoup de
@@ -2068,12 +2091,12 @@ function computeSelectedCourseLabels() {
   coursesCatalogue.forEach((course) => {
     (course.sessions || []).forEach((s) => {
       const key = sessionKey(course.code, s);
-      const isGroup = isGroupSession(s);
+      const isManual = isManualChoiceSession(course, s);
       let name = null;
-      if (!isGroup && selectedSet.has(course.code) && isReliableCmSession(course, s)) {
+      if (!isManual && selectedSet.has(course.code)) {
         name = course.name;
-      } else if (isGroup && groupKeySet.has(key)) {
-        name = `${course.name} — ${groupSessionLabel(s)}`;
+      } else if (isManual && groupKeySet.has(key)) {
+        name = `${course.name} — ${groupSessionLabel(course, s)}`;
       }
       if (!name) return;
       const list = sessionsByDow.get(s.weekday) || [];
