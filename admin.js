@@ -3567,6 +3567,44 @@ function runAdmin() {
     return { matchingCourses, desiredKeys };
   }
 
+  // Revalide côté client les mêmes limites que firestore.rules, AVANT
+  // d'écrire — parce qu'une règle Firestore refusée renvoie toujours le même
+  // message opaque ("Missing or insufficient permissions"), sans dire quel
+  // champ pose problème. Important : sur une écriture "merge", Firestore
+  // revalide le document COMPLET résultant (champs existants + champs
+  // modifiés), pas seulement les champs qu'on écrit — donc un champ déjà en
+  // base qui ne respecte plus une règle (ex: importé avant qu'elle existe)
+  // peut bloquer silencieusement une mise à jour qui n'y touche même pas.
+  function findMemberDocRuleViolation(resultingDoc) {
+    if (typeof resultingDoc.name !== "string" || !resultingDoc.name.length || resultingDoc.name.length >= 100) {
+      return `champ "name" invalide (vide ou ≥100 caractères) : "${resultingDoc.name}"`;
+    }
+    if ("role" in resultingDoc && resultingDoc.role != null && (typeof resultingDoc.role !== "string" || resultingDoc.role.length >= 50)) {
+      return `champ "role" invalide ou trop long (≥50 caractères) : "${resultingDoc.role}"`;
+    }
+    if ("courses" in resultingDoc && resultingDoc.courses != null && (!Array.isArray(resultingDoc.courses) || resultingDoc.courses.length >= 100)) {
+      return `trop de cours enregistrés (${(resultingDoc.courses || []).length}, la règle actuelle limite à 99)`;
+    }
+    if ("courseMarkedKeys" in resultingDoc && resultingDoc.courseMarkedKeys != null && (!Array.isArray(resultingDoc.courseMarkedKeys) || resultingDoc.courseMarkedKeys.length >= 6000)) {
+      return `trop de créneaux de cours enregistrés (${(resultingDoc.courseMarkedKeys || []).length}, la règle actuelle limite à 5999)`;
+    }
+    if ("programs" in resultingDoc && resultingDoc.programs != null && (!Array.isArray(resultingDoc.programs) || resultingDoc.programs.length >= 10)) {
+      return `trop de programmes sur la fiche (${(resultingDoc.programs || []).length}, la règle actuelle limite à 9)`;
+    }
+    return null;
+  }
+
+  function findAvailabilityDocRuleViolation(name, marks) {
+    if (typeof name !== "string" || name.length >= 100) {
+      return `champ "name" invalide sur les disponibilités : "${name}"`;
+    }
+    const markCount = Object.keys(marks || {}).length;
+    if (markCount >= 6000) {
+      return `trop de créneaux marqués au total (${markCount}, la règle actuelle limite à 5999)`;
+    }
+    return null;
+  }
+
   // Applique le remplissage à UN membre en base (marks + courses/courseMarkedKeys
   // tenus synchronisés avec "Mes cours" côté public, union jamais destructive) —
   // part de ses marks actuelles en base, pas de fillState (pour rester correct
@@ -3583,8 +3621,28 @@ function runAdmin() {
     const existingCourses = new Set(member.courses || []);
     matchingCourses.forEach((c) => existingCourses.add(c.code));
     const mergedCourseMarkedKeys = new Set([...(member.courseMarkedKeys || []), ...desiredKeys]);
+    const coursesArr = Array.from(existingCourses);
+    const courseMarkedKeysArr = Array.from(mergedCourseMarkedKeys);
+
+    const availabilityViolation = findAvailabilityDocRuleViolation(member.name, marks);
+    const memberViolation = findMemberDocRuleViolation({
+      ...member,
+      courses: coursesArr,
+      courseMarkedKeys: courseMarkedKeysArr,
+    });
+    console.log("[Remplir depuis programme]", member.name, {
+      marksCount: Object.keys(marks).length,
+      coursesCount: coursesArr.length,
+      courseMarkedKeysCount: courseMarkedKeysArr.length,
+      programsCount: (member.programs || []).length,
+      availabilityViolation,
+      memberViolation,
+    });
+    if (availabilityViolation) throw new Error(`Blocage prévisible (disponibilités) : ${availabilityViolation}`);
+    if (memberViolation) throw new Error(`Blocage prévisible (fiche membre) : ${memberViolation}`);
+
     await db.saveMarks(member.id, member.name, marks);
-    await db.updateMemberCourses(member.id, Array.from(existingCourses), Array.from(mergedCourseMarkedKeys));
+    await db.updateMemberCourses(member.id, coursesArr, courseMarkedKeysArr);
     return added;
   }
 
