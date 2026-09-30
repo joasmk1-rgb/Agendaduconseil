@@ -77,6 +77,7 @@ const coursesList = document.getElementById("courses-list");
 const coursesSelectedCount = document.getElementById("courses-selected-count");
 const coursesApplyBtn = document.getElementById("courses-apply-btn");
 const coursesFromProgramBtn = document.getElementById("courses-from-program-btn");
+const coursesClearAllBtn = document.getElementById("courses-clear-all-btn");
 const coursesCloseBtn = document.getElementById("courses-close-btn");
 const coursesStatus = document.getElementById("courses-status");
 const bulkMarkSection = document.getElementById("bulk-mark-section");
@@ -2024,6 +2025,33 @@ async function applySelectedCourses() {
 }
 
 coursesApplyBtn.addEventListener("click", applySelectedCourses);
+
+// "🗑️ Retirer tous mes cours" : décoche tout (cours + groupes de TP/labo/
+// séances spéciales), puis applique directement — applySelectedCourses()
+// compare toujours desiredKeys (ici vide) à l'existant et ne retire QUE les
+// créneaux encore marqués "pas dispo" ET posés par un cours (jamais un
+// créneau modifié à la main entre-temps), donc pas de risque à tout vider
+// d'un coup ici.
+if (coursesClearAllBtn) {
+  coursesClearAllBtn.addEventListener("click", async () => {
+    if (!state.password) return;
+    if (!state.selectedCourses.length && !(state.groupSessions || []).length) {
+      coursesStatus.textContent = "Aucun cours coché pour l'instant.";
+      return;
+    }
+    if (!confirm("Retirer tous tes cours et groupes de TP/labo (et les créneaux 'pas dispo' que ça avait posé) ?")) return;
+    coursesClearAllBtn.disabled = true;
+    try {
+      state.selectedCourses = [];
+      state.groupSessions = [];
+      await applySelectedCourses();
+      renderCoursesList();
+      renderQuickProgramCoursesList();
+    } finally {
+      coursesClearAllBtn.disabled = false;
+    }
+  });
+}
 
 // Raccourci "Remplir depuis mon programme" : coche d'un coup tous les cours
 // du/des programme(s) renseigné(s) sur la fiche par l'admin (sans décocher

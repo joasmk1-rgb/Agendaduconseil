@@ -715,8 +715,15 @@ function runAdmin() {
               }
             }
             const selectedPrograms = Array.from(programsBox.querySelectorAll("input:checked")).map((el) => el.value);
+            // Programme(s) qu'on vient de décocher : sert à retirer proprement
+            // les cours devenus orphelins (voir removeOrphanedCoursesForMember
+            // ci-dessous) — capturé AVANT l'écriture pour comparer avec l'état
+            // précédent de la fiche.
+            const previousPrograms = new Set(m.programs || []);
+            const removedPrograms = Array.from(previousPrograms).filter((p) => !selectedPrograms.includes(p));
             saveBtn.disabled = true;
             try {
+              let targetPassword = m.id;
               if (newPassword === m.id) {
                 // même mot de passe : simple mise à jour sur place
                 await db.addMember(newName, m.id, adminCheckbox.checked, roleSelect.value);
@@ -732,8 +739,40 @@ function runAdmin() {
                 if (Object.keys(marks).length > 0) {
                   await db.saveMarks(newPassword, newName, marks);
                 }
+                // Migre aussi les cours/groupes de TP-labo/clés déjà cochés
+                // (sinon perdus au changement de mot de passe — ils vivaient
+                // seulement sous l'ancien identifiant).
+                if ((m.courses || []).length || (m.groupSessions || []).length || (m.courseMarkedKeys || []).length) {
+                  await db.updateMemberCourses(
+                    newPassword,
+                    newName,
+                    m.courses || [],
+                    m.courseMarkedKeys || [],
+                    m.groupSessions || []
+                  );
+                }
                 await db.removeMember(m.id);
+                targetPassword = newPassword;
               }
+
+              // Retire les cours qui ne correspondent plus à AUCUN programme
+              // restant (fix du liseré violet qui restait affiché après avoir
+              // décoché un programme sur la fiche d'un membre).
+              if (removedPrograms.length) {
+                if (!studentLoadCatalogue) await loadStudentLoadCatalogue();
+                const memberForCleanup = {
+                  id: targetPassword,
+                  name: newName,
+                  courses: m.courses || [],
+                  courseMarkedKeys: m.courseMarkedKeys || [],
+                  groupSessions: m.groupSessions || [],
+                };
+                const orphanedCodes = computeOrphanedCourseCodes(memberForCleanup, selectedPrograms);
+                if (orphanedCodes.size) {
+                  await removeOrphanedCoursesForMember(memberForCleanup, orphanedCodes);
+                }
+              }
+
               memberEditingId = null;
               renderMembers();
             } catch (err) {
@@ -3665,6 +3704,96 @@ function runAdmin() {
       CONFIG.dayEndHour
     );
     return { matchingCourses, desiredKeys };
+  }
+
+  // Calcule les cours à retirer de la fiche d'un membre quand un ou
+  // plusieurs programmes viennent d'être décochés : un cours n'est retiré
+  // que s'il ne correspond plus à AUCUN programme restant (un cours commun
+  // à deux programmes suivis à la fois reste sur la fiche). Ne touche jamais
+  // aux groupes de TP/labo ou langues d'un cours qui reste valide.
+  function computeOrphanedCourseCodes(member, remainingPrograms) {
+    const remainingSet = new Set(remainingPrograms || []);
+    const selected = new Set((member && member.courses) || []);
+    if (!selected.size || !studentLoadCatalogue) return new Set();
+    const orphaned = new Set();
+    selected.forEach((code) => {
+      const course = studentLoadCatalogue.find((c) => c.code === code);
+      if (!course) return; // cours introuvable au catalogue : on n'y touche pas
+      const stillMatches = (course.programs || []).some((p) => remainingSet.has(p));
+      if (!stillMatches) orphaned.add(code);
+    });
+    return orphaned;
+  }
+
+  // Retire proprement de la fiche d'un membre les cours devenus orphelins
+  // (plus aucun programme restant ne les justifie) : décoche le cours, ses
+  // groupes de TP/labo choisis pour lui, et les créneaux "pas dispo" que ce
+  // cours avait posés automatiquement — jamais un créneau marqué à la main,
+  // ni un créneau qu'un autre cours/groupe encore actif justifie aussi.
+  async function removeOrphanedCoursesForMember(member, orphanedCodes) {
+    if (!orphanedCodes || !orphanedCodes.size) return 0;
+    const orphanedCourses = studentLoadCatalogue.filter((c) => orphanedCodes.has(c.code));
+
+    // Séances fiables (cours magistral) des cours retirés : ce sont les
+    // seules que "Remplir depuis le programme" ou "Mes cours" ont pu poser
+    // automatiquement en "pas dispo" — jamais les groupes de TP/labo (choix
+    // toujours manuel, jamais auto-coché).
+    const sessions = orphanedCourses.flatMap((c) =>
+      (c.sessions || [])
+        .filter((s) => isReliableCmSession(c, s))
+        .map((s) => ({ ...s, title: c.name }))
+    );
+    const PROGRAM_FILL_MAX_DAYS = 90;
+    const fillRangeDays = Math.min(currentConfig.rangeDays, PROGRAM_FILL_MAX_DAYS);
+    const dates = Grid.buildDateList(new Date(), fillRangeDays, currentConfig.includeWeekends);
+    const orphanedKeys = sessions.length
+      ? computeUnavailableSlots(
+          buildICSFromCourseSessions(sessions),
+          dates,
+          CONFIG.slotMinutes,
+          CONFIG.dayStartHour,
+          CONFIG.dayEndHour
+        )
+      : new Set();
+
+    // Ne retire un créneau "pas dispo" que s'il a bien été posé automatiquement
+    // par un cours (présent dans courseMarkedKeys) — jamais un créneau marqué
+    // à la main par le membre ou l'admin.
+    const courseMarkedKeys = new Set(member.courseMarkedKeys || []);
+    const keysToUnmark = Array.from(orphanedKeys).filter((k) => courseMarkedKeys.has(k));
+
+    // Retire aussi les groupes de TP/labo (ou séances spéciales) choisis pour
+    // un cours retiré — leur clé commence toujours par "<code>|".
+    const remainingGroupSessions = (member.groupSessions || []).filter(
+      (key) => !orphanedCodes.has(String(key).split("|")[0])
+    );
+
+    const marks = await db.getMarks(member.id);
+    let removedMarks = 0;
+    keysToUnmark.forEach((key) => {
+      if (marks[key] === "unavailable") {
+        delete marks[key];
+        removedMarks++;
+      }
+      courseMarkedKeys.delete(key);
+    });
+
+    const remainingCourses = (member.courses || []).filter((code) => !orphanedCodes.has(code));
+
+    await db.saveMarks(member.id, member.name, marks);
+    await db.updateMemberCourses(
+      member.id,
+      member.name,
+      remainingCourses,
+      Array.from(courseMarkedKeys),
+      remainingGroupSessions
+    );
+    // Reflète immédiatement le nettoyage sur l'objet passé en argument (avant
+    // le prochain rechargement live depuis Firestore).
+    member.courses = remainingCourses;
+    member.courseMarkedKeys = Array.from(courseMarkedKeys);
+    member.groupSessions = remainingGroupSessions;
+    return removedMarks;
   }
 
   // Pour un membre donné, retrouve — par créneau — de quel cours/groupe
