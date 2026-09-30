@@ -1829,7 +1829,12 @@ async function applySelectedCourses() {
       .filter((c) => selectedSet.has(c.code))
       .flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
 
-    const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+    // Plafonné à 3 mois (90 jours) même si la période affichée du site est
+    // réglée plus large : un programme entier génère déjà beaucoup de
+    // créneaux par semaine, pas la peine de projeter ça sur 4 mois d'un
+    // coup — 3 mois suffit largement pour trouver un créneau de réunion.
+    const coursesFillRangeDays = Math.min(state.config.rangeDays, 90);
+    const dates = Grid.buildDateList(new Date(), coursesFillRangeDays, state.config.includeWeekends);
     const desiredKeys = sessions.length
       ? computeUnavailableSlots(buildICSFromCourseSessions(sessions), dates, CONFIG.slotMinutes, CONFIG.dayStartHour, CONFIG.dayEndHour)
       : new Set();

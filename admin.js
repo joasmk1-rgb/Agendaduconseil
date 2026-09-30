@@ -3556,7 +3556,16 @@ function runAdmin() {
     );
     if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
     const sessions = matchingCourses.flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
-    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
+    // Plafonné à 3 mois (90 jours) même si la période affichée du site
+    // (currentConfig.rangeDays) est réglée plus large : un programme entier
+    // génère déjà beaucoup de créneaux par semaine, pas la peine de projeter
+    // ça sur 4 mois d'un coup — 3 mois suffit largement pour trouver un
+    // créneau de réunion, et ça réduit d'autant le risque de retomber sur une
+    // limite Firestore quelconque. Le membre peut relancer le bouton plus
+    // tard pour prolonger, ça ne touche jamais aux créneaux déjà marqués.
+    const PROGRAM_FILL_MAX_DAYS = 90;
+    const fillRangeDays = Math.min(currentConfig.rangeDays, PROGRAM_FILL_MAX_DAYS);
+    const dates = Grid.buildDateList(new Date(), fillRangeDays, currentConfig.includeWeekends);
     const desiredKeys = computeUnavailableSlots(
       buildICSFromCourseSessions(sessions),
       dates,
