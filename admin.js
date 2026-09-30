@@ -1243,6 +1243,7 @@ function runAdmin() {
       .then(([catalogue, programs]) => {
         studentLoadCatalogue = catalogue;
         studentLoadPrograms = programs;
+        conflictingSessionKeys = computeConflictingSessionKeys(studentLoadCatalogue);
         return catalogue;
       })
       .catch((err) => {
@@ -3636,17 +3637,100 @@ function runAdmin() {
     return sessionDurationMinutes(session) > MAX_RELIABLE_SESSION_MINUTES;
   }
   function isReliableCmSession(course, session) {
-    return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
+    return !isGroupSession(session) && !isUnreliableWeeklySession(course, session) && !isConflictingCmSession(course, session);
   }
   // Toute séance qu'on ne veut JAMAIS cocher automatiquement, mais que le
   // membre peut quand même choisir à la main côté public (jamais
-  // silencieusement ignorée) : groupe de TP/labo, ou séance spéciale par
-  // sous-groupe / horaire pas encore connu. Sert ici uniquement à retrouver
-  // le bon libellé pour l'infobulle de la grille de remplissage (voir
-  // computeMemberCourseLabels) — l'admin ne coche jamais ce genre de séance
-  // lui-même, ce choix reste toujours celui du membre (voir script.js).
+  // silencieusement ignorée) : groupe de TP/labo, séance spéciale par
+  // sous-groupe / horaire pas encore connu, ou cours à horaire qui se
+  // chevauche avec un autre (voir isConflictingCmSession). Sert ici
+  // uniquement à retrouver le bon libellé pour l'infobulle de la grille de
+  // remplissage (voir computeMemberCourseLabels) — l'admin ne coche jamais
+  // ce genre de séance lui-même, ce choix reste toujours celui du membre
+  // (voir script.js).
   function isManualChoiceSession(course, session) {
-    return isGroupSession(session) || isUnreliableWeeklySession(course, session);
+    return isGroupSession(session) || isUnreliableWeeklySession(course, session) || isConflictingCmSession(course, session);
+  }
+
+  // Détecte les séances "cours magistral" dont l'horaire chevauche celui
+  // d'une AUTRE séance du même programme — deux cas trouvés dans les
+  // données réelles (data/mons-courses-catalogue.json), aucun des deux
+  // distinguable autrement qu'en comparant les horaires :
+  //  - options/filières au choix : plusieurs cours DIFFÉRENTS listés comme
+  //    faisant partie du même programme, au même horaire, alors qu'un·e
+  //    étudiant·e n'en suit qu'un seul (ex: "Etudes marketing" / "Econométrie"
+  //    / "Questions de sciences religieuses", tous les trois lundi 8h30 en
+  //    LSM Bac3) — de vrais "impossible à suivre en même temps".
+  //  - groupes parallèles du MÊME cours, sans que le nom du groupe contienne
+  //    "TP"/"labo" (donc pas détecté par isGroupSession) : ex.
+  //    "MGEST1324-1" et "MGEST1324-2" pour "Projet entrepreneurial", toutes
+  //    les deux lundi 13h45-15h45 — le même cours donné à deux groupes, pas
+  //    deux séances à suivre en même temps.
+  // Dans les deux cas : jamais coché automatiquement ("Remplir depuis le
+  // programme" ne peut pas deviner quelle branche/quel groupe suivre), mais
+  // toujours proposé à cocher soi-même (voir isManualChoiceSession), comme
+  // un groupe de TP/labo. Calculé UNE fois pour tout le catalogue dès qu'il
+  // est chargé (voir loadStudentLoadCatalogue) — comparaison uniquement
+  // entre séances qui partagent au moins un programme (ou entre séances du
+  // même cours), jamais entre deux cours totalement sans rapport.
+  let conflictingSessionKeys = new Set();
+
+  // Certains codes de programme du catalogue sont rattachés à la quasi-
+  // totalité des cours (visiblement une erreur/artefact d'export des
+  // données — ex: un programme de master retrouvé sur 90%+ des cours, y
+  // compris des cours de bac clairement sans rapport), contrairement aux
+  // vrais codes de bloc précis (~5-6% des cours, cohérent avec un seul
+  // bloc/année). Un code aussi peu discriminant ne veut rien dire pour
+  // repérer un vrai chevauchement — l'ignorer pour cette détection, sinon
+  // presque tous les cours du catalogue se retrouveraient marqués "en
+  // conflit" entre eux par erreur.
+  function computeBroadProgramCodes(catalogue) {
+    const nonEvt = (catalogue || []).filter((c) => !c.code.startsWith("EVT-"));
+    const counts = new Map();
+    nonEvt.forEach((c) => {
+      new Set(c.programs || []).forEach((p) => counts.set(p, (counts.get(p) || 0) + 1));
+    });
+    const broad = new Set();
+    const total = nonEvt.length || 1;
+    counts.forEach((count, p) => {
+      if (count / total > 0.3) broad.add(p);
+    });
+    return broad;
+  }
+
+  function computeConflictingSessionKeys(catalogue) {
+    const broadPrograms = computeBroadProgramCodes(catalogue);
+    const candidates = [];
+    (catalogue || []).forEach((course) => {
+      if (course.code.startsWith("EVT-")) return; // événements ponctuels, pas de vraie récurrence hebdo
+      (course.sessions || []).forEach((session) => {
+        if (isGroupSession(session) || isUnreliableWeeklySession(course, session)) return;
+        candidates.push({ course, session, key: sessionKey(course.code, session) });
+      });
+    });
+    const conflicting = new Set();
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i + 1; j < candidates.length; j++) {
+        const a = candidates[i];
+        const b = candidates[j];
+        if (a.session.weekday !== b.session.weekday) continue;
+        const sameCourse = a.course.code === b.course.code;
+        if (!sameCourse) {
+          const sharesProgram = (a.course.programs || []).some(
+            (p) => !broadPrograms.has(p) && (b.course.programs || []).includes(p)
+          );
+          if (!sharesProgram) continue;
+        }
+        if (a.session.start < b.session.end && b.session.start < a.session.end) {
+          conflicting.add(a.key);
+          conflicting.add(b.key);
+        }
+      }
+    }
+    return conflicting;
+  }
+  function isConflictingCmSession(course, session) {
+    return conflictingSessionKeys.has(sessionKey(course.code, session));
   }
 
   // Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à
@@ -3974,7 +4058,7 @@ function runAdmin() {
       const refreshed = await db.getMarks(fillState.password);
       fillState = { ...fillState, marks: { ...refreshed } };
       renderFillGrid();
-      fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (hors langues et TP/labos, propres à chaque étudiant·e — les créneaux déjà marqués à la main n'ont pas été touchés).`;
+      fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (hors langues, TP/labos et cours à horaire qui se chevauche (options/groupes parallèles), propres à chaque étudiant·e — les créneaux déjà marqués à la main n'ont pas été touchés).`;
     } catch (err) {
       console.error(err);
       fillStatus.textContent = `Échec de l'enregistrement — ${err && err.message ? err.message : "réessaie."}`;
@@ -4026,7 +4110,7 @@ function runAdmin() {
     }
     const skippedNote = skipped ? ` ${skipped} ignoré(s) (aucun cours trouvé pour leur programme).` : "";
     const failedNote = failed.length ? ` ⚠️ Échec pour : ${failed.join(", ")}.` : "";
-    fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s) (hors langues et TP/labos, propres à chaque étudiant·e).${skippedNote}${failedNote}`;
+    fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s) (hors langues, TP/labos et cours à horaire qui se chevauche (options/groupes parallèles), propres à chaque étudiant·e).${skippedNote}${failedNote}`;
   });
 
   function renderFillMemberOptions() {

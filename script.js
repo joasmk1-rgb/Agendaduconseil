@@ -1846,14 +1846,87 @@ function isUnreliableWeeklySession(course, session) {
   return endMin - startMin > MAX_RELIABLE_SESSION_MINUTES;
 }
 function isReliableCmSession(course, session) {
-  return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
+  return !isGroupSession(session) && !isUnreliableWeeklySession(course, session) && !isConflictingCmSession(course, session);
 }
 // Toute séance qu'on ne veut JAMAIS cocher automatiquement, mais qu'on
 // propose quand même à choisir à la main (jamais silencieusement ignorée) :
-// groupe de TP/labo, ou séance spéciale par sous-groupe / horaire pas encore
-// connu (voir isUnreliableWeeklySession).
+// groupe de TP/labo, séance spéciale par sous-groupe / horaire pas encore
+// connu (voir isUnreliableWeeklySession), ou cours à horaire qui se
+// chevauche avec un autre (voir isConflictingCmSession).
 function isManualChoiceSession(course, session) {
-  return isGroupSession(session) || isUnreliableWeeklySession(course, session);
+  return isGroupSession(session) || isUnreliableWeeklySession(course, session) || isConflictingCmSession(course, session);
+}
+
+// Détecte les séances "cours magistral" dont l'horaire chevauche celui
+// d'une AUTRE séance du même programme — deux cas trouvés dans les données
+// réelles (data/mons-courses-catalogue.json), aucun des deux distinguable
+// autrement qu'en comparant les horaires : des options/filières au choix
+// (plusieurs cours DIFFÉRENTS du même programme, au même horaire, alors
+// qu'on n'en suit qu'un — ex: "Etudes marketing" / "Econométrie" /
+// "Questions de sciences religieuses", tous les trois lundi 8h30 en LSM
+// Bac3), ou des groupes parallèles du MÊME cours sans "TP"/"labo" dans le
+// nom (ex: "MGEST1324-1"/"MGEST1324-2" pour "Projet entrepreneurial", au
+// même horaire). Dans les deux cas : jamais coché automatiquement, mais
+// toujours proposé à choisir soi-même (comme un groupe de TP/labo). Même
+// formule que admin.js — calculé une fois pour tout le catalogue dès qu'il
+// est chargé (voir loadCoursesCatalogue).
+let conflictingSessionKeys = new Set();
+
+// Certains codes de programme du catalogue sont rattachés à la quasi-
+// totalité des cours (visiblement une erreur/artefact d'export des données —
+// ex: un programme de master retrouvé sur 90%+ des cours, y compris des
+// cours de bac clairement sans rapport), contrairement aux vrais codes de
+// bloc précis (~5-6% des cours, cohérent avec un seul bloc/année). Un code
+// aussi peu discriminant ne veut rien dire pour repérer un vrai chevauchement
+// — l'ignorer pour cette détection, sinon presque tous les cours du
+// catalogue se retrouveraient marqués "en conflit" entre eux par erreur.
+function computeBroadProgramCodes(catalogue) {
+  const nonEvt = (catalogue || []).filter((c) => !c.code.startsWith("EVT-"));
+  const counts = new Map();
+  nonEvt.forEach((c) => {
+    new Set(c.programs || []).forEach((p) => counts.set(p, (counts.get(p) || 0) + 1));
+  });
+  const broad = new Set();
+  const total = nonEvt.length || 1;
+  counts.forEach((count, p) => {
+    if (count / total > 0.3) broad.add(p);
+  });
+  return broad;
+}
+
+function computeConflictingSessionKeys(catalogue) {
+  const broadPrograms = computeBroadProgramCodes(catalogue);
+  const candidates = [];
+  (catalogue || []).forEach((course) => {
+    if (course.code.startsWith("EVT-")) return; // événements ponctuels, pas de vraie récurrence hebdo
+    (course.sessions || []).forEach((session) => {
+      if (isGroupSession(session) || isUnreliableWeeklySession(course, session)) return;
+      candidates.push({ course, session, key: sessionKey(course.code, session) });
+    });
+  });
+  const conflicting = new Set();
+  for (let i = 0; i < candidates.length; i++) {
+    for (let j = i + 1; j < candidates.length; j++) {
+      const a = candidates[i];
+      const b = candidates[j];
+      if (a.session.weekday !== b.session.weekday) continue;
+      const sameCourse = a.course.code === b.course.code;
+      if (!sameCourse) {
+        const sharesProgram = (a.course.programs || []).some(
+          (p) => !broadPrograms.has(p) && (b.course.programs || []).includes(p)
+        );
+        if (!sharesProgram) continue;
+      }
+      if (a.session.start < b.session.end && b.session.start < a.session.end) {
+        conflicting.add(a.key);
+        conflicting.add(b.key);
+      }
+    }
+  }
+  return conflicting;
+}
+function isConflictingCmSession(course, session) {
+  return conflictingSessionKeys.has(sessionKey(course.code, session));
 }
 
 // Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à TOUT
@@ -1876,6 +1949,7 @@ async function loadCoursesCatalogue() {
     .then(([catalogue, programs]) => {
       coursesCatalogue = catalogue;
       coursesPrograms = programs;
+      conflictingSessionKeys = computeConflictingSessionKeys(coursesCatalogue);
       return catalogue;
     })
     .catch((err) => {
@@ -2008,7 +2082,7 @@ function renderCoursesList() {
       sub.className = "course-session-subpicker";
       const hint = document.createElement("p");
       hint.className = "hint";
-      hint.textContent = "Séance(s) à choisir toi-même pour ce cours (groupe de TP/labo, ou séance spéciale par sous-groupe) — coche uniquement celle(s) qui te concernent :";
+      hint.textContent = "Séance(s) à choisir toi-même pour ce cours (groupe de TP/labo, séance spéciale par sous-groupe, ou horaire qui chevauche un autre cours — option/groupe parallèle) — coche uniquement celle(s) qui te concernent :";
       sub.appendChild(hint);
       const manualSelectedSet = new Set(state.groupSessions);
       manualSess.forEach((s) => {
@@ -2204,7 +2278,7 @@ coursesFromProgramBtn.addEventListener("click", async () => {
   updateCoursesSelectedCount();
   await applySelectedCourses();
   coursesStatus.textContent =
-    `${addedCount} cours de ton programme ajouté(s) à ta sélection (hors langues et TP/labos). ` +
+    `${addedCount} cours de ton programme ajouté(s) à ta sélection (hors langues, TP/labos, et cours à horaire qui se chevauche — options/groupes parallèles, à choisir toi-même juste en dessous d'eux). ` +
     `N'oublie pas d'ajouter tes 2 langues toi-même (cherche "Anglais", "Espagnol" ou "Néerlandais" ci-dessous). ` +
     coursesStatus.textContent;
 });
