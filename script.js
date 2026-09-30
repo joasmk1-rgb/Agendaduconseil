@@ -1735,6 +1735,16 @@ function isReliableCmSession(course, session) {
   return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
 }
 
+// Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à TOUT
+// le programme (les 3 langues), alors qu'on n'en choisit que 2 sur les 3 —
+// impossible à deviner automatiquement, exactement comme pour un groupe de
+// TP/labo. Le membre les choisit lui-même à part, en les cherchant dans "Mes
+// cours" (par code ou nom), jamais via "Remplir depuis mon programme".
+const LANGUAGE_COURSE_CODE_PATTERN = /^M(ANGL|ESPA|NEER)/;
+function isLanguageElectiveCourse(course) {
+  return LANGUAGE_COURSE_CODE_PATTERN.test((course && course.code) || "");
+}
+
 async function loadCoursesCatalogue() {
   if (coursesCatalogue) return coursesCatalogue;
   if (coursesCatalogueLoading) return coursesCatalogueLoading;
@@ -2012,10 +2022,13 @@ coursesFromProgramBtn.addEventListener("click", async () => {
   // un vrai cours, mais ça bloquerait à tort ce créneau chaque semaine pour
   // un événement qui n'a lieu qu'une fois. Comme ces entrées sont rattachées
   // à presque tous les programmes, il ne faut surtout pas les inclure ici.
+  // Exclut aussi les cours de langue (voir isLanguageElectiveCourse) : on
+  // n'en choisit que 2 sur les 3 proposées, impossible à deviner tout seul.
   const matchingCodes = (coursesCatalogue || [])
     .filter(
       (c) =>
         !c.code.startsWith("EVT-") &&
+        !isLanguageElectiveCourse(c) &&
         (c.programs || []).some((p) => programSet.has(p)) &&
         (c.sessions || []).some((s) => isReliableCmSession(c, s))
     )
@@ -2029,7 +2042,10 @@ coursesFromProgramBtn.addEventListener("click", async () => {
   renderCoursesList();
   updateCoursesSelectedCount();
   await applySelectedCourses();
-  coursesStatus.textContent = `${addedCount} cours de ton programme ajouté(s) à ta sélection. ` + coursesStatus.textContent;
+  coursesStatus.textContent =
+    `${addedCount} cours de ton programme ajouté(s) à ta sélection (hors langues et TP/labos). ` +
+    `N'oublie pas d'ajouter tes 2 langues toi-même (cherche "Anglais", "Espagnol" ou "Néerlandais" ci-dessous). ` +
+    coursesStatus.textContent;
 });
 
 // ===================== RENDU DE LA GRILLE =====================

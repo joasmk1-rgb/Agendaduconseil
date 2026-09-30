@@ -3588,6 +3588,17 @@ function runAdmin() {
     return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
   }
 
+  // Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à
+  // TOUT le programme (les 3 langues), alors qu'un·e étudiant·e n'en choisit
+  // que 2 sur les 3 — impossible de deviner lesquelles pour l'admin ou un
+  // remplissage automatique, exactement comme pour un groupe de TP/labo. Le
+  // membre les choisit lui-même à part, depuis "Mes cours" (recherche par
+  // code/nom), jamais via "Remplir depuis le programme".
+  const LANGUAGE_COURSE_CODE_PATTERN = /^M(ANGL|ESPA|NEER)/;
+  function isLanguageElectiveCourse(course) {
+    return LANGUAGE_COURSE_CODE_PATTERN.test((course && course.code) || "");
+  }
+
   // Calcule, pour un membre donné (déjà pourvu de son "programs"), les
   // cours du catalogue qui correspondent et les clés de créneaux "pas dispo"
   // en découlant — factorisé pour servir au bouton "un membre" ET au bouton
@@ -3603,11 +3614,13 @@ function runAdmin() {
     // bloquerait à tort ce créneau chaque semaine pour un événement qui n'a
     // lieu qu'une fois. Rattachées à presque tous les programmes, il ne faut
     // surtout pas les inclure dans ce remplissage automatique. Exclut aussi
-    // les cours dont AUCUNE séance n'est fiable (voir isReliableCmSession) :
-    // rien d'exploitable à cocher automatiquement pour eux.
+    // les cours de langue (voir isLanguageElectiveCourse) et les cours dont
+    // AUCUNE séance n'est fiable (voir isReliableCmSession) : rien
+    // d'exploitable à cocher automatiquement pour eux.
     const matchingCourses = (studentLoadCatalogue || []).filter(
       (c) =>
         !c.code.startsWith("EVT-") &&
+        !isLanguageElectiveCourse(c) &&
         (c.programs || []).some((p) => programSet.has(p)) &&
         (c.sessions || []).some((s) => isReliableCmSession(c, s))
     );
@@ -3809,7 +3822,7 @@ function runAdmin() {
       const refreshed = await db.getMarks(fillState.password);
       fillState = { ...fillState, marks: { ...refreshed } };
       renderFillGrid();
-      fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (les créneaux déjà marqués à la main n'ont pas été touchés).`;
+      fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (hors langues et TP/labos, propres à chaque étudiant·e — les créneaux déjà marqués à la main n'ont pas été touchés).`;
     } catch (err) {
       console.error(err);
       fillStatus.textContent = `Échec de l'enregistrement — ${err && err.message ? err.message : "réessaie."}`;
@@ -3861,7 +3874,7 @@ function runAdmin() {
     }
     const skippedNote = skipped ? ` ${skipped} ignoré(s) (aucun cours trouvé pour leur programme).` : "";
     const failedNote = failed.length ? ` ⚠️ Échec pour : ${failed.join(", ")}.` : "";
-    fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s).${skippedNote}${failedNote}`;
+    fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s) (hors langues et TP/labos, propres à chaque étudiant·e).${skippedNote}${failedNote}`;
   });
 
   function renderFillMemberOptions() {
