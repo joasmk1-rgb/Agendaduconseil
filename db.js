@@ -116,12 +116,12 @@ export async function hasAnyAdmin() {
 // écriture merge est censée re-valider le document complet résultant (donc
 // le "name" déjà en base), on préfère ne pas en dépendre — l'inclure
 // explicitement rend cette écriture valide sans aucune ambiguïté.
-export async function updateMemberCourses(password, name, courses, courseMarkedKeys, groupSessions) {
-  await setDoc(
-    doc(firestore, "members", password),
-    { name, courses, courseMarkedKeys, groupSessions: groupSessions || [] },
-    { merge: true }
-  );
+export async function updateMemberCourses(password, name, courses, courseMarkedKeys, groupSessions, courseSkips) {
+  const data = { name, courses, courseMarkedKeys, groupSessions: groupSessions || [] };
+  // courseSkips : créneaux de cours libérés à la main (voir courses.js).
+  // Omis quand l'appelant ne le connaît pas (ex: admin), pour ne pas l'écraser.
+  if (Array.isArray(courseSkips)) data.courseSkips = courseSkips;
+  await setDoc(doc(firestore, "members", password), data, { merge: true });
 }
 
 // ---------------------- Programme(s) suivi(s) (délégués) ----------------------

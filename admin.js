@@ -2,7 +2,7 @@
 import { ADMIN_PASSPHRASE, CONFIG } from "./config.js";
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { computeUnavailableSlots, buildICSFromCourseSessions } from "./ics.js";
+import * as Courses from "./courses.js";
 
 // ---------- Navigation "mode application" (menu ☰ + une vue à la fois) ----------
 // Pure UI, ne dépend d'aucune donnée : tourne dès le chargement du script,
@@ -681,7 +681,7 @@ function runAdmin() {
           programsWrap.appendChild(programsLabel);
           const programsBox = document.createElement("div");
           programsBox.className = "checkbox-list courses-checkbox-list member-programs-checkboxes";
-          const memberSelectedPrograms = new Set(m.programs || []);
+          const memberSelectedPrograms = new Set((m.programs || []).map((k) => Courses.migrateProgramKey(k) || k));
           if (!studentLoadPrograms) {
             const loading = document.createElement("p");
             loading.className = "hint";
@@ -693,7 +693,7 @@ function runAdmin() {
             // disparaîtraient en silence à l'enregistrement.
             studentLoadPrograms
               .concat(
-                (m.programs || [])
+                Array.from(memberSelectedPrograms)
                   .filter((code) => !studentLoadPrograms.some((p) => p.prog === code))
                   .map((code) => ({ prog: code, label: programLabel(code) }))
               )
@@ -738,7 +738,7 @@ function runAdmin() {
             // les cours devenus orphelins (voir removeOrphanedCoursesForMember
             // ci-dessous) — capturé AVANT l'écriture pour comparer avec l'état
             // précédent de la fiche.
-            const previousPrograms = new Set(m.programs || []);
+            const previousPrograms = memberSelectedPrograms;
             const removedPrograms = Array.from(previousPrograms).filter((p) => !selectedPrograms.includes(p));
             saveBtn.disabled = true;
             try {
@@ -767,7 +767,8 @@ function runAdmin() {
                     newName,
                     m.courses || [],
                     m.courseMarkedKeys || [],
-                    m.groupSessions || []
+                    m.groupSessions || [],
+                    m.courseSkips || []
                   );
                 }
                 await db.removeMember(m.id);
@@ -785,8 +786,9 @@ function runAdmin() {
                   courses: m.courses || [],
                   courseMarkedKeys: m.courseMarkedKeys || [],
                   groupSessions: m.groupSessions || [],
+                  courseSkips: m.courseSkips || [],
                 };
-                const orphanedCodes = computeOrphanedCourseCodes(memberForCleanup, selectedPrograms);
+                const orphanedCodes = computeOrphanedCourseCodes(memberForCleanup, selectedPrograms, removedPrograms);
                 if (orphanedCodes.size) {
                   await removeOrphanedCoursesForMember(memberForCleanup, orphanedCodes);
                 }
@@ -1229,116 +1231,26 @@ function runAdmin() {
   // grille de dispo des membres existante (renderHeatmap), pour voir d'un
   // coup d'œil "les bac1 sont en cours de X à ce moment-là". Visible aussi
   // par le poste secretaire (vue "availability", voir ROLE_ADMIN_VIEWS).
-  let studentLoadCatalogue = null;
-  let studentLoadPrograms = null;
+  // Tout vient de courses.js (programmes de Mons + séances datées), le même
+  // module que la page membre : une seule source pour les cours.
+  let studentLoadCatalogue = null; // true une fois les horaires chargés
+  let studentLoadPrograms = null; // [{ prog: "gesm1ba:3", label, faculte, niveau }]
   let studentLoadCatalogueLoading = null;
-  // Map slotKey -> [{ label (nom du programme), code, name (du cours) }],
-  // ou null quand rien n'est affiché. Lu par renderHeatmap() plus bas.
+  // Map slotKey -> [{ label (programme), name (cours) }], ou null quand rien
+  // n'est affiché. Lu par renderHeatmap() plus bas.
   let studentLoadOverlay = null;
-  // Codes de cours explicitement décochés dans la liste "Cours à afficher"
-  // (ex: monitorats, TP) — persiste même quand on change la recherche dans
-  // cette liste, pour pouvoir exclure une catégorie puis une autre d'affilée.
+  // Codes de cours explicitement décochés dans la liste "Cours à afficher".
   let studentLoadExcludedCourses = new Set();
-
-  // ---- Masters : découpage M1 / M2 et nettoyage des listes de cours ----
-  // Dans le catalogue, les listes de cours des masters sont cumulatives
-  // (chaque programme de master contient tous les cours des masters
-  // "précédents" + tous les cours de bac) : inutilisables telles quelles.
-  // On reconstruit une liste plausible : uniquement les cours de cycle master
-  // (code "XXXX2…"), apparus d'abord dans un master de la même faculté (+ les
-  // langues avancées), puis on sépare 1re / 2e année d'après le 2e chiffre du
-  // code (21xx = M1, 22xx = M2, autres = transversaux, gardés dans les deux).
-  // Un Master 120 se choisit donc en deux programmes "virtuels" : "<code>@M1"
-  // et "<code>@M2" (enregistrés tels quels dans la fiche du membre).
-  function expandProgramsWithMasterYears(programs) {
-    const out = [];
-    (programs || []).forEach((p) => {
-      if (p.niveau === "Master" && /^Master 120/.test(p.label) && !/bloc/i.test(p.label)) {
-        out.push({ ...p, prog: `${p.prog}@M1`, base: p.prog, label: `${p.label} — 1re année (M1)` });
-        out.push({ ...p, prog: `${p.prog}@M2`, base: p.prog, label: `${p.label} — 2e année (M2)` });
-      } else {
-        out.push({ ...p, base: p.prog });
-      }
-    });
-    return out;
-  }
-
-  function buildProgramCourseIndex(catalogue, rawPrograms) {
-    const courses = (catalogue || []).filter((c) => !c.code.startsWith("EVT-"));
-    const byCode = new Map(courses.map((c) => [c.code, c]));
-    const metaByProg = new Map((rawPrograms || []).map((p) => [p.prog, p]));
-    const setOf = (prog) => new Set(courses.filter((c) => (c.programs || []).includes(prog)).map((c) => c.code));
-    const masterProgs = (rawPrograms || []).filter((p) => p.niveau === "Master");
-    const masterSets = new Map(masterProgs.map((p) => [p.prog, setOf(p.prog)]));
-    const firstFaculte = new Map();
-    masterProgs
-      .filter((p) => masterSets.get(p.prog).size)
-      .sort((a, b) => masterSets.get(a.prog).size - masterSets.get(b.prog).size)
-      .forEach((p) => masterSets.get(p.prog).forEach((code) => {
-        if (!firstFaculte.has(code)) firstFaculte.set(code, p.faculte);
-      }));
-    const cache = new Map();
-    function coursesForProgram(progCode) {
-      if (cache.has(progCode)) return cache.get(progCode);
-      const [base, yearTag] = String(progCode).split("@");
-      const meta = metaByProg.get(base);
-      let result;
-      if (meta && meta.niveau === "Master") {
-        const year = yearTag === "M1" ? "1" : yearTag === "M2" ? "2" : null;
-        result = new Set(
-          Array.from(masterSets.get(base) || []).filter((code) => {
-            const m = code.match(/^[A-Z]+2(\d)/);
-            if (!m) return false; // cours de bac rattachés par erreur au master
-            if (!isLanguageElectiveCourse(byCode.get(code)) && firstFaculte.get(code) !== meta.faculte) return false;
-            if (year && (m[1] === "1" || m[1] === "2") && m[1] !== year) return false;
-            return true;
-          })
-        );
-      } else {
-        result = setOf(base);
-      }
-      cache.set(progCode, result);
-      return result;
-    }
-    coursesForProgram.isMaster = (progCode) => {
-      const meta = metaByProg.get(String(progCode).split("@")[0]);
-      return !!(meta && meta.niveau === "Master");
-    };
-    return coursesForProgram;
-  }
-
-  // Cours d'un programme (voir buildProgramCourseIndex) — gère les codes
-  // virtuels "@M1"/"@M2" des Masters 120 et nettoie les listes des masters.
-  let studentLoadCourseIndex = null;
-  function courseInPrograms(course, progSet) {
-    if (!studentLoadCourseIndex) return (course.programs || []).some((p) => progSet.has(p));
-    return Array.from(progSet).some((p) => studentLoadCourseIndex(p).has(course.code));
-  }
-  function matchedProgramsOf(course, progSet) {
-    if (!studentLoadCourseIndex) return (course.programs || []).filter((p) => progSet.has(p));
-    return Array.from(progSet).filter((p) => studentLoadCourseIndex(p).has(course.code));
-  }
 
   function loadStudentLoadCatalogue() {
     if (studentLoadCatalogue) return Promise.resolve(studentLoadCatalogue);
-    if (studentLoadCatalogueLoading) return studentLoadCatalogueLoading;
-    studentLoadCatalogueLoading = Promise.all([
-      fetch("data/mons-courses-catalogue.json").then((r) => r.json()),
-      fetch("data/mons-programs.json").then((r) => r.json()),
-    ])
-      .then(([catalogue, programs]) => {
-        studentLoadCatalogue = catalogue;
-        studentLoadPrograms = expandProgramsWithMasterYears(programs);
-        studentLoadCourseIndex = buildProgramCourseIndex(catalogue, programs);
-        conflictingSessionKeys = computeConflictingSessionKeys(studentLoadCatalogue);
-        return catalogue;
-      })
-      .catch((err) => {
-        console.error("Échec du chargement du catalogue de cours :", err);
-        studentLoadCatalogue = [];
-        studentLoadPrograms = [];
-        return studentLoadCatalogue;
+    if (!studentLoadCatalogueLoading) {
+      studentLoadCatalogueLoading = Courses.loadSchedule().then(() => {
+        studentLoadPrograms = Courses.programOptions().map((o) => ({ prog: o.key, label: o.label, faculte: o.fac, niveau: o.niveau }));
+        studentLoadCatalogue = true;
+        return true;
       });
+    }
     return studentLoadCatalogueLoading;
   }
 
@@ -1397,7 +1309,10 @@ function runAdmin() {
       studentLoadNiveauSelect.value,
       checkedProgs
     );
-    return (studentLoadCatalogue || []).filter((c) => !c.code.startsWith("EVT-") && courseInPrograms(c, effectiveProgs));
+    return Array.from(Courses.courseCodesOf(Array.from(effectiveProgs)))
+      .filter((code) => Courses.hasSessions(code))
+      .map((code) => ({ code, name: Courses.courseName(code) }))
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
   }
 
   // Reconstruit la liste "Cours à afficher" (checkboxes), filtrée par la
@@ -1471,52 +1386,22 @@ function runAdmin() {
   // les programmes sélectionnés (moins les cours explicitement exclus) —
   // c'est cette Map qui devient la surcouche violette sur la grille de dispo.
   function computeStudentLoadOverlay({ effectiveProgs }) {
-    const programsByCode = new Map((studentLoadPrograms || []).map((p) => [p.prog, p]));
-    const matchingCourses = (studentLoadCatalogue || []).filter(
-      (c) => !c.code.startsWith("EVT-") && courseInPrograms(c, effectiveProgs) && !studentLoadExcludedCourses.has(c.code)
-    );
-    const sessionsByDow = new Map();
-    matchingCourses.forEach((course) => {
-      const matchedProgs = matchedProgramsOf(course, effectiveProgs);
-      (course.sessions || []).forEach((s) => {
-        const list = sessionsByDow.get(s.weekday) || [];
-        list.push({
-          start: timeStrToMinutes(s.start),
-          end: timeStrToMinutes(s.end),
-          code: course.code,
-          name: course.name,
-          matchedProgs,
-        });
-        sessionsByDow.set(s.weekday, list);
-      });
-    });
-
-    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
-    const times = Grid.buildTimeSlots();
+    // Séances communes (cours magistraux, TP communs) aux VRAIES dates de la
+    // période affichée — pas les groupes de TP/labo, propres à chacun.
+    const dateISOs = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends).map((d) => Grid.toISODate(d));
     const overlay = new Map();
-
-    dates.forEach((date) => {
-      const dow = date.getDay();
-      const daySessions = sessionsByDow.get(dow) || [];
-      if (!daySessions.length) return;
-      const dateISO = Grid.toISODate(date);
-      times.forEach((timeLabel) => {
-        const slotStart = timeStrToMinutes(timeLabel);
-        const slotEnd = slotStart + CONFIG.slotMinutes;
-        const hits = [];
-        daySessions.forEach((s) => {
-          if (s.start < slotEnd && s.end > slotStart) {
-            (s.matchedProgs.length ? s.matchedProgs : [null]).forEach((progCode) => {
-              const meta = progCode ? programsByCode.get(progCode) : null;
-              hits.push({ label: meta ? meta.label : "Programme", code: s.code, name: s.name });
-            });
-          }
-        });
-        if (hits.length) overlay.set(Grid.slotKey(dateISO, timeLabel), hits);
+    const shown = new Set();
+    Array.from(effectiveProgs).forEach((key) => {
+      const codes = Array.from(Courses.courseCodesOf([key])).filter((c) => !studentLoadExcludedCourses.has(c) && !Courses.isLanguage(c));
+      codes.forEach((c) => shown.add(c));
+      const label = Courses.programLabel(key);
+      Courses.computeCourseSlots({ courses: codes, groupSessions: [] }, dateISOs).forEach((names, slot) => {
+        const hits = overlay.get(slot) || [];
+        names.forEach((name) => hits.push({ label, name }));
+        overlay.set(slot, hits);
       });
     });
-
-    return { overlay, matchingCourseCount: matchingCourses.length };
+    return { overlay, matchingCourseCount: Array.from(shown).filter((c) => Courses.hasSessions(c)).length };
   }
 
   if (studentLoadFaculteSelect) {
@@ -2640,7 +2525,10 @@ function runAdmin() {
         delegateImportResult.innerHTML = '<p>Colonne "Nom" introuvable dans l\'en-tête.</p>';
         return;
       }
-      const validCodes = new Set((studentLoadPrograms || []).flatMap((p) => [p.prog, p.base]));
+      await loadStudentLoadCatalogue();
+      const validCodes = new Set((studentLoadPrograms || []).map((p) => p.prog));
+      // Accepte "gesm1ba:3" comme les anciens codes "GESM1BA-B3" (convertis).
+      const toKey = (c) => Courses.migrateProgramKey(c) || c;
       const usedPasswords = new Set(currentMembers.map((m) => m.id));
       const rejected = [];
       pendingDelegateRows = [];
@@ -2652,8 +2540,8 @@ function runAdmin() {
           return;
         }
         const rawCodes = programsIdx !== -1 ? (row[programsIdx] || "").split(";").map((c) => c.trim()).filter(Boolean) : [];
-        const programs = rawCodes.filter((c) => validCodes.has(c));
-        const unknownCodes = rawCodes.filter((c) => !validCodes.has(c));
+        const programs = rawCodes.map(toKey).filter((c) => validCodes.has(c));
+        const unknownCodes = rawCodes.filter((c) => !validCodes.has(toKey(c)));
         const match = findExistingMemberMatch(name, currentMembers);
         let password;
         let isNew;
@@ -3681,357 +3569,58 @@ function runAdmin() {
   fillModeAvailableBtn.addEventListener("click", () => setFillMode("available"));
   fillModeUnavailableBtn.addEventListener("click", () => setFillMode("unavailable"));
 
-  // Identifie une séance précise d'un cours (jour+horaire), indépendamment
-  // de sa position dans le tableau "sessions" — sert de clé stable pour les
-  // groupes de TP/labo choisis par un membre (member.groupSessions), même
-  // reconstruite dans script.js côté public avec la même formule.
-  function sessionKey(code, session) {
-    return `${code}|${session.weekday}|${session.start}|${session.end}`;
+  // ---------- Cours d'un membre : tout passe par courses.js ----------
+  // (le même calcul que la page membre — une seule source de vérité)
+  function memberCourseView(member) {
+    return {
+      courses: member.courses || [],
+      groupSessions: (member.groupSessions || []).filter((k) => String(k).includes("#")),
+      courseSkips: member.courseSkips || [],
+      courseMarkedKeys: member.courseMarkedKeys || [],
+    };
   }
 
-  // Une séance de TP/labo (groupe précis, propre à chaque étudiant) se
-  // reconnaît à son event_code : "MANGL1120-1 Labos Gr3", "MCOMU1101-TP
-  // GroupeA", "MAGES2304 - TP"... contrairement à un cours magistral, commun
-  // à tout le monde du programme ("MAGES2304 - Cours magistral"). Basé sur
-  // l'inspection réelle du catalogue (data/mons-courses-catalogue.json).
-  const GROUP_SESSION_PATTERN = /\bTP\b|labo|groupe|\bgr\.?\s*\d/i;
-  function isGroupSession(session) {
-    return GROUP_SESSION_PATTERN.test((session && session.event_code) || "");
+  function memberProgramKeys(member) {
+    return ((member && member.programs) || []).map(Courses.migrateProgramKey).filter(Boolean);
   }
 
-  // Certaines séances du catalogue ne sont PAS de vrais horaires
-  // hebdomadaires récurrents, alors que rien dans leur format ne les
-  // distingue des vraies (pas de champ "type", juste jour + heure, répété
-  // chaque semaine par buildICSFromCourseSessions). Deux cas trouvés dans les
-  // données réelles (data/mons-courses-catalogue.json) :
-  //  - le nom du cours est encore un espace réservé ("Horaires détaillés des
-  //    cours disponibles ultérieurement") : l'horaire réel n'est simplement
-  //    pas encore connu.
-  //  - une séance couvre une bonne partie de la journée (> 6h, ex: 08h30-18h)
-  //    : jamais un vrai cours hebdomadaire (2-4h en pratique), plutôt une
-  //    journée spéciale ponctuelle (séminaire d'accueil, journée projet...)
-  //    qui bloquerait à tort le même horaire chaque semaine jusqu'en 2035 si
-  //    on la traitait comme un cours classique.
-  const PLACEHOLDER_COURSE_NAME = "Horaires détaillés des cours disponibles ultérieurement";
-  const MAX_RELIABLE_SESSION_MINUTES = 360; // 6h
-  function sessionDurationMinutes(session) {
-    const [sh, sm] = session.start.split(":").map(Number);
-    const [eh, em] = session.end.split(":").map(Number);
-    return eh * 60 + em - (sh * 60 + sm);
-  }
-  function isUnreliableWeeklySession(course, session) {
-    if (course.name && course.name.includes(PLACEHOLDER_COURSE_NAME)) return true;
-    return sessionDurationMinutes(session) > MAX_RELIABLE_SESSION_MINUTES;
-  }
-  function isReliableCmSession(course, session) {
-    return !isGroupSession(session) && !isUnreliableWeeklySession(course, session) && !isConflictingCmSession(course, session);
-  }
-  // Toute séance qu'on ne veut JAMAIS cocher automatiquement, mais que le
-  // membre peut quand même choisir à la main côté public (jamais
-  // silencieusement ignorée) : groupe de TP/labo, séance spéciale par
-  // sous-groupe / horaire pas encore connu, ou cours à horaire qui se
-  // chevauche avec un autre (voir isConflictingCmSession). Sert ici
-  // uniquement à retrouver le bon libellé pour l'infobulle de la grille de
-  // remplissage (voir computeMemberCourseLabels) — l'admin ne coche jamais
-  // ce genre de séance lui-même, ce choix reste toujours celui du membre
-  // (voir script.js).
-  function isManualChoiceSession(course, session) {
-    return isGroupSession(session) || isUnreliableWeeklySession(course, session) || isConflictingCmSession(course, session);
-  }
-
-  // Détecte les séances "cours magistral" dont l'horaire chevauche celui
-  // d'une AUTRE séance du même programme — deux cas trouvés dans les
-  // données réelles (data/mons-courses-catalogue.json), aucun des deux
-  // distinguable autrement qu'en comparant les horaires :
-  //  - options/filières au choix : plusieurs cours DIFFÉRENTS listés comme
-  //    faisant partie du même programme, au même horaire, alors qu'un·e
-  //    étudiant·e n'en suit qu'un seul (ex: "Etudes marketing" / "Econométrie"
-  //    / "Questions de sciences religieuses", tous les trois lundi 8h30 en
-  //    LSM Bac3) — de vrais "impossible à suivre en même temps".
-  //  - groupes parallèles du MÊME cours, sans que le nom du groupe contienne
-  //    "TP"/"labo" (donc pas détecté par isGroupSession) : ex.
-  //    "MGEST1324-1" et "MGEST1324-2" pour "Projet entrepreneurial", toutes
-  //    les deux lundi 13h45-15h45 — le même cours donné à deux groupes, pas
-  //    deux séances à suivre en même temps.
-  // Dans les deux cas : jamais coché automatiquement ("Remplir depuis le
-  // programme" ne peut pas deviner quelle branche/quel groupe suivre), mais
-  // toujours proposé à cocher soi-même (voir isManualChoiceSession), comme
-  // un groupe de TP/labo. Calculé UNE fois pour tout le catalogue dès qu'il
-  // est chargé (voir loadStudentLoadCatalogue) — comparaison uniquement
-  // entre séances qui partagent au moins un programme (ou entre séances du
-  // même cours), jamais entre deux cours totalement sans rapport.
-  let conflictingSessionKeys = new Set();
-
-  // Certains codes de programme du catalogue sont rattachés à la quasi-
-  // totalité des cours (visiblement une erreur/artefact d'export des
-  // données — ex: un programme de master retrouvé sur 90%+ des cours, y
-  // compris des cours de bac clairement sans rapport), contrairement aux
-  // vrais codes de bloc précis (~5-6% des cours, cohérent avec un seul
-  // bloc/année). Un code aussi peu discriminant ne veut rien dire pour
-  // repérer un vrai chevauchement — l'ignorer pour cette détection, sinon
-  // presque tous les cours du catalogue se retrouveraient marqués "en
-  // conflit" entre eux par erreur.
-  function computeBroadProgramCodes(catalogue) {
-    const nonEvt = (catalogue || []).filter((c) => !c.code.startsWith("EVT-"));
-    const counts = new Map();
-    nonEvt.forEach((c) => {
-      new Set(c.programs || []).forEach((p) => counts.set(p, (counts.get(p) || 0) + 1));
-    });
-    const broad = new Set();
-    const total = nonEvt.length || 1;
-    counts.forEach((count, p) => {
-      if (count / total > 0.3) broad.add(p);
-    });
-    return broad;
-  }
-
-  function computeConflictingSessionKeys(catalogue) {
-    const broadPrograms = computeBroadProgramCodes(catalogue);
-    const candidates = [];
-    (catalogue || []).forEach((course) => {
-      if (course.code.startsWith("EVT-")) return; // événements ponctuels, pas de vraie récurrence hebdo
-      (course.sessions || []).forEach((session) => {
-        if (isGroupSession(session) || isUnreliableWeeklySession(course, session)) return;
-        candidates.push({ course, session, key: sessionKey(course.code, session) });
-      });
-    });
-    const conflicting = new Set();
-    for (let i = 0; i < candidates.length; i++) {
-      for (let j = i + 1; j < candidates.length; j++) {
-        const a = candidates[i];
-        const b = candidates[j];
-        if (a.session.weekday !== b.session.weekday) continue;
-        const sameCourse = a.course.code === b.course.code;
-        if (!sameCourse) {
-          const sharesProgram = (a.course.programs || []).some(
-            (p) => !broadPrograms.has(p) && (b.course.programs || []).includes(p)
-          );
-          if (!sharesProgram) continue;
-        }
-        if (a.session.start < b.session.end && b.session.start < a.session.end) {
-          conflicting.add(a.key);
-          conflicting.add(b.key);
-        }
-      }
-    }
-    return conflicting;
-  }
-  function isConflictingCmSession(course, session) {
-    return conflictingSessionKeys.has(sessionKey(course.code, session));
-  }
-
-  // Cours de langue (Anglais/Espagnol/Néerlandais à la LSM) : rattachés à
-  // TOUT le programme (les 3 langues), alors qu'un·e étudiant·e n'en choisit
-  // que 2 sur les 3 — impossible de deviner lesquelles pour l'admin ou un
-  // remplissage automatique, exactement comme pour un groupe de TP/labo. Le
-  // membre les choisit lui-même à part, depuis "Mes cours" (recherche par
-  // code/nom), jamais via "Remplir depuis le programme".
-  const LANGUAGE_COURSE_CODE_PATTERN = /^M(ANGL|ESPA|NEER)/;
-  function isLanguageElectiveCourse(course) {
-    return LANGUAGE_COURSE_CODE_PATTERN.test((course && course.code) || "");
-  }
-
-  // Calcule, pour un membre donné (déjà pourvu de son "programs"), les
-  // cours du catalogue qui correspondent et les clés de créneaux "pas dispo"
-  // en découlant — factorisé pour servir au bouton "un membre" ET au bouton
-  // "tous les membres" ci-dessous, sans dupliquer le calcul.
+  // Cours à appliquer pour un membre : ceux qu'il a choisis dans son profil
+  // (jamais écrasés ni complétés par l'admin) ; seulement s'il n'a encore
+  // rien choisi, les cours obligatoires de son programme.
   function computeProgramFillForMember(member) {
-    const programs = member && Array.isArray(member.programs) ? member.programs : [];
-    if (!programs.length) return { matchingCourses: [], desiredKeys: new Set() };
-    // Masters exclus : presque tout y est option/finalité, l'admin ne peut
-    // pas deviner — le membre coche lui-même ses cours dans son profil.
-    const programSet = new Set(programs.filter((p) => !(studentLoadCourseIndex && studentLoadCourseIndex.isMaster(p))));
-    // Exclut les entrées "EVT-..." (événements ponctuels d'accueil) : elles
-    // n'ont qu'un jour de semaine + une heure enregistrés (pas de vraie
-    // date), et buildICSFromCourseSessions génère toujours une récurrence
-    // HEBDOMADAIRE jusqu'en 2035 — correct pour un vrai cours, mais ça
-    // bloquerait à tort ce créneau chaque semaine pour un événement qui n'a
-    // lieu qu'une fois. Rattachées à presque tous les programmes, il ne faut
-    // surtout pas les inclure dans ce remplissage automatique. Exclut aussi
-    // les cours de langue (voir isLanguageElectiveCourse) et les cours dont
-    // AUCUNE séance n'est fiable (voir isReliableCmSession) : rien
-    // d'exploitable à cocher automatiquement pour eux.
-    const matchingCourses = (studentLoadCatalogue || []).filter(
-      (c) =>
-        !c.code.startsWith("EVT-") &&
-        !isLanguageElectiveCourse(c) &&
-        courseInPrograms(c, programSet) &&
-        (c.sessions || []).some((s) => isReliableCmSession(c, s))
-    );
-    if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
-    // Ne marque jamais les séances de TP/labo automatiquement : elles dépendent
-    // du groupe précis de CHAQUE étudiant, que l'admin ne peut pas deviner à
-    // sa place — seuls les cours magistraux (communs à tout le programme)
-    // sont sûrs à remplir en masse. Le membre ajoute son propre groupe de
-    // TP/labo lui-même, depuis "Mes cours" (à part, voir script.js) ; comme
-    // ce remplissage est toujours additif (jamais destructif, voir
-    // persistProgramFillForMember), ça ne touche jamais à ce choix.
-    const sessions = matchingCourses.flatMap((c) =>
-      (c.sessions || [])
-        .filter((s) => isReliableCmSession(c, s))
-        .map((s) => ({ ...s, title: c.name }))
-    );
-    // Plafonné à 3 mois (90 jours) même si la période affichée du site
-    // (currentConfig.rangeDays) est réglée plus large : un programme entier
-    // génère déjà beaucoup de créneaux par semaine, pas la peine de projeter
-    // ça sur 4 mois d'un coup — 3 mois suffit largement pour trouver un
-    // créneau de réunion, et ça réduit d'autant le risque de retomber sur une
-    // limite Firestore quelconque. Le membre peut relancer le bouton plus
-    // tard pour prolonger, ça ne touche jamais aux créneaux déjà marqués.
-    const PROGRAM_FILL_MAX_DAYS = 90;
-    const fillRangeDays = Math.min(currentConfig.rangeDays, PROGRAM_FILL_MAX_DAYS);
-    const dates = Grid.buildDateList(new Date(), fillRangeDays, currentConfig.includeWeekends);
-    const desiredKeys = computeUnavailableSlots(
-      buildICSFromCourseSessions(sessions),
-      dates,
-      CONFIG.slotMinutes,
-      CONFIG.dayStartHour,
-      CONFIG.dayEndHour
-    );
-    return { matchingCourses, desiredKeys };
+    const view = memberCourseView(member);
+    const keys = memberProgramKeys(member);
+    const fromProfile = view.courses.length > 0;
+    if (!fromProfile) view.courses = Courses.defaultCourses(keys);
+    return { view, fromProfile, courseCount: view.courses.length };
   }
 
-  // Calcule les cours à retirer de la fiche d'un membre quand un ou
-  // plusieurs programmes viennent d'être décochés : un cours n'est retiré
-  // que s'il ne correspond plus à AUCUN programme restant (un cours commun
-  // à deux programmes suivis à la fois reste sur la fiche). Ne touche jamais
-  // aux groupes de TP/labo ou langues d'un cours qui reste valide.
-  function computeOrphanedCourseCodes(member, remainingPrograms) {
-    const remainingSet = new Set(remainingPrograms || []);
-    const selected = new Set((member && member.courses) || []);
-    if (!selected.size || !studentLoadCatalogue) return new Set();
-    const orphaned = new Set();
-    selected.forEach((code) => {
-      const course = studentLoadCatalogue.find((c) => c.code === code);
-      if (!course) return; // cours introuvable au catalogue : on n'y touche pas
-      const stillMatches = courseInPrograms(course, remainingSet);
-      if (!stillMatches) orphaned.add(code);
-    });
-    return orphaned;
+  // Cours qui ne correspondent plus à aucun programme restant (un cours
+  // commun à deux programmes suivis reste ; un cours hors programme ajouté
+  // par le membre aussi).
+  function computeOrphanedCourseCodes(member, remainingPrograms, removedPrograms) {
+    const removedCodes = Courses.courseCodesOf((removedPrograms || []).map(Courses.migrateProgramKey).filter(Boolean));
+    const remainingCodes = Courses.courseCodesOf((remainingPrograms || []).map(Courses.migrateProgramKey).filter(Boolean));
+    return new Set((member.courses || []).filter((c) => removedCodes.has(c) && !remainingCodes.has(c)));
   }
 
-  // Retire proprement de la fiche d'un membre les cours devenus orphelins
-  // (plus aucun programme restant ne les justifie) : décoche le cours, ses
-  // groupes de TP/labo choisis pour lui, et les créneaux "pas dispo" que ce
-  // cours avait posés automatiquement — jamais un créneau marqué à la main,
-  // ni un créneau qu'un autre cours/groupe encore actif justifie aussi.
   async function removeOrphanedCoursesForMember(member, orphanedCodes) {
     if (!orphanedCodes || !orphanedCodes.size) return 0;
-    const orphanedCourses = studentLoadCatalogue.filter((c) => orphanedCodes.has(c.code));
-
-    // Séances fiables (cours magistral) des cours retirés : ce sont les
-    // seules que "Remplir depuis le programme" ou "Mes cours" ont pu poser
-    // automatiquement en "pas dispo" — jamais les groupes de TP/labo (choix
-    // toujours manuel, jamais auto-coché).
-    const sessions = orphanedCourses.flatMap((c) =>
-      (c.sessions || [])
-        .filter((s) => isReliableCmSession(c, s))
-        .map((s) => ({ ...s, title: c.name }))
-    );
-    const PROGRAM_FILL_MAX_DAYS = 90;
-    const fillRangeDays = Math.min(currentConfig.rangeDays, PROGRAM_FILL_MAX_DAYS);
-    const dates = Grid.buildDateList(new Date(), fillRangeDays, currentConfig.includeWeekends);
-    const orphanedKeys = sessions.length
-      ? computeUnavailableSlots(
-          buildICSFromCourseSessions(sessions),
-          dates,
-          CONFIG.slotMinutes,
-          CONFIG.dayStartHour,
-          CONFIG.dayEndHour
-        )
-      : new Set();
-
-    // Ne retire un créneau "pas dispo" que s'il a bien été posé automatiquement
-    // par un cours (présent dans courseMarkedKeys) — jamais un créneau marqué
-    // à la main par le membre ou l'admin.
-    const courseMarkedKeys = new Set(member.courseMarkedKeys || []);
-    const keysToUnmark = Array.from(orphanedKeys).filter((k) => courseMarkedKeys.has(k));
-
-    // Retire aussi les groupes de TP/labo (ou séances spéciales) choisis pour
-    // un cours retiré — leur clé commence toujours par "<code>|".
-    const remainingGroupSessions = (member.groupSessions || []).filter(
-      (key) => !orphanedCodes.has(String(key).split("|")[0])
-    );
-
+    const view = memberCourseView(member);
+    view.courses = view.courses.filter((c) => !orphanedCodes.has(c));
+    view.groupSessions = view.groupSessions.filter((k) => !orphanedCodes.has(k.split("#")[0]));
     const marks = await db.getMarks(member.id);
-    let removedMarks = 0;
-    keysToUnmark.forEach((key) => {
-      if (marks[key] === "unavailable") {
-        delete marks[key];
-        removedMarks++;
-      }
-      courseMarkedKeys.delete(key);
-    });
-
-    const remainingCourses = (member.courses || []).filter((code) => !orphanedCodes.has(code));
-
+    const res = Courses.applyCoursesToMarks(view, marks, currentConfig.rangeDays);
     await db.saveMarks(member.id, member.name, marks);
-    await db.updateMemberCourses(
-      member.id,
-      member.name,
-      remainingCourses,
-      Array.from(courseMarkedKeys),
-      remainingGroupSessions
-    );
-    // Reflète immédiatement le nettoyage sur l'objet passé en argument (avant
-    // le prochain rechargement live depuis Firestore).
-    member.courses = remainingCourses;
-    member.courseMarkedKeys = Array.from(courseMarkedKeys);
-    member.groupSessions = remainingGroupSessions;
-    return removedMarks;
+    await db.updateMemberCourses(member.id, member.name, view.courses, res.courseMarkedKeys, view.groupSessions);
+    return res.removed;
   }
 
-  // Pour un membre donné, retrouve — par créneau — de quel cours/groupe
-  // vient un "pas dispo" posé par "Mes cours" côté public OU par "Remplir
-  // depuis le programme" ici : affiché en infobulle (+ liseré violet) dans la
-  // grille de remplissage de l'admin, pour comprendre d'un coup d'œil
-  // pourquoi une case précise est bloquée (ex: un cours qui n'a pas sa place
-  // dans ce programme, ou une charge visiblement trop lourde). Se base sur
-  // member.courses/.groupSessions tels qu'enregistrés en base, pas sur un
-  // recalcul du programme — donc reflète l'état réel du membre, même s'il a
-  // coché des cours à la main en plus de son programme.
+  // Par créneau : de quel(s) cours vient un "pas dispo" (infobulle + liseré
+  // violet dans la grille de remplissage de l'admin).
   function computeMemberCourseLabels(member) {
-    const overlay = new Map();
-    if (!member || !studentLoadCatalogue || !studentLoadCatalogue.length) return overlay;
-    const selectedSet = new Set(member.courses || []);
-    const groupKeySet = new Set(member.groupSessions || []);
-    if (!selectedSet.size && !groupKeySet.size) return overlay;
-
-    const sessionsByDow = new Map();
-    studentLoadCatalogue.forEach((course) => {
-      (course.sessions || []).forEach((s) => {
-        const key = sessionKey(course.code, s);
-        let name = null;
-        if (groupKeySet.has(key)) {
-          const ec = s.event_code;
-          name = `${course.name} — ${ec && ec !== course.code ? ec : "Séance"}`;
-        } else if (selectedSet.has(course.code) && !isLanguageElectiveCourse(course) && isReliableCmSession(course, s)) {
-          name = course.name;
-        }
-        if (!name) return;
-        const list = sessionsByDow.get(s.weekday) || [];
-        list.push({ start: timeStrToMinutes(s.start), end: timeStrToMinutes(s.end), name });
-        sessionsByDow.set(s.weekday, list);
-      });
-    });
-    if (!sessionsByDow.size) return overlay;
-
-    const rangeDays = Math.min(currentConfig.rangeDays, 90);
-    const dates = Grid.buildDateList(new Date(), rangeDays, currentConfig.includeWeekends);
-    const times = Grid.buildTimeSlots();
-    dates.forEach((date) => {
-      const dow = date.getDay();
-      const daySessions = sessionsByDow.get(dow) || [];
-      if (!daySessions.length) return;
-      const dateISO = Grid.toISODate(date);
-      times.forEach((timeLabel) => {
-        const slotStart = timeStrToMinutes(timeLabel);
-        const slotEnd = slotStart + CONFIG.slotMinutes;
-        const names = daySessions.filter((s) => s.start < slotEnd && s.end > slotStart).map((s) => s.name);
-        if (names.length) overlay.set(Grid.slotKey(dateISO, timeLabel), Array.from(new Set(names)));
-      });
-    });
-    return overlay;
+    if (!member || !Courses.isLoaded() || !currentConfig) return new Map();
+    return Courses.computeCourseSlots(memberCourseView(member), Courses.courseDateWindow(currentConfig.rangeDays));
   }
 
   // Revalide côté client les mêmes limites que firestore.rules, AVANT
@@ -4075,45 +3664,16 @@ function runAdmin() {
     return null;
   }
 
-  // Applique le remplissage à UN membre en base (marks + courses/courseMarkedKeys
-  // tenus synchronisés avec "Mes cours" côté public, union jamais destructive) —
-  // part de ses marks actuelles en base, pas de fillState (pour rester correct
-  // même quand ce n'est pas le membre affiché dans la grille au-dessus).
-  async function persistProgramFillForMember(member, matchingCourses, desiredKeys) {
+  // Applique les cours d'UN membre en base : cases vides seulement, jamais
+  // un créneau marqué à la main, jamais le passé.
+  async function persistProgramFillForMember(member, fill) {
     const marks = await db.getMarks(member.id);
-    let added = 0;
-    desiredKeys.forEach((key) => {
-      if (!(key in marks)) {
-        marks[key] = "unavailable";
-        added++;
-      }
-    });
-    const existingCourses = new Set(member.courses || []);
-    matchingCourses.forEach((c) => existingCourses.add(c.code));
-    const mergedCourseMarkedKeys = new Set([...(member.courseMarkedKeys || []), ...desiredKeys]);
-    const coursesArr = Array.from(existingCourses);
-    const courseMarkedKeysArr = Array.from(mergedCourseMarkedKeys);
-
+    const res = Courses.applyCoursesToMarks(fill.view, marks, currentConfig.rangeDays);
     const availabilityViolation = findAvailabilityDocRuleViolation(member.name, marks);
-    const memberViolation = findMemberDocRuleViolation({
-      ...member,
-      courses: coursesArr,
-      courseMarkedKeys: courseMarkedKeysArr,
-    });
-    console.log("[Remplir depuis programme]", member.name, {
-      marksCount: Object.keys(marks).length,
-      coursesCount: coursesArr.length,
-      courseMarkedKeysCount: courseMarkedKeysArr.length,
-      programsCount: (member.programs || []).length,
-      availabilityViolation,
-      memberViolation,
-    });
     if (availabilityViolation) throw new Error(`Blocage prévisible (disponibilités) : ${availabilityViolation}`);
-    if (memberViolation) throw new Error(`Blocage prévisible (fiche membre) : ${memberViolation}`);
-
     await db.saveMarks(member.id, member.name, marks);
-    await db.updateMemberCourses(member.id, member.name, coursesArr, courseMarkedKeysArr, member.groupSessions || []);
-    return added;
+    await db.updateMemberCourses(member.id, member.name, fill.view.courses, res.courseMarkedKeys, fill.view.groupSessions);
+    return res.added;
   }
 
   // Bouton manuel "Remplir depuis son programme" — même pipeline que "Mes
@@ -4129,24 +3689,22 @@ function runAdmin() {
       return;
     }
     const member = currentMembers.find((m) => m.id === fillState.password);
-    if (!member || !Array.isArray(member.programs) || !member.programs.length) {
-      fillStatus.textContent = `${fillState.name} n'a pas de programme renseigné sur sa fiche (Membres → Modifier) — rien à remplir automatiquement.`;
-      return;
-    }
-    fillStatus.textContent = "Chargement du catalogue de cours…";
+    fillStatus.textContent = "Chargement des horaires…";
     await loadStudentLoadCatalogue();
-    const { matchingCourses, desiredKeys } = computeProgramFillForMember(member);
-    if (!matchingCourses.length) {
-      fillStatus.textContent = `Aucun cours trouvé dans le catalogue pour le(s) programme(s) de ${fillState.name}.`;
+    const fill = computeProgramFillForMember(member || {});
+    if (!fill.courseCount) {
+      fillStatus.textContent = `${fillState.name} n'a ni cours choisis ni programme reconnu — c'est à lui/elle de remplir son profil (👤 Mon profil).`;
       return;
     }
     fillStatus.textContent = "Enregistrement…";
     try {
-      const added = await persistProgramFillForMember(member, matchingCourses, desiredKeys);
+      const added = await persistProgramFillForMember(member, fill);
       const refreshed = await db.getMarks(fillState.password);
       fillState = { ...fillState, marks: { ...refreshed } };
       renderFillGrid();
-      fillStatus.textContent = `${added} créneau(x) marqué(s) "pas dispo" d'après le programme de ${fillState.name} (hors langues, TP/labos et cours à horaire qui se chevauche (options/groupes parallèles), propres à chaque étudiant·e — les créneaux déjà marqués à la main n'ont pas été touchés).`;
+      fillStatus.textContent = fill.fromProfile
+        ? `${added} créneau(x) de cours ajouté(s), d'après les cours choisis par ${fillState.name} dans son profil.`
+        : `${added} créneau(x) ajouté(s) d'après les cours obligatoires de son programme (${fillState.name} n'a pas encore rempli son profil : langues et groupes de TP non inclus).`;
     } catch (err) {
       console.error(err);
       fillStatus.textContent = `Échec de l'enregistrement — ${err && err.message ? err.message : "réessaie."}`;
@@ -4160,7 +3718,7 @@ function runAdmin() {
   fillFromProgramAllBtn.addEventListener("click", async () => {
     fillAllStatus.textContent = "Chargement du catalogue de cours…";
     await loadStudentLoadCatalogue();
-    const eligible = currentMembers.filter((m) => Array.isArray(m.programs) && m.programs.length);
+    const eligible = currentMembers.filter((m) => (Array.isArray(m.programs) && m.programs.length) || (Array.isArray(m.courses) && m.courses.length));
     if (!eligible.length) {
       fillAllStatus.textContent = "Aucun membre n'a de programme renseigné sur sa fiche pour l'instant.";
       return;
@@ -4176,12 +3734,12 @@ function runAdmin() {
     // suivants — sinon un seul cas problématique bloque tout le monde.
     for (const member of eligible) {
       try {
-        const { matchingCourses, desiredKeys } = computeProgramFillForMember(member);
-        if (!matchingCourses.length) {
+        const fill = computeProgramFillForMember(member);
+        if (!fill.courseCount) {
           skipped++;
           continue;
         }
-        const added = await persistProgramFillForMember(member, matchingCourses, desiredKeys);
+        const added = await persistProgramFillForMember(member, fill);
         totalAdded += added;
         membersUpdated++;
       } catch (err) {
@@ -4196,9 +3754,9 @@ function runAdmin() {
       fillState = { ...fillState, marks: { ...refreshed } };
       renderFillGrid();
     }
-    const skippedNote = skipped ? ` ${skipped} ignoré(s) (aucun cours trouvé pour leur programme).` : "";
+    const skippedNote = skipped ? ` ${skipped} ignoré(s) (programme non reconnu et aucun cours choisi).` : "";
     const failedNote = failed.length ? ` ⚠️ Échec pour : ${failed.join(", ")}.` : "";
-    fillAllStatus.textContent = `${totalAdded} créneau(x) au total marqué(s) "pas dispo" pour ${membersUpdated} membre(s) (hors langues, TP/labos et cours à horaire qui se chevauche (options/groupes parallèles), propres à chaque étudiant·e).${skippedNote}${failedNote}`;
+    fillAllStatus.textContent = `${totalAdded} créneau(x) de cours ajouté(s) pour ${membersUpdated} membre(s) (d'après leur profil, ou les cours obligatoires de leur programme s'ils ne l'ont pas encore rempli).${skippedNote}${failedNote}`;
   });
 
   function renderFillMemberOptions() {
@@ -4566,22 +4124,24 @@ function runAdmin() {
     }
 
     const newValue = fillQuickMode === "clear" ? null : fillQuickMode;
-    // Pas de case "seulement les cases vides" à cocher à l'avance : si des
-    // créneaux ciblés sont déjà marqués, on demande à la volée s'il faut les
-    // garder ou les remplacer — même principe que côté public.
+    // Le vide se remplit sans rien demander ; on ne demande que si la règle
+    // ferait passer du vert au rouge ou du rouge au vert (même règle que
+    // côté membre).
     let keysToApply = matchKeys;
     if (newValue) {
-      const alreadyMarked = matchKeys.filter((key) => key in fillState.marks).length;
-      if (alreadyMarked > 0) {
-        const overwrite = confirm(
-          `${alreadyMarked} créneau(x) sur les ${matchKeys.length} ciblés sont déjà marqués (dispo ou pas dispo) pour ${fillState.name}.\n\n` +
-          `OK = les remplacer aussi.\nAnnuler = les garder, ne remplir que les cases encore vides.`
+      const flips = matchKeys.filter((key) => fillState.marks[key] && fillState.marks[key] !== newValue);
+      if (flips.length) {
+        const from = newValue === "available" ? "rouge (pas dispo)" : "vert (dispo)";
+        const to = newValue === "available" ? "vert (dispo)" : "rouge (pas dispo)";
+        const change = confirm(
+          `${flips.length} créneau(x) de ${fillState.name} déjà en ${from} passeraient en ${to}.\n\n` +
+          `OK = les changer aussi.\nAnnuler = ne pas y toucher (seules les cases vides seront remplies).`
         );
-        if (!overwrite) keysToApply = matchKeys.filter((key) => !(key in fillState.marks));
+        if (!change) keysToApply = matchKeys.filter((key) => !fillState.marks[key] || fillState.marks[key] === newValue);
       }
     }
     if (!keysToApply.length) {
-      fillQuickResult.textContent = "Tous les créneaux de cette plage sont déjà marqués — rien à remplir.";
+      fillQuickResult.textContent = "Rien à changer dans cette plage.";
       return;
     }
     keysToApply.forEach((key) => {
@@ -4694,16 +4254,20 @@ function runAdmin() {
       for (const cb of checkedMembers) {
         marksByPassword.set(cb.value, await db.getMarks(cb.value));
       }
+      // Le vide se remplit sans rien demander ; on ne demande que pour les
+      // cases qui passeraient du vert au rouge ou du rouge au vert.
       let overwrite = true;
       if (newValue) {
-        let alreadyMarked = 0;
+        let flips = 0;
         marksByPassword.forEach((marks) => {
-          alreadyMarked += matchKeys.filter((key) => key in marks).length;
+          flips += matchKeys.filter((key) => marks[key] && marks[key] !== newValue).length;
         });
-        if (alreadyMarked > 0) {
+        if (flips > 0) {
+          const from = newValue === "available" ? "rouge (pas dispo)" : "vert (dispo)";
+          const to = newValue === "available" ? "vert (dispo)" : "rouge (pas dispo)";
           overwrite = confirm(
-            `${alreadyMarked} créneau(x) au total sont déjà marqués (dispo ou pas dispo) chez ces ${checkedMembers.length} membre(s), sur cette plage.\n\n` +
-            `OK = les remplacer aussi.\nAnnuler = les garder, ne remplir que les cases encore vides.`
+            `${flips} créneau(x) au total, chez ces ${checkedMembers.length} membre(s), déjà en ${from} passeraient en ${to}.\n\n` +
+            `OK = les changer aussi.\nAnnuler = ne pas y toucher (seules les cases vides seront remplies).`
           );
         }
       }
@@ -4713,7 +4277,7 @@ function runAdmin() {
         const password = cb.value;
         const name = cb.dataset.name;
         const marks = marksByPassword.get(password);
-        const keysForMember = overwrite ? matchKeys : matchKeys.filter((key) => !(key in marks));
+        const keysForMember = overwrite || !newValue ? matchKeys : matchKeys.filter((key) => !marks[key] || marks[key] === newValue);
         keysForMember.forEach((key) => {
           if (newValue) marks[key] = newValue;
           else delete marks[key];
@@ -4722,7 +4286,7 @@ function runAdmin() {
         await db.saveMarks(password, name, marks);
       }
       bulkFillResult.textContent = !totalUpdated
-        ? "Tous les créneaux de cette plage sont déjà marqués pour ces membres — rien à remplir."
+        ? "Rien à changer dans cette plage pour ces membres."
         : `${totalUpdated} créneau(x) mis à jour pour ${checkedMembers.length} membre(s).`;
       if (fillState.password && checkedMembers.some((c) => c.value === fillState.password)) {
         // Le membre affiché dans la grille juste au-dessus vient peut-être
