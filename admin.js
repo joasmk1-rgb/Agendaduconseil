@@ -3544,7 +3544,16 @@ function runAdmin() {
     const programs = member && Array.isArray(member.programs) ? member.programs : [];
     if (!programs.length) return { matchingCourses: [], desiredKeys: new Set() };
     const programSet = new Set(programs);
-    const matchingCourses = (studentLoadCatalogue || []).filter((c) => (c.programs || []).some((p) => programSet.has(p)));
+    // Exclut les entrées "EVT-..." (événements ponctuels d'accueil) : elles
+    // n'ont qu'un jour de semaine + une heure enregistrés (pas de vraie
+    // date), et buildICSFromCourseSessions génère toujours une récurrence
+    // HEBDOMADAIRE jusqu'en 2035 — correct pour un vrai cours, mais ça
+    // bloquerait à tort ce créneau chaque semaine pour un événement qui n'a
+    // lieu qu'une fois. Rattachées à presque tous les programmes, il ne faut
+    // surtout pas les inclure dans ce remplissage automatique.
+    const matchingCourses = (studentLoadCatalogue || []).filter(
+      (c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p))
+    );
     if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
     const sessions = matchingCourses.flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
     const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);

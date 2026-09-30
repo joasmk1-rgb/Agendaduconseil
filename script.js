@@ -1878,8 +1878,15 @@ coursesFromProgramBtn.addEventListener("click", async () => {
     return;
   }
   const programSet = new Set(state.programs);
+  // Exclut les entrées "EVT-..." (événements ponctuels d'accueil : tests de
+  // prérequis, barbecue, séminaires...) : elles n'ont qu'un jour de semaine +
+  // une heure enregistrés (pas de vraie date), et buildICSFromCourseSessions
+  // génère toujours une récurrence HEBDOMADAIRE jusqu'en 2035 — correct pour
+  // un vrai cours, mais ça bloquerait à tort ce créneau chaque semaine pour
+  // un événement qui n'a lieu qu'une fois. Comme ces entrées sont rattachées
+  // à presque tous les programmes, il ne faut surtout pas les inclure ici.
   const matchingCodes = (coursesCatalogue || [])
-    .filter((c) => (c.programs || []).some((p) => programSet.has(p)))
+    .filter((c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p)))
     .map((c) => c.code);
   const before = new Set(state.selectedCourses);
   matchingCodes.forEach((code) => {
