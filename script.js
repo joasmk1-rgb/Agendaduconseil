@@ -86,6 +86,8 @@ const memberDashboardContent = document.getElementById("member-dashboard-content
 const tasksLoginHint = document.getElementById("tasks-login-hint");
 const bulkMarkToggle = document.getElementById("bulk-mark-toggle");
 const bulkMarkPanel = document.getElementById("bulk-mark-panel");
+const quickCoursesHint = document.getElementById("quick-courses-hint");
+const quickCoursesList = document.getElementById("quick-courses-list");
 const bulkDayAll = document.getElementById("bulk-day-all");
 const bulkDayCheckboxes = document.getElementById("bulk-day-checkboxes");
 const bulkStartTime = document.getElementById("bulk-start-time");
@@ -267,6 +269,7 @@ async function enterAsMember(member) {
   if (state.selectedCourses.length || state.groupSessions.length) {
     loadCoursesCatalogue().then(() => renderGrid());
   }
+  renderQuickProgramCoursesList();
   memberNameEl.textContent = member.name;
   adminLink.classList.toggle("hidden", !state.isAdmin);
   loginForm.classList.add("hidden");
@@ -2070,6 +2073,103 @@ coursesFromProgramBtn.addEventListener("click", async () => {
     `N'oublie pas d'ajouter tes 2 langues toi-même (cherche "Anglais", "Espagnol" ou "Néerlandais" ci-dessous). ` +
     coursesStatus.textContent;
 });
+
+// ===================== COURS DE MON PROGRAMME (dans "⚡ Marquage rapide") ====
+// Liste compacte, cours par cours, de TOUS les cours du/des programme(s) du
+// membre (langues et cours à groupes/séminaires inclus, contrairement au
+// bouton "Remplir depuis mon programme" qui ne prend que les cours sûrs à
+// cocher en masse) — directement dans le panneau "⚡ Marquage rapide", sans
+// devoir ouvrir "Mes cours". Chaque coche s'applique tout de suite (comme le
+// reste de "Marquage rapide"), pas besoin d'un bouton "Appliquer" séparé.
+async function renderQuickProgramCoursesList() {
+  if (!quickCoursesList) return;
+  if (!state.programs || !state.programs.length) {
+    quickCoursesHint.textContent = "Aucun programme renseigné sur ta fiche pour l'instant — demande à l'admin de l'ajouter (Membres → Modifier).";
+    quickCoursesList.innerHTML = "";
+    return;
+  }
+  quickCoursesHint.textContent = "Chargement du catalogue…";
+  await loadCoursesCatalogue();
+  quickCoursesHint.textContent = "Coche/décoche un cours pour le marquer \"pas dispo\" à ses heures — appliqué tout de suite.";
+
+  const programSet = new Set(state.programs);
+  const matching = (coursesCatalogue || [])
+    .filter((c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p)))
+    .sort((a, b) => a.code.localeCompare(b.code));
+
+  quickCoursesList.innerHTML = "";
+  if (!matching.length) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = "Aucun cours trouvé dans le catalogue pour ton/tes programme(s).";
+    quickCoursesList.appendChild(p);
+    return;
+  }
+
+  const selected = new Set(state.selectedCourses);
+  const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+
+  matching.forEach((course) => {
+    const label = document.createElement("label");
+    label.className = "course-item";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = selected.has(course.code);
+    checkbox.addEventListener("change", async () => {
+      checkbox.disabled = true;
+      if (checkbox.checked) {
+        if (!state.selectedCourses.includes(course.code)) state.selectedCourses.push(course.code);
+      } else {
+        state.selectedCourses = state.selectedCourses.filter((c) => c !== course.code);
+      }
+      await applySelectedCourses();
+      renderQuickProgramCoursesList();
+    });
+    const text = document.createElement("span");
+    const cmSessions = (course.sessions || []).filter((s) => isReliableCmSession(course, s));
+    const manualSess = (course.sessions || []).filter((s) => isManualChoiceSession(course, s));
+    const scheduleText = cmSessions.map((s) => `${dayNames[s.weekday]} ${s.start}-${s.end}`).join(", ");
+    const scheduleLine = scheduleText || (manualSess.length ? "aucune séance commune — à choisir toi-même ci-dessous" : "");
+    text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleLine}</span>`;
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    quickCoursesList.appendChild(label);
+
+    if (manualSess.length) {
+      const sub = document.createElement("div");
+      sub.className = "course-session-subpicker";
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent = "Séance(s) à choisir toi-même (groupe de TP/labo, ou séance spéciale) — coche celle(s) qui te concernent :";
+      sub.appendChild(hint);
+      const manualSelectedSet = new Set(state.groupSessions);
+      manualSess.forEach((s) => {
+        const key = sessionKey(course.code, s);
+        const sLabel = document.createElement("label");
+        sLabel.className = "course-session-item";
+        const sCheckbox = document.createElement("input");
+        sCheckbox.type = "checkbox";
+        sCheckbox.checked = manualSelectedSet.has(key);
+        sCheckbox.addEventListener("change", async () => {
+          sCheckbox.disabled = true;
+          if (sCheckbox.checked) {
+            if (!state.groupSessions.includes(key)) state.groupSessions.push(key);
+          } else {
+            state.groupSessions = state.groupSessions.filter((k) => k !== key);
+          }
+          await applySelectedCourses();
+          renderQuickProgramCoursesList();
+        });
+        const sText = document.createElement("span");
+        sText.textContent = `${groupSessionLabel(course, s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
+        sLabel.appendChild(sCheckbox);
+        sLabel.appendChild(sText);
+        sub.appendChild(sLabel);
+      });
+      quickCoursesList.appendChild(sub);
+    }
+  });
+}
 
 // ===================== RENDU DE LA GRILLE =====================
 // La grille (cours bloqués + événements) est visible par tout le monde, avec

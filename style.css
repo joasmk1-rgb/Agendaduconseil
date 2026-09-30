@@ -534,6 +534,10 @@ main.main-layout {
 }
 .bulk-mark-panel .control-group { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; }
 
+.quick-courses-sep { border: none; border-top: 1px solid var(--color-border, #e5e7eb); margin: 4px 0; }
+.quick-program-courses summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.quick-program-courses .courses-list { max-height: 260px; }
+
 .polling-slot-quickselect {
   margin: 10px 0;
   padding: 10px 12px;
