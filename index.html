@@ -60,8 +60,8 @@
         <span class="greeting">Bonjour, <strong id="member-name"></strong></span>
         <button type="button" id="ics-import-btn" class="btn btn-ghost btn-sm" title="Importe un fichier .ics (ex: export de ton horaire de cours) pour marquer automatiquement ces créneaux en pas dispo">📅 Importer mon calendrier</button>
         <input type="file" id="ics-file-input" accept=".ics,text/calendar" class="hidden">
-        <button type="button" id="courses-btn" class="btn btn-ghost btn-sm" title="Choisis tes cours (LSM/ESPO FUCaM Mons) pour bloquer automatiquement leurs horaires">🎓 Mes cours</button>
         <a id="admin-link" href="admin.html" class="btn btn-ghost btn-sm hidden">Panneau admin</a>
+        <button type="button" id="profile-btn" class="btn btn-ghost btn-sm" title="Choisis le ou les programme(s) que tu suis — ça alimente 'Mes cours' dans le Marquage rapide">👤 Mon profil</button>
         <button type="button" id="password-change-btn" class="btn btn-ghost btn-sm hidden">🔑 Changer mon mot de passe</button>
         <button type="button" id="logout-btn" class="btn btn-ghost btn-sm">Se déconnecter</button>
       </div>
@@ -73,35 +73,14 @@
         <button type="button" id="password-change-cancel-btn" class="btn btn-ghost btn-sm">Annuler</button>
       </form>
       <p id="password-change-status" class="hint"></p>
-      <div id="courses-panel" class="courses-panel hidden">
-        <p class="hint">Choisis ta faculté et ton année pour voir tes cours, ou cherche directement par code/nom. Coche ceux que tu suis vraiment — leurs horaires seront automatiquement marqués "pas dispo" sur ton calendrier, sans toucher aux créneaux que tu as déjà marqués toi-même. Décoche un cours et clique "Appliquer" pour retirer ses créneaux.</p>
-        <div class="control-group actions">
-          <button type="button" id="courses-from-program-btn" class="btn btn-ghost btn-sm" title="Si l'admin a renseigné ton programme sur ta fiche, coche et applique d'un coup tous ses cours">🎓 Remplir depuis mon programme</button>
-          <button type="button" id="courses-clear-all-btn" class="btn btn-ghost btn-sm" title="Décoche tous tes cours et groupes de TP/labo, et retire tous les créneaux 'pas dispo' que ça avait posé (jamais les créneaux marqués à la main)">🗑️ Retirer tous mes cours</button>
-        </div>
-        <div class="courses-filters">
-          <select id="courses-filter-faculte">
-            <option value="">Toutes facultés</option>
-            <option value="LSM">LSM (gestion)</option>
-            <option value="ESPO">ESPO (sciences po/sociales/com)</option>
-          </select>
-          <select id="courses-filter-niveau">
-            <option value="">Tous niveaux</option>
-            <option value="Bac">Bac</option>
-            <option value="Master">Master</option>
-          </select>
-          <select id="courses-filter-programme">
-            <option value="">Tous les programmes</option>
-          </select>
-        </div>
-        <input type="search" id="courses-search" placeholder="Ou rechercher directement un cours (code ou nom)…" autocomplete="off">
-        <p id="courses-selected-count" class="hint"></p>
-        <div id="courses-list" class="courses-list"></div>
+      <div id="profile-panel" class="courses-panel hidden">
+        <p class="hint">Le ou les programme(s) que tu suis (data/mons-programs.json) — sert à te proposer direct tes cours dans "⚡ Marquage rapide", sans devoir chercher toi-même chaque cours par code/nom.</p>
+        <div id="profile-programs-checkboxes" class="checkbox-list courses-checkbox-list member-programs-checkboxes"></div>
         <div class="courses-panel-actions">
-          <button type="button" id="courses-apply-btn" class="btn btn-primary btn-sm">Appliquer à mon calendrier</button>
-          <button type="button" id="courses-close-btn" class="btn btn-ghost btn-sm">Fermer</button>
+          <button type="button" id="profile-save-btn" class="btn btn-primary btn-sm">Enregistrer</button>
+          <button type="button" id="profile-close-btn" class="btn btn-ghost btn-sm">Fermer</button>
         </div>
-        <p id="courses-status" class="hint"></p>
+        <p id="profile-status" class="hint"></p>
       </div>
     </div>
   </section>
@@ -162,9 +141,31 @@
 
         <hr class="quick-courses-sep">
         <details id="quick-courses-details" class="quick-program-courses" open>
-          <summary>📚 Cours de mon programme (coche un par un)</summary>
-          <p id="quick-courses-hint" class="hint"></p>
-          <div id="quick-courses-list" class="courses-list quick-courses-list"></div>
+          <summary>📚 Mes cours</summary>
+          <p class="hint">Coche tes cours (LSM/ESPO FUCaM Mons) — ça bloque tout de suite leurs horaires sur ton calendrier, sans toucher aux créneaux que tu as déjà marqués toi-même. Par défaut : les cours de ton/tes programme(s) (👤 Mon profil) ; cherche pour en trouver d'autres.</p>
+          <div class="control-group actions">
+            <button type="button" id="courses-from-program-btn" class="btn btn-ghost btn-sm" title="Coche et applique d'un coup tous les cours de ton/tes programme(s) (hors langues et TP/labos)">🎓 Remplir depuis mon programme</button>
+            <button type="button" id="courses-clear-all-btn" class="btn btn-ghost btn-sm" title="Décoche tous tes cours et groupes de TP/labo, et retire tous les créneaux 'pas dispo' que ça avait posé (jamais les créneaux marqués à la main)">🗑️ Retirer tous mes cours</button>
+          </div>
+          <div class="courses-filters">
+            <select id="courses-filter-faculte">
+              <option value="">Toutes facultés</option>
+              <option value="LSM">LSM (gestion)</option>
+              <option value="ESPO">ESPO (sciences po/sociales/com)</option>
+            </select>
+            <select id="courses-filter-niveau">
+              <option value="">Tous niveaux</option>
+              <option value="Bac">Bac</option>
+              <option value="Master">Master</option>
+            </select>
+            <select id="courses-filter-programme">
+              <option value="">Tous les programmes</option>
+            </select>
+          </div>
+          <input type="search" id="courses-search" placeholder="Ou rechercher directement un cours (code ou nom)…" autocomplete="off">
+          <p id="courses-selected-count" class="hint"></p>
+          <div id="courses-list" class="courses-list quick-courses-list"></div>
+          <p id="courses-status" class="hint"></p>
         </details>
       </div>
     </aside>

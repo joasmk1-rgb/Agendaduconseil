@@ -67,19 +67,21 @@ const pollBanner = document.getElementById("poll-banner");
 const icsImportBtn = document.getElementById("ics-import-btn");
 const icsFileInput = document.getElementById("ics-file-input");
 const icsStatus = document.getElementById("ics-status");
-const coursesBtn = document.getElementById("courses-btn");
-const coursesPanel = document.getElementById("courses-panel");
 const coursesFilterFaculte = document.getElementById("courses-filter-faculte");
 const coursesFilterNiveau = document.getElementById("courses-filter-niveau");
 const coursesFilterProgramme = document.getElementById("courses-filter-programme");
 const coursesSearch = document.getElementById("courses-search");
 const coursesList = document.getElementById("courses-list");
 const coursesSelectedCount = document.getElementById("courses-selected-count");
-const coursesApplyBtn = document.getElementById("courses-apply-btn");
 const coursesFromProgramBtn = document.getElementById("courses-from-program-btn");
 const coursesClearAllBtn = document.getElementById("courses-clear-all-btn");
-const coursesCloseBtn = document.getElementById("courses-close-btn");
 const coursesStatus = document.getElementById("courses-status");
+const profileBtn = document.getElementById("profile-btn");
+const profilePanel = document.getElementById("profile-panel");
+const profileProgramsCheckboxes = document.getElementById("profile-programs-checkboxes");
+const profileSaveBtn = document.getElementById("profile-save-btn");
+const profileCloseBtn = document.getElementById("profile-close-btn");
+const profileStatus = document.getElementById("profile-status");
 const bulkMarkSection = document.getElementById("bulk-mark-section");
 const toggleColBulkBtn = document.getElementById("toggle-col-bulk");
 const toggleColGridBtn = document.getElementById("toggle-col-grid");
@@ -87,8 +89,6 @@ const memberDashboardContent = document.getElementById("member-dashboard-content
 const tasksLoginHint = document.getElementById("tasks-login-hint");
 const bulkMarkToggle = document.getElementById("bulk-mark-toggle");
 const bulkMarkPanel = document.getElementById("bulk-mark-panel");
-const quickCoursesHint = document.getElementById("quick-courses-hint");
-const quickCoursesList = document.getElementById("quick-courses-list");
 const bulkDayAll = document.getElementById("bulk-day-all");
 const bulkDayCheckboxes = document.getElementById("bulk-day-checkboxes");
 const bulkStartTime = document.getElementById("bulk-start-time");
@@ -247,6 +247,8 @@ logoutBtn.addEventListener("click", () => {
   bulkMarkSection.classList.add("hidden");
   passwordChangeForm.classList.add("hidden");
   passwordChangeStatus.textContent = "";
+  profilePanel.classList.add("hidden");
+  profileStatus.textContent = "";
   renderGrid();
   if (state.activeTab === "agenda") renderAgendaTab();
   if (state.openAgendaItemId) renderAgendaModal();
@@ -270,7 +272,9 @@ async function enterAsMember(member) {
   if (state.selectedCourses.length || state.groupSessions.length) {
     loadCoursesCatalogue().then(() => renderGrid());
   }
-  renderQuickProgramCoursesList();
+  refreshCoursesSection();
+  profilePanel.classList.add("hidden");
+  profileStatus.textContent = "";
   memberNameEl.textContent = member.name;
   adminLink.classList.toggle("hidden", !state.isAdmin);
   loginForm.classList.add("hidden");
@@ -341,6 +345,100 @@ passwordChangeForm.addEventListener("submit", async (e) => {
     passwordChangeStatus.textContent = err.message || "Échec du changement, réessaie.";
   }
   submitBtn.disabled = false;
+});
+
+// ===================== MON PROFIL (programme(s) suivi(s)) =====================
+// Permet à chaque membre connecté de choisir lui-même son/ses programme(s)
+// (data/mons-programs.json), sans dépendre de l'admin (Membres → Modifier).
+// Alimente la liste par défaut de "Mes cours" dans "⚡ Marquage rapide" (voir
+// renderCoursesList) et "Remplir depuis mon programme". Si un programme est
+// retiré, nettoie aussi les cours qui n'en dépendent plus (voir
+// computeOrphanedCourseCodes) — même logique que côté admin (admin.js).
+profileBtn.addEventListener("click", async () => {
+  profileStatus.textContent = "Chargement des programmes…";
+  profilePanel.classList.remove("hidden");
+  await loadCoursesCatalogue();
+  profileStatus.textContent = "";
+  renderProfileProgramsCheckboxes();
+});
+
+profileCloseBtn.addEventListener("click", () => {
+  profilePanel.classList.add("hidden");
+});
+
+function renderProfileProgramsCheckboxes() {
+  profileProgramsCheckboxes.innerHTML = "";
+  if (!coursesPrograms || !coursesPrograms.length) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = "Liste des programmes indisponible pour l'instant, réessaie.";
+    profileProgramsCheckboxes.appendChild(p);
+    return;
+  }
+  const selectedPrograms = new Set(state.programs || []);
+  coursesPrograms
+    .slice()
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .forEach((p) => {
+      const label = document.createElement("label");
+      label.className = "course-item";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = p.prog;
+      checkbox.checked = selectedPrograms.has(p.prog);
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(" " + p.label));
+      profileProgramsCheckboxes.appendChild(label);
+    });
+}
+
+// Cours dont AUCUN programme restant ne justifie plus la présence — un cours
+// commun à deux programmes suivis à la fois reste. Même logique que côté
+// admin (admin.js, computeOrphanedCourseCodes) — dupliquée ici côté public
+// puisque les deux fichiers tournent indépendamment, sans module partagé.
+function computeOrphanedCourseCodes(remainingPrograms) {
+  const remainingSet = new Set(remainingPrograms || []);
+  const selected = new Set(state.selectedCourses || []);
+  if (!selected.size || !coursesCatalogue) return new Set();
+  const orphaned = new Set();
+  selected.forEach((code) => {
+    const course = coursesCatalogue.find((c) => c.code === code);
+    if (!course) return; // cours introuvable au catalogue : on n'y touche pas
+    const stillMatches = (course.programs || []).some((p) => remainingSet.has(p));
+    if (!stillMatches) orphaned.add(code);
+  });
+  return orphaned;
+}
+
+profileSaveBtn.addEventListener("click", async () => {
+  if (!state.password) return;
+  const selectedPrograms = Array.from(profileProgramsCheckboxes.querySelectorAll("input:checked")).map((el) => el.value);
+  profileSaveBtn.disabled = true;
+  profileStatus.textContent = "Enregistrement…";
+  try {
+    await loadCoursesCatalogue();
+    // Retire les cours qui ne correspondent plus à AUCUN programme restant
+    // (ex: changement de bloc/année) — jamais un cours partagé avec un
+    // programme encore suivi, ni un créneau modifié à la main.
+    const orphaned = computeOrphanedCourseCodes(selectedPrograms);
+    if (orphaned.size) {
+      state.selectedCourses = state.selectedCourses.filter((c) => !orphaned.has(c));
+      state.groupSessions = (state.groupSessions || []).filter((key) => !orphaned.has(String(key).split("|")[0]));
+    }
+    state.programs = selectedPrograms;
+    await db.updateMemberPrograms(state.password, selectedPrograms);
+    if (orphaned.size) {
+      await applySelectedCourses();
+    }
+    renderCoursesList();
+    profileStatus.textContent = orphaned.size
+      ? `Profil enregistré ✓ (${orphaned.size} cours retiré(s), ils ne correspondaient plus à aucun programme restant).`
+      : "Profil enregistré ✓";
+  } catch (err) {
+    console.error(err);
+    profileStatus.textContent = "Échec de l'enregistrement, réessaie.";
+  }
+  profileSaveBtn.disabled = false;
 });
 
 async function tryAutoLogin() {
@@ -1808,6 +1906,18 @@ function refreshProgrammeOptions() {
   if (matching.some((p) => p.prog === previousValue)) coursesFilterProgramme.value = previousValue;
 }
 
+// Charge le catalogue puis (re)affiche la liste — appelé à la connexion et à
+// chaque ouverture du panneau "⚡ Marquage rapide" (fusion de l'ancien "Mes
+// cours" et de l'ancienne liste "Cours de mon programme" : un seul endroit,
+// une seule liste, chaque coche s'applique tout de suite).
+async function refreshCoursesSection() {
+  coursesStatus.textContent = "Chargement du catalogue…";
+  await loadCoursesCatalogue();
+  coursesStatus.textContent = "";
+  refreshProgrammeOptions();
+  renderCoursesList();
+}
+
 function renderCoursesList() {
   const query = coursesSearch.value.trim().toLowerCase();
   const selected = new Set(state.selectedCourses);
@@ -1829,12 +1939,19 @@ function renderCoursesList() {
     );
   }
 
+  const programSet = new Set(state.programs || []);
   if (query) {
     items = items.filter((c) => c.code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query));
   } else if (!progFilter && !faculteFilter && !niveauFilter) {
-    // Aucun filtre ni recherche : on affiche seulement les cours déjà
-    // sélectionnés (pour relire/décocher facilement), pas les 266 d'un coup.
-    items = items.filter((c) => selected.has(c.code));
+    // Aucun filtre ni recherche : par défaut, les cours de mon/mes
+    // programme(s) (voir "👤 Mon profil") — comme l'ancienne liste "Cours de
+    // mon programme" — plus ceux déjà cochés (utile si l'admin a coché un
+    // cours hors programme, ou si le profil a changé depuis), pour relire/
+    // décocher facilement sans devoir chercher. Si aucun programme réglé, on
+    // retombe sur les cours déjà cochés uniquement.
+    items = programSet.size
+      ? items.filter((c) => !c.code.startsWith("EVT-") && ((c.programs || []).some((p) => programSet.has(p)) || selected.has(c.code)))
+      : items.filter((c) => selected.has(c.code));
   }
   const MAX_SHOWN = 150;
   const shown = items.slice(0, MAX_SHOWN);
@@ -1842,7 +1959,9 @@ function renderCoursesList() {
   if (!query && !progFilter && !faculteFilter && !niveauFilter && shown.length === 0) {
     const p = document.createElement("p");
     p.className = "hint";
-    p.textContent = "Choisis une faculté/année ci-dessus, ou tape un code/nom de cours pour le trouver (ex: \"MGEST\", \"comptabilité\").";
+    p.textContent = programSet.size
+      ? "Aucun cours trouvé dans le catalogue pour ton/tes programme(s) — cherche directement un cours par code/nom ci-dessus."
+      : "Choisis ton programme dans \"👤 Mon profil\" pour voir direct tes cours, ou tape un code/nom de cours pour le trouver (ex: \"MGEST\", \"comptabilité\").";
     coursesList.appendChild(p);
   } else if (shown.length === 0) {
     const p = document.createElement("p");
@@ -1856,13 +1975,14 @@ function renderCoursesList() {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = selected.has(course.code);
-    checkbox.addEventListener("change", () => {
+    checkbox.addEventListener("change", async () => {
+      checkbox.disabled = true;
       if (checkbox.checked) {
         if (!state.selectedCourses.includes(course.code)) state.selectedCourses.push(course.code);
       } else {
         state.selectedCourses = state.selectedCourses.filter((c) => c !== course.code);
       }
-      updateCoursesSelectedCount();
+      await applySelectedCourses();
       renderCoursesList();
     });
     const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
@@ -1898,12 +2018,15 @@ function renderCoursesList() {
         const sCheckbox = document.createElement("input");
         sCheckbox.type = "checkbox";
         sCheckbox.checked = manualSelectedSet.has(key);
-        sCheckbox.addEventListener("change", () => {
+        sCheckbox.addEventListener("change", async () => {
+          sCheckbox.disabled = true;
           if (sCheckbox.checked) {
             if (!state.groupSessions.includes(key)) state.groupSessions.push(key);
           } else {
             state.groupSessions = state.groupSessions.filter((k) => k !== key);
           }
+          await applySelectedCourses();
+          renderCoursesList();
         });
         const sText = document.createElement("span");
         sText.textContent = `${groupSessionLabel(course, s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
@@ -1920,6 +2043,7 @@ function renderCoursesList() {
     p.textContent = `... et ${items.length - MAX_SHOWN} autre(s) résultat(s), affine ta recherche.`;
     coursesList.appendChild(p);
   }
+  updateCoursesSelectedCount();
 }
 
 function updateCoursesSelectedCount() {
@@ -1927,20 +2051,6 @@ function updateCoursesSelectedCount() {
     ? `${state.selectedCourses.length} cours sélectionné(s).`
     : "Aucun cours sélectionné pour l'instant.";
 }
-
-coursesBtn.addEventListener("click", async () => {
-  coursesPanel.classList.remove("hidden");
-  coursesStatus.textContent = "Chargement du catalogue…";
-  await loadCoursesCatalogue();
-  coursesStatus.textContent = "";
-  refreshProgrammeOptions();
-  updateCoursesSelectedCount();
-  renderCoursesList();
-});
-
-coursesCloseBtn.addEventListener("click", () => {
-  coursesPanel.classList.add("hidden");
-});
 
 coursesSearch.addEventListener("input", renderCoursesList);
 coursesFilterFaculte.addEventListener("change", () => {
@@ -2024,8 +2134,6 @@ async function applySelectedCourses() {
   }
 }
 
-coursesApplyBtn.addEventListener("click", applySelectedCourses);
-
 // "🗑️ Retirer tous mes cours" : décoche tout (cours + groupes de TP/labo/
 // séances spéciales), puis applique directement — applySelectedCourses()
 // compare toujours desiredKeys (ici vide) à l'existant et ne retire QUE les
@@ -2046,7 +2154,6 @@ if (coursesClearAllBtn) {
       state.groupSessions = [];
       await applySelectedCourses();
       renderCoursesList();
-      renderQuickProgramCoursesList();
     } finally {
       coursesClearAllBtn.disabled = false;
     }
@@ -2101,103 +2208,6 @@ coursesFromProgramBtn.addEventListener("click", async () => {
     `N'oublie pas d'ajouter tes 2 langues toi-même (cherche "Anglais", "Espagnol" ou "Néerlandais" ci-dessous). ` +
     coursesStatus.textContent;
 });
-
-// ===================== COURS DE MON PROGRAMME (dans "⚡ Marquage rapide") ====
-// Liste compacte, cours par cours, de TOUS les cours du/des programme(s) du
-// membre (langues et cours à groupes/séminaires inclus, contrairement au
-// bouton "Remplir depuis mon programme" qui ne prend que les cours sûrs à
-// cocher en masse) — directement dans le panneau "⚡ Marquage rapide", sans
-// devoir ouvrir "Mes cours". Chaque coche s'applique tout de suite (comme le
-// reste de "Marquage rapide"), pas besoin d'un bouton "Appliquer" séparé.
-async function renderQuickProgramCoursesList() {
-  if (!quickCoursesList) return;
-  if (!state.programs || !state.programs.length) {
-    quickCoursesHint.textContent = "Aucun programme renseigné sur ta fiche pour l'instant — demande à l'admin de l'ajouter (Membres → Modifier).";
-    quickCoursesList.innerHTML = "";
-    return;
-  }
-  quickCoursesHint.textContent = "Chargement du catalogue…";
-  await loadCoursesCatalogue();
-  quickCoursesHint.textContent = "Coche/décoche un cours pour le marquer \"pas dispo\" à ses heures — appliqué tout de suite.";
-
-  const programSet = new Set(state.programs);
-  const matching = (coursesCatalogue || [])
-    .filter((c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p)))
-    .sort((a, b) => a.code.localeCompare(b.code));
-
-  quickCoursesList.innerHTML = "";
-  if (!matching.length) {
-    const p = document.createElement("p");
-    p.className = "hint";
-    p.textContent = "Aucun cours trouvé dans le catalogue pour ton/tes programme(s).";
-    quickCoursesList.appendChild(p);
-    return;
-  }
-
-  const selected = new Set(state.selectedCourses);
-  const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
-
-  matching.forEach((course) => {
-    const label = document.createElement("label");
-    label.className = "course-item";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = selected.has(course.code);
-    checkbox.addEventListener("change", async () => {
-      checkbox.disabled = true;
-      if (checkbox.checked) {
-        if (!state.selectedCourses.includes(course.code)) state.selectedCourses.push(course.code);
-      } else {
-        state.selectedCourses = state.selectedCourses.filter((c) => c !== course.code);
-      }
-      await applySelectedCourses();
-      renderQuickProgramCoursesList();
-    });
-    const text = document.createElement("span");
-    const cmSessions = (course.sessions || []).filter((s) => isReliableCmSession(course, s));
-    const manualSess = (course.sessions || []).filter((s) => isManualChoiceSession(course, s));
-    const scheduleText = cmSessions.map((s) => `${dayNames[s.weekday]} ${s.start}-${s.end}`).join(", ");
-    const scheduleLine = scheduleText || (manualSess.length ? "aucune séance commune — à choisir toi-même ci-dessous" : "");
-    text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleLine}</span>`;
-    label.appendChild(checkbox);
-    label.appendChild(text);
-    quickCoursesList.appendChild(label);
-
-    if (manualSess.length) {
-      const sub = document.createElement("div");
-      sub.className = "course-session-subpicker";
-      const hint = document.createElement("p");
-      hint.className = "hint";
-      hint.textContent = "Séance(s) à choisir toi-même (groupe de TP/labo, ou séance spéciale) — coche celle(s) qui te concernent :";
-      sub.appendChild(hint);
-      const manualSelectedSet = new Set(state.groupSessions);
-      manualSess.forEach((s) => {
-        const key = sessionKey(course.code, s);
-        const sLabel = document.createElement("label");
-        sLabel.className = "course-session-item";
-        const sCheckbox = document.createElement("input");
-        sCheckbox.type = "checkbox";
-        sCheckbox.checked = manualSelectedSet.has(key);
-        sCheckbox.addEventListener("change", async () => {
-          sCheckbox.disabled = true;
-          if (sCheckbox.checked) {
-            if (!state.groupSessions.includes(key)) state.groupSessions.push(key);
-          } else {
-            state.groupSessions = state.groupSessions.filter((k) => k !== key);
-          }
-          await applySelectedCourses();
-          renderQuickProgramCoursesList();
-        });
-        const sText = document.createElement("span");
-        sText.textContent = `${groupSessionLabel(course, s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
-        sLabel.appendChild(sCheckbox);
-        sLabel.appendChild(sText);
-        sub.appendChild(sLabel);
-      });
-      quickCoursesList.appendChild(sub);
-    }
-  });
-}
 
 // ===================== RENDU DE LA GRILLE =====================
 // La grille (cours bloqués + événements) est visible par tout le monde, avec
