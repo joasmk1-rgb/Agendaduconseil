@@ -444,10 +444,17 @@ function runAdmin() {
   resetBtn.addEventListener("click", async () => {
     const ok = confirm("Réinitialiser les disponibilités de tout le monde ? (archivées avant d'être effacées)");
     if (!ok) return;
+    const alsoProfiles = confirm(
+      "Effacer aussi les programmes et les cours de tout le monde ?\n\n" +
+        "OK = oui, tout le monde repart de zéro (recommandé : sinon les cours se remettent en rouge dès que la personne se reconnecte).\n" +
+        "Annuler = garder les programmes/cours."
+    );
     configStatus.textContent = "Réinitialisation…";
     try {
-      await db.resetAvailability();
-      configStatus.textContent = "Disponibilités réinitialisées ✓";
+      await db.resetAvailability(alsoProfiles);
+      configStatus.textContent = alsoProfiles
+        ? "Tout est remis à zéro ✓ (dispos + programmes + cours). Demande à chacun de recharger la page (Ctrl+Maj+R) avant de remplir."
+        : "Disponibilités réinitialisées ✓";
     } catch (err) {
       console.error(err);
       configStatus.textContent = "Échec de la réinitialisation.";

@@ -784,16 +784,32 @@ export function listenArchive(callback) {
 
 // Archive toutes les disponibilités actuelles puis les efface (les membres,
 // la config et les événements restent inchangés).
-export async function resetAvailability() {
+// alsoProfiles : efface aussi programme/cours/groupes de chaque membre —
+// sinon les cours se remettent en rouge à leur prochaine connexion.
+export async function resetAvailability(alsoProfiles = false) {
   const snap = await getDocs(collection(firestore, "availability"));
-  if (snap.empty) return;
+  const membersSnap = alsoProfiles ? await getDocs(collection(firestore, "members")) : null;
+  if (snap.empty && !alsoProfiles) return;
 
   const batch = writeBatch(firestore);
   const archiveId = `archive-${Date.now()}`;
-  batch.set(doc(firestore, "archive", archiveId), {
-    availability: toDocs(snap),
-    archivedAt: serverTimestamp(),
-  });
+  const archive = { availability: toDocs(snap), archivedAt: serverTimestamp() };
+  if (membersSnap) {
+    archive.profiles = toDocs(membersSnap).map((m) => ({
+      id: m.id,
+      name: m.name || "",
+      programs: m.programs || [],
+      courses: m.courses || [],
+      groupSessions: m.groupSessions || [],
+      courseSkips: m.courseSkips || [],
+    }));
+  }
+  batch.set(doc(firestore, "archive", archiveId), archive);
   snap.forEach((d) => batch.delete(d.ref));
+  if (membersSnap) {
+    membersSnap.forEach((d) =>
+      batch.set(d.ref, { programs: [], courses: [], groupSessions: [], courseSkips: [], courseMarkedKeys: [] }, { merge: true })
+    );
+  }
   await batch.commit();
 }
