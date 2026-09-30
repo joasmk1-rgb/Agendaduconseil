@@ -3538,10 +3538,20 @@ function runAdmin() {
 
   // Identifie une séance précise d'un cours (jour+horaire), indépendamment
   // de sa position dans le tableau "sessions" — sert de clé stable pour les
-  // exclusions par séance (member.excludedSessions), même reconstruite dans
-  // script.js côté public avec la même formule.
+  // groupes de TP/labo choisis par un membre (member.groupSessions), même
+  // reconstruite dans script.js côté public avec la même formule.
   function sessionKey(code, session) {
     return `${code}|${session.weekday}|${session.start}|${session.end}`;
+  }
+
+  // Une séance de TP/labo (groupe précis, propre à chaque étudiant) se
+  // reconnaît à son event_code : "MANGL1120-1 Labos Gr3", "MCOMU1101-TP
+  // GroupeA", "MAGES2304 - TP"... contrairement à un cours magistral, commun
+  // à tout le monde du programme ("MAGES2304 - Cours magistral"). Basé sur
+  // l'inspection réelle du catalogue (data/mons-courses-catalogue.json).
+  const GROUP_SESSION_PATTERN = /\bTP\b|labo|groupe|\bgr\.?\s*\d/i;
+  function isGroupSession(session) {
+    return GROUP_SESSION_PATTERN.test((session && session.event_code) || "");
   }
 
   // Calcule, pour un membre donné (déjà pourvu de son "programs"), les
@@ -3563,14 +3573,16 @@ function runAdmin() {
       (c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p))
     );
     if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
-    // Respecte les séances que CE membre a lui-même exclues (via "Mes cours"
-    // côté public) pour un cours à groupes parallèles — l'admin ne peut pas
-    // deviner à sa place quel groupe est le sien, donc si rien n'est encore
-    // exclu, toutes les séances du cours restent incluses comme avant.
-    const excludedSessSet = new Set((member && member.excludedSessions) || []);
+    // Ne marque jamais les séances de TP/labo automatiquement : elles dépendent
+    // du groupe précis de CHAQUE étudiant, que l'admin ne peut pas deviner à
+    // sa place — seuls les cours magistraux (communs à tout le programme)
+    // sont sûrs à remplir en masse. Le membre ajoute son propre groupe de
+    // TP/labo lui-même, depuis "Mes cours" (à part, voir script.js) ; comme
+    // ce remplissage est toujours additif (jamais destructif, voir
+    // persistProgramFillForMember), ça ne touche jamais à ce choix.
     const sessions = matchingCourses.flatMap((c) =>
       (c.sessions || [])
-        .filter((s) => !excludedSessSet.has(sessionKey(c.code, s)))
+        .filter((s) => !isGroupSession(s))
         .map((s) => ({ ...s, title: c.name }))
     );
     // Plafonné à 3 mois (90 jours) même si la période affichée du site
@@ -3617,8 +3629,8 @@ function runAdmin() {
     if ("programs" in resultingDoc && resultingDoc.programs != null && (!Array.isArray(resultingDoc.programs) || resultingDoc.programs.length >= 10)) {
       return `trop de programmes sur la fiche (${(resultingDoc.programs || []).length}, la règle actuelle limite à 9)`;
     }
-    if ("excludedSessions" in resultingDoc && resultingDoc.excludedSessions != null && (!Array.isArray(resultingDoc.excludedSessions) || resultingDoc.excludedSessions.length >= 500)) {
-      return `trop de séances exclues (${(resultingDoc.excludedSessions || []).length}, la règle actuelle limite à 499)`;
+    if ("groupSessions" in resultingDoc && resultingDoc.groupSessions != null && (!Array.isArray(resultingDoc.groupSessions) || resultingDoc.groupSessions.length >= 500)) {
+      return `trop de groupes de TP/labo enregistrés (${(resultingDoc.groupSessions || []).length}, la règle actuelle limite à 499)`;
     }
     return null;
   }
@@ -3671,7 +3683,7 @@ function runAdmin() {
     if (memberViolation) throw new Error(`Blocage prévisible (fiche membre) : ${memberViolation}`);
 
     await db.saveMarks(member.id, member.name, marks);
-    await db.updateMemberCourses(member.id, member.name, coursesArr, courseMarkedKeysArr, member.excludedSessions || []);
+    await db.updateMemberCourses(member.id, member.name, coursesArr, courseMarkedKeysArr, member.groupSessions || []);
     return added;
   }
 

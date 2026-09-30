@@ -103,21 +103,23 @@ export async function hasAnyAdmin() {
 
 // ---------------------- Cours suivis (catalogue FUCaM Mons) ----------------------
 // members/{password}.courses = [code de cours, ...] sélectionnés par le
-// membre. .courseMarkedKeys = ["YYYY-MM-DD|HH:MM", ...] : les créneaux que la
-// fonctionnalité "Mes cours" a marqués "pas dispo" en dernier, pour pouvoir
-// les retirer proprement si le membre décoche un cours par la suite (sans
-// jamais toucher un créneau modifié à la main depuis). .excludedSessions =
-// ["CODE|weekday|start|end", ...] : séances d'un cours à plusieurs groupes
-// parallèles que CE membre a explicitement exclues (ce n'est pas son groupe).
-// "name" est réécrit explicitement ici (même valeur qu'avant) : les règles
-// Firestore exigent 'name' sur toute écriture members/{password}, et même si
-// une écriture merge est censée re-valider le document complet résultant (donc
+// membre (cours magistraux, communs à tout le programme). .courseMarkedKeys =
+// ["YYYY-MM-DD|HH:MM", ...] : les créneaux que la fonctionnalité "Mes cours"
+// a marqués "pas dispo" en dernier, pour pouvoir les retirer proprement si le
+// membre décoche un cours par la suite (sans jamais toucher un créneau
+// modifié à la main depuis). .groupSessions = ["CODE|weekday|start|end", ...]
+// : séances de TP/labo (groupe précis, propre à CE membre) qu'il a lui-même
+// choisi d'ajouter — jamais déduites automatiquement, contrairement aux cours
+// magistraux, puisque le groupe dépend de chaque étudiant. "name" est
+// réécrit explicitement ici (même valeur qu'avant) : les règles Firestore
+// exigent 'name' sur toute écriture members/{password}, et même si une
+// écriture merge est censée re-valider le document complet résultant (donc
 // le "name" déjà en base), on préfère ne pas en dépendre — l'inclure
 // explicitement rend cette écriture valide sans aucune ambiguïté.
-export async function updateMemberCourses(password, name, courses, courseMarkedKeys, excludedSessions) {
+export async function updateMemberCourses(password, name, courses, courseMarkedKeys, groupSessions) {
   await setDoc(
     doc(firestore, "members", password),
-    { name, courses, courseMarkedKeys, excludedSessions: excludedSessions || [] },
+    { name, courses, courseMarkedKeys, groupSessions: groupSessions || [] },
     { merge: true }
   );
 }

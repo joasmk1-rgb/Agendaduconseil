@@ -13,7 +13,7 @@ service cloud.firestore {
                    && (!('courses' in request.resource.data) || (request.resource.data.courses is list && request.resource.data.courses.size() < 300))
                    && (!('courseMarkedKeys' in request.resource.data) || (request.resource.data.courseMarkedKeys is list && request.resource.data.courseMarkedKeys.size() < 20000))
                    && (!('programs' in request.resource.data) || (request.resource.data.programs is list && request.resource.data.programs.size() < 10))
-                   && (!('excludedSessions' in request.resource.data) || (request.resource.data.excludedSessions is list && request.resource.data.excludedSessions.size() < 500));
+                   && (!('groupSessions' in request.resource.data) || (request.resource.data.groupSessions is list && request.resource.data.groupSessions.size() < 500));
       allow delete: if true;
     }
 

@@ -23,7 +23,7 @@ let state = {
   selectedCourses: [], // codes de cours choisis dans "Mes cours"
   courseMarkedKeys: [], // dernières clés de créneaux posées par "Mes cours"
   programs: [], // programme(s) renseigné(s) par l'admin sur la fiche (data/mons-programs.json)
-  excludedSessionKeys: [], // séances exclues (groupes parallèles qui ne sont pas les miennes) — "CODE|weekday|start|end"
+  groupSessions: [], // groupes de TP/labo choisis à part (propres à ce membre) — "CODE|weekday|start|end"
   mode: "available",
   tasks: [],
   polls: [],
@@ -258,11 +258,12 @@ async function enterAsMember(member) {
   state.selectedCourses = Array.isArray(member.courses) ? member.courses : [];
   state.courseMarkedKeys = Array.isArray(member.courseMarkedKeys) ? member.courseMarkedKeys : [];
   state.programs = Array.isArray(member.programs) ? member.programs : [];
-  state.excludedSessionKeys = Array.isArray(member.excludedSessions) ? member.excludedSessions : [];
-  // Charge le catalogue en tâche de fond dès la connexion si des cours sont
-  // déjà sélectionnés, pour que le nom du cours puisse s'afficher sur la
-  // grille sans attendre que le membre ouvre "Mes cours" au moins une fois.
-  if (state.selectedCourses.length) {
+  state.groupSessions = Array.isArray(member.groupSessions) ? member.groupSessions : [];
+  // Charge le catalogue en tâche de fond dès la connexion si des cours ou des
+  // groupes de TP/labo sont déjà sélectionnés, pour que le nom du cours
+  // puisse s'afficher sur la grille sans attendre que le membre ouvre "Mes
+  // cours" au moins une fois.
+  if (state.selectedCourses.length || state.groupSessions.length) {
     loadCoursesCatalogue().then(() => renderGrid());
   }
   memberNameEl.textContent = member.name;
@@ -1690,39 +1691,25 @@ function toMinutesLocal(t) {
 }
 
 // Identifie une séance précise d'un cours (jour+horaire) — clé stable pour
-// les exclusions par séance (state.excludedSessionKeys / member.excludedSessions),
-// indépendante de sa position dans le tableau "sessions".
+// les groupes de TP/labo choisis à part (state.groupSessions /
+// member.groupSessions), indépendante de sa position dans le tableau "sessions".
 function sessionKey(code, session) {
   return `${code}|${session.weekday}|${session.start}|${session.end}`;
 }
 
-// Séances d'un même cours qui se chevauchent en horaire le même jour —
-// signal fiable de groupes parallèles (littéralement impossible d'être aux
-// deux en même temps), contrairement à "même jour" seul qui peut être
-// légitime (ex: cours magistral le matin + séance d'exercices l'après-midi).
-// Les données sources n'ont pas de champ "type de séance" (CM/TP/exercices),
-// donc pas de détection garantie à 100% — juste cet indice pour aider à trier.
-function computeOverlappingSessionKeys(course) {
-  const flagged = new Set();
-  const byDay = new Map();
-  (course.sessions || []).forEach((s) => {
-    const list = byDay.get(s.weekday) || [];
-    list.push(s);
-    byDay.set(s.weekday, list);
-  });
-  byDay.forEach((sessions) => {
-    for (let i = 0; i < sessions.length; i++) {
-      for (let j = i + 1; j < sessions.length; j++) {
-        const a = sessions[i];
-        const b = sessions[j];
-        if (toMinutesLocal(a.start) < toMinutesLocal(b.end) && toMinutesLocal(b.start) < toMinutesLocal(a.end)) {
-          flagged.add(sessionKey(course.code, a));
-          flagged.add(sessionKey(course.code, b));
-        }
-      }
-    }
-  });
-  return flagged;
+// Une séance de TP/labo (groupe précis, propre à chaque étudiant) se
+// reconnaît à son event_code : "MANGL1120-1 Labos Gr3", "MCOMU1101-TP
+// GroupeA", "MAGES2304 - TP"... contrairement à un cours magistral, commun à
+// tout le monde du programme ("MAGES2304 - Cours magistral"). Basé sur
+// l'inspection réelle du catalogue (data/mons-courses-catalogue.json) — même
+// formule que admin.js pour rester cohérent.
+const GROUP_SESSION_PATTERN = /\bTP\b|labo|groupe|\bgr\.?\s*\d/i;
+function isGroupSession(session) {
+  return GROUP_SESSION_PATTERN.test((session && session.event_code) || "");
+}
+
+function groupSessionLabel(session) {
+  return (session && session.event_code) || "groupe";
 }
 
 async function loadCoursesCatalogue() {
@@ -1822,46 +1809,45 @@ function renderCoursesList() {
       updateCoursesSelectedCount();
       renderCoursesList();
     });
+    const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+    const cmSessions = (course.sessions || []).filter((s) => !isGroupSession(s));
+    const groupSess = (course.sessions || []).filter((s) => isGroupSession(s));
+
     const text = document.createElement("span");
-    const scheduleText = course.sessions
-      .map((s) => `${["dim", "lun", "mar", "mer", "jeu", "ven", "sam"][s.weekday]} ${s.start}-${s.end}`)
-      .join(", ");
-    text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleText}</span>`;
+    const scheduleText = cmSessions.map((s) => `${dayNames[s.weekday]} ${s.start}-${s.end}`).join(", ");
+    const scheduleLine = scheduleText || (groupSess.length ? "aucune séance commune — uniquement des groupes de TP/labo (voir ci-dessous)" : "");
+    text.innerHTML = `<strong>${course.code}</strong> — ${course.name}<br><span class="course-schedule">${scheduleLine}</span>`;
     label.appendChild(checkbox);
     label.appendChild(text);
     coursesList.appendChild(label);
 
-    // Séances qui se chevauchent le même jour pour ce cours : probablement des
-    // groupes de TP/exercices parallèles. Si le cours est sélectionné, on
-    // propose de décocher celles qui ne sont pas les siennes.
-    const overlapping = computeOverlappingSessionKeys(course);
-    if (overlapping.size && selected.has(course.code)) {
+    // Séances de TP/labo de ce cours : toujours affichées à part, que le
+    // cours "magistral" soit coché ou non — c'est un choix indépendant,
+    // propre à chaque membre (son groupe), jamais déduit automatiquement.
+    if (groupSess.length) {
       const sub = document.createElement("div");
       sub.className = "course-session-subpicker";
-      const warn = document.createElement("p");
-      warn.className = "hint";
-      warn.textContent =
-        "⚠️ Plusieurs séances de ce cours se chevauchent le même jour — probablement des groupes parallèles. Décoche celles qui ne sont pas les tiennes.";
-      sub.appendChild(warn);
-      const excludedSet = new Set(state.excludedSessionKeys);
-      const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
-      (course.sessions || []).forEach((s) => {
+      const hint = document.createElement("p");
+      hint.className = "hint";
+      hint.textContent = "Groupe de TP/labo pour ce cours — coche uniquement le tien :";
+      sub.appendChild(hint);
+      const groupSelectedSet = new Set(state.groupSessions);
+      groupSess.forEach((s) => {
         const key = sessionKey(course.code, s);
-        if (!overlapping.has(key)) return;
         const sLabel = document.createElement("label");
         sLabel.className = "course-session-item";
         const sCheckbox = document.createElement("input");
         sCheckbox.type = "checkbox";
-        sCheckbox.checked = !excludedSet.has(key);
+        sCheckbox.checked = groupSelectedSet.has(key);
         sCheckbox.addEventListener("change", () => {
           if (sCheckbox.checked) {
-            state.excludedSessionKeys = state.excludedSessionKeys.filter((k) => k !== key);
-          } else if (!state.excludedSessionKeys.includes(key)) {
-            state.excludedSessionKeys.push(key);
+            if (!state.groupSessions.includes(key)) state.groupSessions.push(key);
+          } else {
+            state.groupSessions = state.groupSessions.filter((k) => k !== key);
           }
         });
         const sText = document.createElement("span");
-        sText.textContent = `${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
+        sText.textContent = `${groupSessionLabel(s)} — ${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
         sLabel.appendChild(sCheckbox);
         sLabel.appendChild(sText);
         sub.appendChild(sLabel);
@@ -1913,14 +1899,26 @@ async function applySelectedCourses() {
   coursesStatus.textContent = "Application en cours…";
   try {
     const selectedSet = new Set(state.selectedCourses);
-    const excludedSet = new Set(state.excludedSessionKeys || []);
-    const sessions = (coursesCatalogue || [])
+    // Cours cochés : uniquement leurs séances "cours magistral" (jamais les
+    // TP/labos, qui dépendent du groupe précis de chaque membre).
+    const cmSessions = (coursesCatalogue || [])
       .filter((c) => selectedSet.has(c.code))
-      .flatMap((c) =>
-        (c.sessions || [])
-          .filter((s) => !excludedSet.has(sessionKey(c.code, s)))
-          .map((s) => ({ ...s, title: c.name }))
-      );
+      .flatMap((c) => (c.sessions || []).filter((s) => !isGroupSession(s)).map((s) => ({ ...s, title: c.name })));
+    // Groupes de TP/labo choisis à part par ce membre, quel que soit le cours
+    // "magistral" correspondant (coché ou non) — recherchés dans tout le
+    // catalogue par leur clé de séance.
+    const groupKeySet = new Set(state.groupSessions || []);
+    const groupSess = [];
+    if (groupKeySet.size) {
+      (coursesCatalogue || []).forEach((c) => {
+        (c.sessions || []).forEach((s) => {
+          if (groupKeySet.has(sessionKey(c.code, s))) {
+            groupSess.push({ ...s, title: `${c.name} — ${groupSessionLabel(s)}` });
+          }
+        });
+      });
+    }
+    const sessions = cmSessions.concat(groupSess);
 
     // Plafonné à 3 mois (90 jours) même si la période affichée du site est
     // réglée plus large : un programme entier génère déjà beaucoup de
@@ -1954,7 +1952,7 @@ async function applySelectedCourses() {
       state.name,
       state.selectedCourses,
       state.courseMarkedKeys,
-      state.excludedSessionKeys
+      state.groupSessions
     );
     await persistMarks();
     renderGrid();
@@ -1970,11 +1968,11 @@ coursesApplyBtn.addEventListener("click", applySelectedCourses);
 
 // Raccourci "Remplir depuis mon programme" : coche d'un coup tous les cours
 // du/des programme(s) renseigné(s) sur la fiche par l'admin (sans décocher
-// ce que le membre avait déjà choisi à la main), SANS appliquer tout de
-// suite — certains cours peuvent avoir plusieurs séances qui se chevauchent
-// le même jour (groupes de TP/exercices parallèles) : le membre doit d'abord
-// pouvoir décocher celles qui ne sont pas les siennes (visible juste en
-// dessous de chaque cours concerné) avant de cliquer lui-même "Appliquer".
+// ce que le membre avait déjà choisi à la main), puis applique directement —
+// sans risque, puisque seuls les cours magistraux sont concernés (jamais les
+// TP/labos, filtrés par applySelectedCourses). Le membre reste ensuite libre
+// d'ajouter son propre groupe de TP/labo à part (voir juste en dessous de
+// chaque cours concerné dans la liste), ou de cocher/décocher d'autres cours.
 coursesFromProgramBtn.addEventListener("click", async () => {
   if (!state.password) return;
   coursesStatus.textContent = "Chargement du catalogue…";
@@ -2002,7 +2000,8 @@ coursesFromProgramBtn.addEventListener("click", async () => {
   refreshProgrammeOptions();
   renderCoursesList();
   updateCoursesSelectedCount();
-  coursesStatus.textContent = `${addedCount} cours de ton programme ajouté(s) à ta sélection. Vérifie les séances signalées ⚠️ ci-dessous (groupes parallèles probables), décoche celles qui ne sont pas les tiennes, puis clique sur "Appliquer".`;
+  await applySelectedCourses();
+  coursesStatus.textContent = `${addedCount} cours de ton programme ajouté(s) à ta sélection. ` + coursesStatus.textContent;
 });
 
 // ===================== RENDU DE LA GRILLE =====================
@@ -2010,25 +2009,31 @@ coursesFromProgramBtn.addEventListener("click", async () => {
 // ou sans connexion. Les marques personnelles et la possibilité de cliquer ne
 // s'activent qu'une fois connecté (state.password non nul).
 // Pour chaque créneau "pas dispo" posé par "Mes cours", retrouve de quel(s)
-// cours il s'agit (nom affiché en infobulle + petit liseré violet sur la
-// case) — pratique pour comprendre d'un coup d'œil pourquoi un créneau est
-// marqué sans devoir rouvrir le panneau "Mes cours". Les séances exclues
-// (groupes parallèles décochés) n'y figurent pas. Bornée à 90 jours comme le
-// remplissage lui-même, inutile de calculer plus loin.
+// cours/groupe il s'agit (nom affiché en infobulle + petit liseré violet sur
+// la case) — pratique pour comprendre d'un coup d'œil pourquoi un créneau
+// est marqué sans devoir rouvrir le panneau "Mes cours". Bornée à 90 jours
+// comme le remplissage lui-même, inutile de calculer plus loin.
 function computeSelectedCourseLabels() {
   const overlay = new Map();
-  if (!state.config || !coursesCatalogue || !state.selectedCourses || !state.selectedCourses.length) return overlay;
-  const selectedSet = new Set(state.selectedCourses);
-  const excludedSet = new Set(state.excludedSessionKeys || []);
-  const matchingCourses = coursesCatalogue.filter((c) => selectedSet.has(c.code));
-  if (!matchingCourses.length) return overlay;
+  if (!state.config || !coursesCatalogue) return overlay;
+  const selectedSet = new Set(state.selectedCourses || []);
+  const groupKeySet = new Set(state.groupSessions || []);
+  if (!selectedSet.size && !groupKeySet.size) return overlay;
 
   const sessionsByDow = new Map();
-  matchingCourses.forEach((course) => {
+  coursesCatalogue.forEach((course) => {
     (course.sessions || []).forEach((s) => {
-      if (excludedSet.has(sessionKey(course.code, s))) return;
+      const key = sessionKey(course.code, s);
+      const isGroup = isGroupSession(s);
+      let name = null;
+      if (!isGroup && selectedSet.has(course.code)) {
+        name = course.name;
+      } else if (isGroup && groupKeySet.has(key)) {
+        name = `${course.name} — ${groupSessionLabel(s)}`;
+      }
+      if (!name) return;
       const list = sessionsByDow.get(s.weekday) || [];
-      list.push({ start: toMinutesLocal(s.start), end: toMinutesLocal(s.end), name: course.name });
+      list.push({ start: toMinutesLocal(s.start), end: toMinutesLocal(s.end), name });
       sessionsByDow.set(s.weekday, list);
     });
   });
