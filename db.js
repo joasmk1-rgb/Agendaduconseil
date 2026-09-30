@@ -107,8 +107,13 @@ export async function hasAnyAdmin() {
 // fonctionnalité "Mes cours" a marqués "pas dispo" en dernier, pour pouvoir
 // les retirer proprement si le membre décoche un cours par la suite (sans
 // jamais toucher un créneau modifié à la main depuis).
-export async function updateMemberCourses(password, courses, courseMarkedKeys) {
-  await setDoc(doc(firestore, "members", password), { courses, courseMarkedKeys }, { merge: true });
+// "name" est réécrit explicitement ici (même valeur qu'avant) : les règles
+// Firestore exigent 'name' sur toute écriture members/{password}, et même si
+// une écriture merge est censée re-valider le document complet résultant (donc
+// le "name" déjà en base), on préfère ne pas en dépendre — l'inclure
+// explicitement rend cette écriture valide sans aucune ambiguïté.
+export async function updateMemberCourses(password, name, courses, courseMarkedKeys) {
+  await setDoc(doc(firestore, "members", password), { name, courses, courseMarkedKeys }, { merge: true });
 }
 
 // ---------------------- Programme(s) suivi(s) (délégués) ----------------------

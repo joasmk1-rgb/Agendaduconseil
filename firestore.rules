@@ -10,8 +10,8 @@ service cloud.firestore {
                    && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100
                    && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin is bool)
                    && (!('role' in request.resource.data) || (request.resource.data.role is string && request.resource.data.role.size() < 50))
-                   && (!('courses' in request.resource.data) || (request.resource.data.courses is list && request.resource.data.courses.size() < 100))
-                   && (!('courseMarkedKeys' in request.resource.data) || (request.resource.data.courseMarkedKeys is list && request.resource.data.courseMarkedKeys.size() < 6000))
+                   && (!('courses' in request.resource.data) || (request.resource.data.courses is list && request.resource.data.courses.size() < 300))
+                   && (!('courseMarkedKeys' in request.resource.data) || (request.resource.data.courseMarkedKeys is list && request.resource.data.courseMarkedKeys.size() < 20000))
                    && (!('programs' in request.resource.data) || (request.resource.data.programs is list && request.resource.data.programs.size() < 10));
       allow delete: if true;
     }

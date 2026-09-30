@@ -1856,7 +1856,7 @@ async function applySelectedCourses() {
     });
 
     state.courseMarkedKeys = Array.from(desiredKeys);
-    await db.updateMemberCourses(state.password, state.selectedCourses, state.courseMarkedKeys);
+    await db.updateMemberCourses(state.password, state.name, state.selectedCourses, state.courseMarkedKeys);
     await persistMarks();
     renderGrid();
 

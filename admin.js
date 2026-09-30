@@ -3651,7 +3651,7 @@ function runAdmin() {
     if (memberViolation) throw new Error(`Blocage prévisible (fiche membre) : ${memberViolation}`);
 
     await db.saveMarks(member.id, member.name, marks);
-    await db.updateMemberCourses(member.id, coursesArr, courseMarkedKeysArr);
+    await db.updateMemberCourses(member.id, member.name, coursesArr, courseMarkedKeysArr);
     return added;
   }
 
