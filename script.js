@@ -99,7 +99,6 @@ const bulkModeAvailableBtn = document.getElementById("bulk-mode-available");
 const bulkModeUnavailableBtn = document.getElementById("bulk-mode-unavailable");
 const bulkModeClearBtn = document.getElementById("bulk-mode-clear");
 const bulkApplyBtn = document.getElementById("bulk-apply-btn");
-const bulkOnlyEmpty = document.getElementById("bulk-only-empty");
 const bulkMarkResult = document.getElementById("bulk-mark-result");
 
 // ---- Onglet "Ordre du jour" (public, activable depuis l'admin) ----
@@ -550,39 +549,31 @@ bulkApplyBtn.addEventListener("click", async () => {
     });
   });
 
-  // "Seulement les cases pas encore marquées" : on retire du lot tout
-  // créneau déjà en dispo OU pas dispo, pour ne remplir que le neutre —
-  // pratique pour compléter d'un coup ce qui reste à répondre sans risquer
-  // d'écraser des réponses déjà données ailleurs dans la même plage. N'a de
-  // sens qu'en mode "Dispo"/"Pas dispo" (en mode "Effacer" tout est déjà
-  // couvert par la logique normale, la case est ignorée).
-  const onlyEmpty = bulkOnlyEmpty.checked && newValue;
-  const finalMatches = onlyEmpty ? matches.filter((key) => !state.marks[key]) : matches;
-
-  if (!finalMatches.length) {
-    bulkMarkResult.textContent = onlyEmpty && matches.length
-      ? "Tous les créneaux de cette plage sont déjà marqués — rien à remplir."
-      : "Aucun créneau ne correspond à ces critères.";
+  if (!matches.length) {
+    bulkMarkResult.textContent = "Aucun créneau ne correspond à ces critères.";
     return;
   }
 
-  // Avertit seulement si on écrase un dispo <-> pas dispo déjà marqué
-  // différemment — passer d'un état neutre à un état marqué (ou l'inverse,
-  // "Effacer") ne déclenche jamais de confirmation, comme demandé. Jamais
-  // de conflit possible quand "Seulement les cases pas encore marquées" est
-  // coché, puisque ces créneaux sont déjà exclus de finalMatches ci-dessus.
-  if (newValue && !onlyEmpty) {
-    const conflicts = matches.filter((key) => {
-      const current = state.marks[key];
-      return current && current !== newValue;
-    }).length;
-    if (conflicts > 0) {
-      const label = newValue === "available" ? "dispo" : "pas dispo";
-      const ok = confirm(
-        `${conflicts} créneau(x) étaient déjà marqués différemment et vont passer en "${label}" — continuer ?`
+  // Pas de case "seulement les cases vides" à cocher à l'avance : si des
+  // créneaux ciblés sont déjà marqués (dispo ou pas dispo), on demande à la
+  // volée s'il faut les garder ou les remplacer — plus simple qu'une case à
+  // penser à cocher avant coup. Rien à demander en mode "Effacer" (rien à
+  // "garder"), ni si aucun créneau ciblé n'est déjà marqué.
+  let finalMatches = matches;
+  if (newValue) {
+    const alreadyMarked = matches.filter((key) => key in state.marks).length;
+    if (alreadyMarked > 0) {
+      const overwrite = confirm(
+        `${alreadyMarked} créneau(x) sur les ${matches.length} ciblés sont déjà marqués (dispo ou pas dispo).\n\n` +
+        `OK = les remplacer aussi.\nAnnuler = les garder, ne remplir que les cases encore vides.`
       );
-      if (!ok) return;
+      if (!overwrite) finalMatches = matches.filter((key) => !(key in state.marks));
     }
+  }
+
+  if (!finalMatches.length) {
+    bulkMarkResult.textContent = "Tous les créneaux de cette plage sont déjà marqués — rien à remplir.";
+    return;
   }
 
   finalMatches.forEach((key) => {

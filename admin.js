@@ -443,7 +443,6 @@ function runAdmin() {
   const fillQuickModeAvailableBtn = document.getElementById("fill-quick-mode-available");
   const fillQuickModeUnavailableBtn = document.getElementById("fill-quick-mode-unavailable");
   const fillQuickModeClearBtn = document.getElementById("fill-quick-mode-clear");
-  const fillQuickOnlyEmpty = document.getElementById("fill-quick-only-empty");
   const fillQuickApplyBtn = document.getElementById("fill-quick-apply-btn");
   const fillQuickResult = document.getElementById("fill-quick-result");
   const fillGridEl = document.getElementById("fill-grid");
@@ -468,7 +467,6 @@ function runAdmin() {
   const pollingSlotEndDate = document.getElementById("polling-slot-end-date");
   const pollingSlotQuickselectBtn = document.getElementById("polling-slot-quickselect-btn");
   const pollingSlotQuickselectResult = document.getElementById("polling-slot-quickselect-result");
-  const bulkFillOnlyEmpty = document.getElementById("bulk-fill-only-empty");
   const bulkFillApplyBtn = document.getElementById("bulk-fill-apply-btn");
   const bulkFillResult = document.getElementById("bulk-fill-result");
 
@@ -4478,11 +4476,21 @@ function runAdmin() {
     }
 
     const newValue = fillQuickMode === "clear" ? null : fillQuickMode;
-    // "Seulement les cases pas encore marquées" ne s'applique que quand on
-    // remplit (pas quand on efface) — même règle que côté public.
-    const onlyEmpty = fillQuickOnlyEmpty.checked && !!newValue;
-    const keysToApply = onlyEmpty ? matchKeys.filter((key) => !fillState.marks[key]) : matchKeys;
-    if (onlyEmpty && !keysToApply.length) {
+    // Pas de case "seulement les cases vides" à cocher à l'avance : si des
+    // créneaux ciblés sont déjà marqués, on demande à la volée s'il faut les
+    // garder ou les remplacer — même principe que côté public.
+    let keysToApply = matchKeys;
+    if (newValue) {
+      const alreadyMarked = matchKeys.filter((key) => key in fillState.marks).length;
+      if (alreadyMarked > 0) {
+        const overwrite = confirm(
+          `${alreadyMarked} créneau(x) sur les ${matchKeys.length} ciblés sont déjà marqués (dispo ou pas dispo) pour ${fillState.name}.\n\n` +
+          `OK = les remplacer aussi.\nAnnuler = les garder, ne remplir que les cases encore vides.`
+        );
+        if (!overwrite) keysToApply = matchKeys.filter((key) => !(key in fillState.marks));
+      }
+    }
+    if (!keysToApply.length) {
       fillQuickResult.textContent = "Tous les créneaux de cette plage sont déjà marqués — rien à remplir.";
       return;
     }
@@ -4586,18 +4594,36 @@ function runAdmin() {
     }
 
     const newValue = bulkFillMode === "clear" ? null : bulkFillMode;
-    // "Seulement les cases pas encore marquées" ne s'applique que quand on
-    // remplit (pas quand on efface) — même règle que côté public.
-    const onlyEmpty = bulkFillOnlyEmpty.checked && !!newValue;
-    bulkFillResult.textContent = "Enregistrement…";
+    bulkFillResult.textContent = "Chargement des disponibilités actuelles…";
     bulkFillApplyBtn.disabled = true;
     try {
+      // Charge d'abord les dispos actuelles de chaque membre concerné, pour
+      // pouvoir demander UNE seule fois (plutôt qu'une case à cocher à
+      // l'avance) s'il faut garder ou remplacer ce qui est déjà marqué.
+      const marksByPassword = new Map();
+      for (const cb of checkedMembers) {
+        marksByPassword.set(cb.value, await db.getMarks(cb.value));
+      }
+      let overwrite = true;
+      if (newValue) {
+        let alreadyMarked = 0;
+        marksByPassword.forEach((marks) => {
+          alreadyMarked += matchKeys.filter((key) => key in marks).length;
+        });
+        if (alreadyMarked > 0) {
+          overwrite = confirm(
+            `${alreadyMarked} créneau(x) au total sont déjà marqués (dispo ou pas dispo) chez ces ${checkedMembers.length} membre(s), sur cette plage.\n\n` +
+            `OK = les remplacer aussi.\nAnnuler = les garder, ne remplir que les cases encore vides.`
+          );
+        }
+      }
+      bulkFillResult.textContent = "Enregistrement…";
       let totalUpdated = 0;
       for (const cb of checkedMembers) {
         const password = cb.value;
         const name = cb.dataset.name;
-        const marks = await db.getMarks(password);
-        const keysForMember = onlyEmpty ? matchKeys.filter((key) => !marks[key]) : matchKeys;
+        const marks = marksByPassword.get(password);
+        const keysForMember = overwrite ? matchKeys : matchKeys.filter((key) => !(key in marks));
         keysForMember.forEach((key) => {
           if (newValue) marks[key] = newValue;
           else delete marks[key];
@@ -4605,7 +4631,7 @@ function runAdmin() {
         totalUpdated += keysForMember.length;
         await db.saveMarks(password, name, marks);
       }
-      bulkFillResult.textContent = onlyEmpty && !totalUpdated
+      bulkFillResult.textContent = !totalUpdated
         ? "Tous les créneaux de cette plage sont déjà marqués pour ces membres — rien à remplir."
         : `${totalUpdated} créneau(x) mis à jour pour ${checkedMembers.length} membre(s).`;
       if (fillState.password && checkedMembers.some((c) => c.value === fillState.password)) {
