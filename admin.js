@@ -367,6 +367,7 @@ function runAdmin() {
   const bestSlotEndInput = document.getElementById("best-slot-end-input");
   const bestSlotDurationInput = document.getElementById("best-slot-duration-input");
   const bestSlotThresholdInput = document.getElementById("best-slot-threshold-input");
+  const bestSlotWeekendsInput = document.getElementById("best-slot-weekends-input");
   const bestSlotResult = document.getElementById("best-slot-result");
 
   const studentLoadFaculteSelect = document.getElementById("student-load-faculte");
@@ -491,6 +492,10 @@ function runAdmin() {
     tasksTabToggle.checked = !!(config && config.tasksTabEnabled);
     passwordChangeToggle.checked = !!(config && config.passwordChangeEnabled);
     focusDateInput.value = (config && config.focusDate) || "";
+    // Pré-coche "Inclure les weekends" dans "Trouver le meilleur créneau"
+    // d'après le réglage global, comme point de départ — reste modifiable
+    // pour CETTE recherche précise sans toucher au réglage du site.
+    if (bestSlotWeekendsInput) bestSlotWeekendsInput.checked = !!(config && config.includeWeekends);
   }
 
   // ---------- Vue ciblée ----------
@@ -1033,9 +1038,9 @@ function runAdmin() {
     return `${h}:${m}`;
   }
 
-  function findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes }) {
+  function findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends }) {
     const dates = Grid.buildInclusiveDateRange(startDate, endDate).filter((d) => {
-      if (currentConfig.includeWeekends) return true;
+      if (includeWeekends) return true;
       const dow = new Date(`${d}T00:00:00`).getDay();
       return dow !== 0 && dow !== 6;
     });
@@ -1150,7 +1155,8 @@ function runAdmin() {
     if (!startDate || !endDate) return;
     const durationMinutes = Number(bestSlotDurationInput.value) || 60;
     const thresholdMinutes = Number(bestSlotThresholdInput.value) || 45;
-    const { all, top, dates } = findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes });
+    const includeWeekends = !!(bestSlotWeekendsInput && bestSlotWeekendsInput.checked);
+    const { all, top, dates } = findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends });
     renderBestSlotResults(top);
     renderBestSlotHeatmap(all, top, dates);
   });

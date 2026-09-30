@@ -126,6 +126,7 @@ const rolesBestSlotStartInput = document.getElementById("roles-bestslot-start-in
 const rolesBestSlotEndInput = document.getElementById("roles-bestslot-end-input");
 const rolesBestSlotDurationInput = document.getElementById("roles-bestslot-duration-input");
 const rolesBestSlotThresholdInput = document.getElementById("roles-bestslot-threshold-input");
+const rolesBestSlotWeekendsInput = document.getElementById("roles-bestslot-weekends-input");
 const rolesBestSlotResult = document.getElementById("roles-bestslot-result");
 const rolesBestSlotHeatmapEl = document.getElementById("roles-bestslot-heatmap");
 const ROLES_WITH_AVAILABILITY_ACCESS = ["presidente", "vice-presidente"];
@@ -1343,8 +1344,7 @@ function rolesMinutesToTimeStr(mins) {
   return `${h}:${m}`;
 }
 
-function findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes }) {
-  const includeWeekends = !!(state.config && state.config.includeWeekends);
+function findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends }) {
   const dates = Grid.buildInclusiveDateRange(startDate, endDate).filter((d) => {
     if (includeWeekends) return true;
     const dow = new Date(`${d}T00:00:00`).getDay();
@@ -1448,7 +1448,8 @@ if (rolesBestSlotForm) {
     if (!startDate || !endDate) return;
     const durationMinutes = Number(rolesBestSlotDurationInput.value) || 60;
     const thresholdMinutes = Number(rolesBestSlotThresholdInput.value) || 45;
-    const { all, top, dates } = findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes });
+    const includeWeekends = !!(rolesBestSlotWeekendsInput && rolesBestSlotWeekendsInput.checked);
+    const { all, top, dates } = findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends });
     renderRolesBestSlotResults(top);
     renderRolesBestSlotHeatmap(all, top, dates);
   });
@@ -2267,12 +2268,21 @@ gridEl.addEventListener("touchmove", onTouchMove, { passive: false });
 // ===================== INITIALISATION =====================
 // Le calendrier (cours bloqués + événements admin) se charge et s'affiche
 // tout de suite, sans attendre de connexion.
+let bestSlotWeekendsDefaulted = false;
 db.listenConfig((config) => {
   state.config = config;
   renderGrid();
   applyPublicTabsVisibility();
   rolesPollingSlotSelection = new Set((state.config && state.config.pollingSlots) || []);
   if (state.activeTab === "roles") renderRolesPollingSlotGrid();
+  // Pré-coche "Inclure les weekends" dans "Trouver le meilleur créneau"
+  // d'après le réglage global, une seule fois au chargement — comme point de
+  // départ, sans écraser un choix que la personne aurait fait entre-temps
+  // pour cette recherche précise.
+  if (!bestSlotWeekendsDefaulted && rolesBestSlotWeekendsInput) {
+    rolesBestSlotWeekendsInput.checked = !!(config && config.includeWeekends);
+    bestSlotWeekendsDefaulted = true;
+  }
 });
 db.listenEvents((events) => {
   state.events = events;
