@@ -496,6 +496,42 @@
           <button type="button" id="fill-from-program-all-btn" class="btn btn-ghost btn-sm" title="Fait la même chose que le bouton ci-dessus, d'un coup pour tous les membres dont un programme est renseigné sur leur fiche">🎓 Remplir depuis le programme — pour tous les membres concernés</button>
         </div>
         <p id="fill-all-status" class="hint"></p>
+        <details class="polling-slot-quickselect">
+          <summary>⚡ Marquage rapide (par règle) — pour ce membre</summary>
+          <p class="hint">Marque d'un coup toutes les cases qui correspondent aux critères ci-dessous, pour le membre choisi ci-dessus (ex: "tous les mardis de 14h à 16h", "tout le mois", "tous les midis").</p>
+          <div class="control-group">
+            <span class="mode-label">Jour(s) :</span>
+            <label class="checkbox-group"><input type="checkbox" id="fill-quick-day-all" checked> Tous les jours</label>
+            <div id="fill-quick-day-checkboxes" class="checkbox-list"></div>
+          </div>
+          <div class="control-group">
+            <label for="fill-quick-start-time">De</label>
+            <input type="time" id="fill-quick-start-time" title="Heure de début (vide = toute la journée)">
+            <label for="fill-quick-end-time">à</label>
+            <input type="time" id="fill-quick-end-time" title="Heure de fin (vide = toute la journée)">
+          </div>
+          <div class="control-group">
+            <label for="fill-quick-start-date">Du</label>
+            <input type="date" id="fill-quick-start-date" title="Date de début (vide = début de la période affichée)">
+            <label for="fill-quick-end-date">au</label>
+            <input type="date" id="fill-quick-end-date" title="Date de fin (vide = fin de la période affichée)">
+          </div>
+          <div class="control-group mode-group">
+            <span class="mode-label">Marquer en :</span>
+            <div class="mode-toggle">
+              <button type="button" id="fill-quick-mode-available" class="mode-btn active" data-mode="available">✅ Dispo</button>
+              <button type="button" id="fill-quick-mode-unavailable" class="mode-btn" data-mode="unavailable">❌ Pas dispo</button>
+              <button type="button" id="fill-quick-mode-clear" class="mode-btn" data-mode="clear">⚪ Effacer</button>
+            </div>
+          </div>
+          <div class="control-group checkbox-group">
+            <label><input type="checkbox" id="fill-quick-only-empty"> Seulement les cases pas encore marquées (ne touche pas à ce qui est déjà en dispo/pas dispo)</label>
+          </div>
+          <div class="control-group actions">
+            <button type="button" id="fill-quick-apply-btn" class="btn btn-primary btn-sm">Appliquer à ce membre</button>
+          </div>
+          <p id="fill-quick-result" class="hint"></p>
+        </details>
         <div class="grid-scroll">
           <div id="fill-grid" class="grid"></div>
         </div>

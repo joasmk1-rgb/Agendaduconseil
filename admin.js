@@ -434,6 +434,18 @@ function runAdmin() {
   const fillFromProgramAllBtn = document.getElementById("fill-from-program-all-btn");
   const fillAllStatus = document.getElementById("fill-all-status");
   const fillStatus = document.getElementById("fill-status");
+  const fillQuickDayAll = document.getElementById("fill-quick-day-all");
+  const fillQuickDayCheckboxes = document.getElementById("fill-quick-day-checkboxes");
+  const fillQuickStartTime = document.getElementById("fill-quick-start-time");
+  const fillQuickEndTime = document.getElementById("fill-quick-end-time");
+  const fillQuickStartDate = document.getElementById("fill-quick-start-date");
+  const fillQuickEndDate = document.getElementById("fill-quick-end-date");
+  const fillQuickModeAvailableBtn = document.getElementById("fill-quick-mode-available");
+  const fillQuickModeUnavailableBtn = document.getElementById("fill-quick-mode-unavailable");
+  const fillQuickModeClearBtn = document.getElementById("fill-quick-mode-clear");
+  const fillQuickOnlyEmpty = document.getElementById("fill-quick-only-empty");
+  const fillQuickApplyBtn = document.getElementById("fill-quick-apply-btn");
+  const fillQuickResult = document.getElementById("fill-quick-result");
   const fillGridEl = document.getElementById("fill-grid");
   const bulkFillMemberCheckboxes = document.getElementById("bulk-fill-member-checkboxes");
   const bulkFillDayAll = document.getElementById("bulk-fill-day-all");
@@ -4301,6 +4313,111 @@ function runAdmin() {
         : "Aucun nouveau créneau à ajouter (déjà tous sélectionnés).";
     });
   }
+
+  // ---------- Marquage rapide (par règle) — pour le membre affiché ----------
+  // Même principe que "Règle rapide pour plusieurs membres" juste en dessous,
+  // mais rattaché directement au membre choisi dans le menu déroulant
+  // ci-dessus (fillState) — pas besoin de le recocher dans une liste séparée.
+  // Opère sur fillState.marks (même tampon local que le clic case par case),
+  // donc persistFillMarks()/renderFillGrid() suffisent à enregistrer/afficher.
+  const FILL_QUICK_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lundi → dimanche
+
+  function renderFillQuickDayCheckboxes() {
+    if (fillQuickDayCheckboxes.childElementCount) return; // construit une seule fois
+    FILL_QUICK_DAY_ORDER.forEach((dow) => {
+      const label = document.createElement("label");
+      label.className = "checkbox-group";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.className = "fill-quick-day-checkbox";
+      input.value = String(dow);
+      input.checked = true;
+      input.disabled = true;
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(" " + Grid.WEEKDAYS_FULL[dow].slice(0, 3)));
+      fillQuickDayCheckboxes.appendChild(label);
+    });
+  }
+  fillQuickDayAll.addEventListener("change", () => {
+    const allChecked = fillQuickDayAll.checked;
+    fillQuickDayCheckboxes.querySelectorAll(".fill-quick-day-checkbox").forEach((c) => {
+      c.disabled = allChecked;
+      c.checked = allChecked;
+    });
+  });
+  renderFillQuickDayCheckboxes();
+
+  let fillQuickMode = "available";
+  function setFillQuickMode(mode) {
+    fillQuickMode = mode;
+    fillQuickModeAvailableBtn.classList.toggle("active", mode === "available");
+    fillQuickModeUnavailableBtn.classList.toggle("active", mode === "unavailable");
+    fillQuickModeClearBtn.classList.toggle("active", mode === "clear");
+  }
+  fillQuickModeAvailableBtn.addEventListener("click", () => setFillQuickMode("available"));
+  fillQuickModeUnavailableBtn.addEventListener("click", () => setFillQuickMode("unavailable"));
+  fillQuickModeClearBtn.addEventListener("click", () => setFillQuickMode("clear"));
+
+  fillQuickApplyBtn.addEventListener("click", async () => {
+    if (!fillState.password) {
+      fillQuickResult.textContent = "Choisis d'abord un membre.";
+      return;
+    }
+    const selectedDays = new Set(
+      Array.from(fillQuickDayCheckboxes.querySelectorAll(".fill-quick-day-checkbox"))
+        .filter((c) => fillQuickDayAll.checked || c.checked)
+        .map((c) => Number(c.value))
+    );
+    const startTime = fillQuickStartTime.value || null;
+    const endTime = fillQuickEndTime.value || null;
+    const startDateISO = fillQuickStartDate.value || null;
+    const endDateISO = fillQuickEndDate.value || null;
+
+    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
+    const times = Grid.buildTimeSlots();
+    const matchKeys = [];
+    dates.forEach((date) => {
+      const dateISO = Grid.toISODate(date);
+      if (startDateISO && dateISO < startDateISO) return;
+      if (endDateISO && dateISO > endDateISO) return;
+      if (!selectedDays.has(date.getDay())) return;
+      times.forEach((timeLabel) => {
+        if (startTime && timeLabel < startTime) return;
+        if (endTime && timeLabel >= endTime) return;
+        matchKeys.push(Grid.slotKey(dateISO, timeLabel));
+      });
+    });
+
+    if (!matchKeys.length) {
+      fillQuickResult.textContent = "Aucun créneau ne correspond à ces critères.";
+      return;
+    }
+
+    const newValue = fillQuickMode === "clear" ? null : fillQuickMode;
+    // "Seulement les cases pas encore marquées" ne s'applique que quand on
+    // remplit (pas quand on efface) — même règle que côté public.
+    const onlyEmpty = fillQuickOnlyEmpty.checked && !!newValue;
+    const keysToApply = onlyEmpty ? matchKeys.filter((key) => !fillState.marks[key]) : matchKeys;
+    if (onlyEmpty && !keysToApply.length) {
+      fillQuickResult.textContent = "Tous les créneaux de cette plage sont déjà marqués — rien à remplir.";
+      return;
+    }
+    keysToApply.forEach((key) => {
+      if (newValue) fillState.marks[key] = newValue;
+      else delete fillState.marks[key];
+    });
+    fillQuickApplyBtn.disabled = true;
+    fillQuickResult.textContent = "Enregistrement…";
+    try {
+      await persistFillMarks();
+      renderFillGrid();
+      fillQuickResult.textContent = `${keysToApply.length} créneau(x) mis à jour pour ${fillState.name}.`;
+    } catch (err) {
+      console.error(err);
+      fillQuickResult.textContent = "Échec de l'enregistrement, réessaie.";
+    }
+    fillQuickApplyBtn.disabled = false;
+  });
 
   // ---------- Règle rapide pour plusieurs membres à la fois ----------
   // Même logique que le "Marquage rapide" côté membre (script.js), mais
