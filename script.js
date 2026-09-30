@@ -1713,6 +1713,28 @@ function groupSessionLabel(session) {
   return (session && session.event_code) || "groupe";
 }
 
+// Certaines séances du catalogue ne sont PAS de vrais horaires hebdomadaires
+// récurrents, alors que rien dans leur format ne les distingue des vraies
+// (pas de champ "type", juste jour + heure, répété chaque semaine par
+// buildICSFromCourseSessions). Deux cas trouvés dans les données réelles :
+// le nom du cours est encore un espace réservé ("Horaires détaillés des
+// cours disponibles ultérieurement"), ou une séance couvre une bonne partie
+// de la journée (> 6h, ex: 08h30-18h) — jamais un vrai cours hebdomadaire,
+// plutôt une journée spéciale ponctuelle (séminaire d'accueil, journée
+// projet...) qui bloquerait à tort le même horaire chaque semaine jusqu'en
+// 2035 si on la traitait comme un cours classique. Même formule que admin.js.
+const PLACEHOLDER_COURSE_NAME = "Horaires détaillés des cours disponibles ultérieurement";
+const MAX_RELIABLE_SESSION_MINUTES = 360; // 6h
+function isUnreliableWeeklySession(course, session) {
+  if (course.name && course.name.includes(PLACEHOLDER_COURSE_NAME)) return true;
+  const startMin = toMinutesLocal(session.start);
+  const endMin = toMinutesLocal(session.end);
+  return endMin - startMin > MAX_RELIABLE_SESSION_MINUTES;
+}
+function isReliableCmSession(course, session) {
+  return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
+}
+
 async function loadCoursesCatalogue() {
   if (coursesCatalogue) return coursesCatalogue;
   if (coursesCatalogueLoading) return coursesCatalogueLoading;
@@ -1811,7 +1833,7 @@ function renderCoursesList() {
       renderCoursesList();
     });
     const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
-    const cmSessions = (course.sessions || []).filter((s) => !isGroupSession(s));
+    const cmSessions = (course.sessions || []).filter((s) => isReliableCmSession(course, s));
     const groupSess = (course.sessions || []).filter((s) => isGroupSession(s));
 
     const text = document.createElement("span");
@@ -1904,7 +1926,7 @@ async function applySelectedCourses() {
     // TP/labos, qui dépendent du groupe précis de chaque membre).
     const cmSessions = (coursesCatalogue || [])
       .filter((c) => selectedSet.has(c.code))
-      .flatMap((c) => (c.sessions || []).filter((s) => !isGroupSession(s)).map((s) => ({ ...s, title: c.name })));
+      .flatMap((c) => (c.sessions || []).filter((s) => isReliableCmSession(c, s)).map((s) => ({ ...s, title: c.name })));
     // Groupes de TP/labo choisis à part par ce membre, quel que soit le cours
     // "magistral" correspondant (coché ou non) — recherchés dans tout le
     // catalogue par leur clé de séance.
@@ -1991,7 +2013,12 @@ coursesFromProgramBtn.addEventListener("click", async () => {
   // un événement qui n'a lieu qu'une fois. Comme ces entrées sont rattachées
   // à presque tous les programmes, il ne faut surtout pas les inclure ici.
   const matchingCodes = (coursesCatalogue || [])
-    .filter((c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p)))
+    .filter(
+      (c) =>
+        !c.code.startsWith("EVT-") &&
+        (c.programs || []).some((p) => programSet.has(p)) &&
+        (c.sessions || []).some((s) => isReliableCmSession(c, s))
+    )
     .map((c) => c.code);
   const before = new Set(state.selectedCourses);
   matchingCodes.forEach((code) => {
@@ -2027,7 +2054,7 @@ function computeSelectedCourseLabels() {
       const key = sessionKey(course.code, s);
       const isGroup = isGroupSession(s);
       let name = null;
-      if (!isGroup && selectedSet.has(course.code)) {
+      if (!isGroup && selectedSet.has(course.code) && isReliableCmSession(course, s)) {
         name = course.name;
       } else if (isGroup && groupKeySet.has(key)) {
         name = `${course.name} — ${groupSessionLabel(s)}`;

@@ -3560,6 +3560,34 @@ function runAdmin() {
     return GROUP_SESSION_PATTERN.test((session && session.event_code) || "");
   }
 
+  // Certaines séances du catalogue ne sont PAS de vrais horaires
+  // hebdomadaires récurrents, alors que rien dans leur format ne les
+  // distingue des vraies (pas de champ "type", juste jour + heure, répété
+  // chaque semaine par buildICSFromCourseSessions). Deux cas trouvés dans les
+  // données réelles (data/mons-courses-catalogue.json) :
+  //  - le nom du cours est encore un espace réservé ("Horaires détaillés des
+  //    cours disponibles ultérieurement") : l'horaire réel n'est simplement
+  //    pas encore connu.
+  //  - une séance couvre une bonne partie de la journée (> 6h, ex: 08h30-18h)
+  //    : jamais un vrai cours hebdomadaire (2-4h en pratique), plutôt une
+  //    journée spéciale ponctuelle (séminaire d'accueil, journée projet...)
+  //    qui bloquerait à tort le même horaire chaque semaine jusqu'en 2035 si
+  //    on la traitait comme un cours classique.
+  const PLACEHOLDER_COURSE_NAME = "Horaires détaillés des cours disponibles ultérieurement";
+  const MAX_RELIABLE_SESSION_MINUTES = 360; // 6h
+  function sessionDurationMinutes(session) {
+    const [sh, sm] = session.start.split(":").map(Number);
+    const [eh, em] = session.end.split(":").map(Number);
+    return eh * 60 + em - (sh * 60 + sm);
+  }
+  function isUnreliableWeeklySession(course, session) {
+    if (course.name && course.name.includes(PLACEHOLDER_COURSE_NAME)) return true;
+    return sessionDurationMinutes(session) > MAX_RELIABLE_SESSION_MINUTES;
+  }
+  function isReliableCmSession(course, session) {
+    return !isGroupSession(session) && !isUnreliableWeeklySession(course, session);
+  }
+
   // Calcule, pour un membre donné (déjà pourvu de son "programs"), les
   // cours du catalogue qui correspondent et les clés de créneaux "pas dispo"
   // en découlant — factorisé pour servir au bouton "un membre" ET au bouton
@@ -3574,9 +3602,14 @@ function runAdmin() {
     // HEBDOMADAIRE jusqu'en 2035 — correct pour un vrai cours, mais ça
     // bloquerait à tort ce créneau chaque semaine pour un événement qui n'a
     // lieu qu'une fois. Rattachées à presque tous les programmes, il ne faut
-    // surtout pas les inclure dans ce remplissage automatique.
+    // surtout pas les inclure dans ce remplissage automatique. Exclut aussi
+    // les cours dont AUCUNE séance n'est fiable (voir isReliableCmSession) :
+    // rien d'exploitable à cocher automatiquement pour eux.
     const matchingCourses = (studentLoadCatalogue || []).filter(
-      (c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p))
+      (c) =>
+        !c.code.startsWith("EVT-") &&
+        (c.programs || []).some((p) => programSet.has(p)) &&
+        (c.sessions || []).some((s) => isReliableCmSession(c, s))
     );
     if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
     // Ne marque jamais les séances de TP/labo automatiquement : elles dépendent
@@ -3588,7 +3621,7 @@ function runAdmin() {
     // persistProgramFillForMember), ça ne touche jamais à ce choix.
     const sessions = matchingCourses.flatMap((c) =>
       (c.sessions || [])
-        .filter((s) => !isGroupSession(s))
+        .filter((s) => isReliableCmSession(c, s))
         .map((s) => ({ ...s, title: c.name }))
     );
     // Plafonné à 3 mois (90 jours) même si la période affichée du site
@@ -3609,6 +3642,59 @@ function runAdmin() {
       CONFIG.dayEndHour
     );
     return { matchingCourses, desiredKeys };
+  }
+
+  // Pour un membre donné, retrouve — par créneau — de quel cours/groupe
+  // vient un "pas dispo" posé par "Mes cours" côté public OU par "Remplir
+  // depuis le programme" ici : affiché en infobulle (+ liseré violet) dans la
+  // grille de remplissage de l'admin, pour comprendre d'un coup d'œil
+  // pourquoi une case précise est bloquée (ex: un cours qui n'a pas sa place
+  // dans ce programme, ou une charge visiblement trop lourde). Se base sur
+  // member.courses/.groupSessions tels qu'enregistrés en base, pas sur un
+  // recalcul du programme — donc reflète l'état réel du membre, même s'il a
+  // coché des cours à la main en plus de son programme.
+  function computeMemberCourseLabels(member) {
+    const overlay = new Map();
+    if (!member || !studentLoadCatalogue || !studentLoadCatalogue.length) return overlay;
+    const selectedSet = new Set(member.courses || []);
+    const groupKeySet = new Set(member.groupSessions || []);
+    if (!selectedSet.size && !groupKeySet.size) return overlay;
+
+    const sessionsByDow = new Map();
+    studentLoadCatalogue.forEach((course) => {
+      (course.sessions || []).forEach((s) => {
+        const key = sessionKey(course.code, s);
+        const isGroup = isGroupSession(s);
+        let name = null;
+        if (!isGroup && selectedSet.has(course.code) && isReliableCmSession(course, s)) {
+          name = course.name;
+        } else if (isGroup && groupKeySet.has(key)) {
+          name = `${course.name} — ${s.event_code || "groupe"}`;
+        }
+        if (!name) return;
+        const list = sessionsByDow.get(s.weekday) || [];
+        list.push({ start: timeStrToMinutes(s.start), end: timeStrToMinutes(s.end), name });
+        sessionsByDow.set(s.weekday, list);
+      });
+    });
+    if (!sessionsByDow.size) return overlay;
+
+    const rangeDays = Math.min(currentConfig.rangeDays, 90);
+    const dates = Grid.buildDateList(new Date(), rangeDays, currentConfig.includeWeekends);
+    const times = Grid.buildTimeSlots();
+    dates.forEach((date) => {
+      const dow = date.getDay();
+      const daySessions = sessionsByDow.get(dow) || [];
+      if (!daySessions.length) return;
+      const dateISO = Grid.toISODate(date);
+      times.forEach((timeLabel) => {
+        const slotStart = timeStrToMinutes(timeLabel);
+        const slotEnd = slotStart + CONFIG.slotMinutes;
+        const names = daySessions.filter((s) => s.start < slotEnd && s.end > slotStart).map((s) => s.name);
+        if (names.length) overlay.set(Grid.slotKey(dateISO, timeLabel), Array.from(new Set(names)));
+      });
+    });
+    return overlay;
   }
 
   // Revalide côté client les mêmes limites que firestore.rules, AVANT
@@ -3813,6 +3899,12 @@ function runAdmin() {
     fillState = { password, name: member ? member.name : "", mode: fillState.mode, marks: { ...marks } };
     fillStatus.textContent = `Modification des disponibilités de ${fillState.name}`;
     renderFillGrid();
+    // Charge le catalogue en tâche de fond (pour l'infobulle "quel cours ?"
+    // sur les créneaux déjà marqués par "Mes cours"/le remplissage) sans
+    // bloquer l'affichage de la grille elle-même.
+    loadStudentLoadCatalogue().then(() => {
+      if (fillState.password === password) renderFillGrid();
+    });
   });
 
   let fillIsPainting = false;
@@ -3879,6 +3971,8 @@ function runAdmin() {
     }
     const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
     const times = Grid.buildTimeSlots();
+    const member = currentMembers.find((m) => m.id === fillState.password);
+    const courseLabels = computeMemberCourseLabels(member);
 
     fillGridEl.innerHTML = "";
     fillGridEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
@@ -3891,6 +3985,12 @@ function runAdmin() {
       const mark = fillState.marks[key];
       if (mark === "available") cell.classList.add("mark-available");
       if (mark === "unavailable") cell.classList.add("mark-unavailable");
+      const courseNames = courseLabels.get(key);
+      if (courseNames && courseNames.length) {
+        cell.classList.add("course-slot");
+        const courseTitle = "Cours : " + courseNames.join(", ");
+        cell.title = cell.title ? cell.title + "\n" + courseTitle : courseTitle;
+      }
       if (!blocked) {
         cell.addEventListener("mousedown", (e) => {
           e.preventDefault();
