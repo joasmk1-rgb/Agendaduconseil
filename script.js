@@ -64,9 +64,6 @@ const viewRangeToggle = document.getElementById("view-range-toggle");
 const gridScrollEl = document.getElementById("grid-scroll");
 const availRequestBanner = document.getElementById("avail-request-banner");
 const pollBanner = document.getElementById("poll-banner");
-const icsImportBtn = document.getElementById("ics-import-btn");
-const icsFileInput = document.getElementById("ics-file-input");
-const icsStatus = document.getElementById("ics-status");
 const coursesStatus = document.getElementById("courses-status");
 const coursesSummaryText = document.getElementById("courses-summary-text");
 const coursesEditBtn = document.getElementById("courses-edit-btn");
@@ -1635,44 +1632,6 @@ agendaProposalForm.addEventListener("submit", async (e) => {
   }
 });
 
-// ===================== IMPORT D'UN CALENDRIER .ICS =====================
-// Importe un fichier .ics (ex: export de l'horaire de cours personnel) et
-// marque automatiquement "pas dispo" les créneaux qui tombent dedans — sans
-// jamais toucher aux créneaux déjà marqués à la main (dispo OU pas dispo),
-// pour ne jamais écraser une décision déjà prise manuellement. On peut donc
-// toujours re-marquer "dispo" par-dessus après coup, y compris en réimportant.
-icsImportBtn.addEventListener("click", () => icsFileInput.click());
-
-icsFileInput.addEventListener("change", async () => {
-  const file = icsFileInput.files[0];
-  if (!file || !state.password || !state.config) return;
-  icsStatus.classList.remove("hidden");
-  icsStatus.textContent = "Import en cours…";
-  try {
-    const text = await file.text();
-    const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-    const unavailableKeys = computeUnavailableSlots(text, dates, CONFIG.slotMinutes, CONFIG.dayStartHour, CONFIG.dayEndHour);
-    let added = 0;
-    unavailableKeys.forEach((key) => {
-      if (!(key in state.marks)) {
-        state.marks[key] = "unavailable";
-        added++;
-      }
-    });
-    if (added > 0) {
-      await persistMarks();
-      renderGrid();
-    }
-    icsStatus.textContent = added > 0
-      ? `Importé : ${added} créneau(x) marqué(s) "pas dispo" (les créneaux déjà marqués à la main n'ont pas été touchés).`
-      : "Importé, mais rien à ajouter (soit aucun créneau reconnu dans la période affichée, soit déjà tous marqués).";
-  } catch (err) {
-    console.error("Échec de l'import .ics :", err);
-    icsStatus.textContent = "Fichier .ics illisible, réessaie avec un autre export.";
-  }
-  icsFileInput.value = "";
-});
-
 // ===================== "MES COURS" (catalogue LSM/ESPO FUCaM Mons) =====================
 // Catalogue statique construit une fois pour toutes à partir des horaires
 // publiés (monhoraire.uclouvain.be) pour les programmes LSM et ESPO de la
@@ -2403,7 +2362,7 @@ function renderProfileForm() {
 
   // ---- 4. Langues ----
   if (analysis.languages.length) {
-    const section = profileSection("🗣️ Tes langues", "En général 2 langues sur 3. Choisis ton groupe de labo si tu le connais déjà.");
+    const section = profileSection("🗣️ Tes langues", "Choisis seulement les langues que tu suis, puis ton groupe de labo si tu le connais. Les groupes laissés vides ne seront pas ajoutés.");
     analysis.languages.forEach((info) => {
       const code = info.course.code;
       const followed = profileDraft.selected.has(code);
@@ -2449,7 +2408,7 @@ function renderProfileForm() {
     .concat(analysis.options)
     .filter((info) => info.choices.length && profileDraft.selected.has(info.course.code));
   if (withChoices.length) {
-    const section = profileSection("👥 Tes groupes de TP / labo", "Laisse \"pas encore connu\" si tu ne sais pas encore — tu pourras revenir plus tard.");
+    const section = profileSection("👥 Tes groupes de TP / labo", "Le catalogue peut afficher plusieurs groupes : sélectionne celui qui t’a été attribué. Seul le groupe choisi sera ajouté à ton calendrier.");
     withChoices.forEach((info) => {
       const row = document.createElement("div");
       row.className = "profile-row";
