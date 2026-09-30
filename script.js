@@ -23,6 +23,7 @@ let state = {
   selectedCourses: [], // codes de cours choisis dans "Mes cours"
   courseMarkedKeys: [], // dernières clés de créneaux posées par "Mes cours"
   programs: [], // programme(s) renseigné(s) par l'admin sur la fiche (data/mons-programs.json)
+  excludedSessionKeys: [], // séances exclues (groupes parallèles qui ne sont pas les miennes) — "CODE|weekday|start|end"
   mode: "available",
   tasks: [],
   polls: [],
@@ -257,6 +258,13 @@ async function enterAsMember(member) {
   state.selectedCourses = Array.isArray(member.courses) ? member.courses : [];
   state.courseMarkedKeys = Array.isArray(member.courseMarkedKeys) ? member.courseMarkedKeys : [];
   state.programs = Array.isArray(member.programs) ? member.programs : [];
+  state.excludedSessionKeys = Array.isArray(member.excludedSessions) ? member.excludedSessions : [];
+  // Charge le catalogue en tâche de fond dès la connexion si des cours sont
+  // déjà sélectionnés, pour que le nom du cours puisse s'afficher sur la
+  // grille sans attendre que le membre ouvre "Mes cours" au moins une fois.
+  if (state.selectedCourses.length) {
+    loadCoursesCatalogue().then(() => renderGrid());
+  }
   memberNameEl.textContent = member.name;
   adminLink.classList.toggle("hidden", !state.isAdmin);
   loginForm.classList.add("hidden");
@@ -1676,6 +1684,47 @@ let coursesCatalogue = null; // chargé à la demande (fetch), une seule fois
 let coursesCatalogueLoading = null;
 let coursesPrograms = null; // data/mons-programs.json : [{prog, faculte, niveau, label}]
 
+function toMinutesLocal(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Identifie une séance précise d'un cours (jour+horaire) — clé stable pour
+// les exclusions par séance (state.excludedSessionKeys / member.excludedSessions),
+// indépendante de sa position dans le tableau "sessions".
+function sessionKey(code, session) {
+  return `${code}|${session.weekday}|${session.start}|${session.end}`;
+}
+
+// Séances d'un même cours qui se chevauchent en horaire le même jour —
+// signal fiable de groupes parallèles (littéralement impossible d'être aux
+// deux en même temps), contrairement à "même jour" seul qui peut être
+// légitime (ex: cours magistral le matin + séance d'exercices l'après-midi).
+// Les données sources n'ont pas de champ "type de séance" (CM/TP/exercices),
+// donc pas de détection garantie à 100% — juste cet indice pour aider à trier.
+function computeOverlappingSessionKeys(course) {
+  const flagged = new Set();
+  const byDay = new Map();
+  (course.sessions || []).forEach((s) => {
+    const list = byDay.get(s.weekday) || [];
+    list.push(s);
+    byDay.set(s.weekday, list);
+  });
+  byDay.forEach((sessions) => {
+    for (let i = 0; i < sessions.length; i++) {
+      for (let j = i + 1; j < sessions.length; j++) {
+        const a = sessions[i];
+        const b = sessions[j];
+        if (toMinutesLocal(a.start) < toMinutesLocal(b.end) && toMinutesLocal(b.start) < toMinutesLocal(a.end)) {
+          flagged.add(sessionKey(course.code, a));
+          flagged.add(sessionKey(course.code, b));
+        }
+      }
+    }
+  });
+  return flagged;
+}
+
 async function loadCoursesCatalogue() {
   if (coursesCatalogue) return coursesCatalogue;
   if (coursesCatalogueLoading) return coursesCatalogueLoading;
@@ -1771,6 +1820,7 @@ function renderCoursesList() {
         state.selectedCourses = state.selectedCourses.filter((c) => c !== course.code);
       }
       updateCoursesSelectedCount();
+      renderCoursesList();
     });
     const text = document.createElement("span");
     const scheduleText = course.sessions
@@ -1780,6 +1830,44 @@ function renderCoursesList() {
     label.appendChild(checkbox);
     label.appendChild(text);
     coursesList.appendChild(label);
+
+    // Séances qui se chevauchent le même jour pour ce cours : probablement des
+    // groupes de TP/exercices parallèles. Si le cours est sélectionné, on
+    // propose de décocher celles qui ne sont pas les siennes.
+    const overlapping = computeOverlappingSessionKeys(course);
+    if (overlapping.size && selected.has(course.code)) {
+      const sub = document.createElement("div");
+      sub.className = "course-session-subpicker";
+      const warn = document.createElement("p");
+      warn.className = "hint";
+      warn.textContent =
+        "⚠️ Plusieurs séances de ce cours se chevauchent le même jour — probablement des groupes parallèles. Décoche celles qui ne sont pas les tiennes.";
+      sub.appendChild(warn);
+      const excludedSet = new Set(state.excludedSessionKeys);
+      const dayNames = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
+      (course.sessions || []).forEach((s) => {
+        const key = sessionKey(course.code, s);
+        if (!overlapping.has(key)) return;
+        const sLabel = document.createElement("label");
+        sLabel.className = "course-session-item";
+        const sCheckbox = document.createElement("input");
+        sCheckbox.type = "checkbox";
+        sCheckbox.checked = !excludedSet.has(key);
+        sCheckbox.addEventListener("change", () => {
+          if (sCheckbox.checked) {
+            state.excludedSessionKeys = state.excludedSessionKeys.filter((k) => k !== key);
+          } else if (!state.excludedSessionKeys.includes(key)) {
+            state.excludedSessionKeys.push(key);
+          }
+        });
+        const sText = document.createElement("span");
+        sText.textContent = `${dayNames[s.weekday]} ${s.start}-${s.end}${s.location ? " — " + s.location : ""}`;
+        sLabel.appendChild(sCheckbox);
+        sLabel.appendChild(sText);
+        sub.appendChild(sLabel);
+      });
+      coursesList.appendChild(sub);
+    }
   });
   if (items.length > MAX_SHOWN) {
     const p = document.createElement("p");
@@ -1825,9 +1913,14 @@ async function applySelectedCourses() {
   coursesStatus.textContent = "Application en cours…";
   try {
     const selectedSet = new Set(state.selectedCourses);
+    const excludedSet = new Set(state.excludedSessionKeys || []);
     const sessions = (coursesCatalogue || [])
       .filter((c) => selectedSet.has(c.code))
-      .flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
+      .flatMap((c) =>
+        (c.sessions || [])
+          .filter((s) => !excludedSet.has(sessionKey(c.code, s)))
+          .map((s) => ({ ...s, title: c.name }))
+      );
 
     // Plafonné à 3 mois (90 jours) même si la période affichée du site est
     // réglée plus large : un programme entier génère déjà beaucoup de
@@ -1856,7 +1949,13 @@ async function applySelectedCourses() {
     });
 
     state.courseMarkedKeys = Array.from(desiredKeys);
-    await db.updateMemberCourses(state.password, state.name, state.selectedCourses, state.courseMarkedKeys);
+    await db.updateMemberCourses(
+      state.password,
+      state.name,
+      state.selectedCourses,
+      state.courseMarkedKeys,
+      state.excludedSessionKeys
+    );
     await persistMarks();
     renderGrid();
 
@@ -1871,9 +1970,11 @@ coursesApplyBtn.addEventListener("click", applySelectedCourses);
 
 // Raccourci "Remplir depuis mon programme" : coche d'un coup tous les cours
 // du/des programme(s) renseigné(s) sur la fiche par l'admin (sans décocher
-// ce que le membre avait déjà choisi à la main), puis applique directement —
-// le membre reste ensuite libre de cocher/décocher d'autres cours, ou de
-// marquer "dispo" à la main par-dessus n'importe quel créneau resté libre.
+// ce que le membre avait déjà choisi à la main), SANS appliquer tout de
+// suite — certains cours peuvent avoir plusieurs séances qui se chevauchent
+// le même jour (groupes de TP/exercices parallèles) : le membre doit d'abord
+// pouvoir décocher celles qui ne sont pas les siennes (visible juste en
+// dessous de chaque cours concerné) avant de cliquer lui-même "Appliquer".
 coursesFromProgramBtn.addEventListener("click", async () => {
   if (!state.password) return;
   coursesStatus.textContent = "Chargement du catalogue…";
@@ -1901,14 +2002,56 @@ coursesFromProgramBtn.addEventListener("click", async () => {
   refreshProgrammeOptions();
   renderCoursesList();
   updateCoursesSelectedCount();
-  await applySelectedCourses();
-  coursesStatus.textContent = `${addedCount} cours de ton programme ajouté(s) à ta sélection. ` + coursesStatus.textContent;
+  coursesStatus.textContent = `${addedCount} cours de ton programme ajouté(s) à ta sélection. Vérifie les séances signalées ⚠️ ci-dessous (groupes parallèles probables), décoche celles qui ne sont pas les tiennes, puis clique sur "Appliquer".`;
 });
 
 // ===================== RENDU DE LA GRILLE =====================
 // La grille (cours bloqués + événements) est visible par tout le monde, avec
 // ou sans connexion. Les marques personnelles et la possibilité de cliquer ne
 // s'activent qu'une fois connecté (state.password non nul).
+// Pour chaque créneau "pas dispo" posé par "Mes cours", retrouve de quel(s)
+// cours il s'agit (nom affiché en infobulle + petit liseré violet sur la
+// case) — pratique pour comprendre d'un coup d'œil pourquoi un créneau est
+// marqué sans devoir rouvrir le panneau "Mes cours". Les séances exclues
+// (groupes parallèles décochés) n'y figurent pas. Bornée à 90 jours comme le
+// remplissage lui-même, inutile de calculer plus loin.
+function computeSelectedCourseLabels() {
+  const overlay = new Map();
+  if (!state.config || !coursesCatalogue || !state.selectedCourses || !state.selectedCourses.length) return overlay;
+  const selectedSet = new Set(state.selectedCourses);
+  const excludedSet = new Set(state.excludedSessionKeys || []);
+  const matchingCourses = coursesCatalogue.filter((c) => selectedSet.has(c.code));
+  if (!matchingCourses.length) return overlay;
+
+  const sessionsByDow = new Map();
+  matchingCourses.forEach((course) => {
+    (course.sessions || []).forEach((s) => {
+      if (excludedSet.has(sessionKey(course.code, s))) return;
+      const list = sessionsByDow.get(s.weekday) || [];
+      list.push({ start: toMinutesLocal(s.start), end: toMinutesLocal(s.end), name: course.name });
+      sessionsByDow.set(s.weekday, list);
+    });
+  });
+  if (!sessionsByDow.size) return overlay;
+
+  const rangeDays = Math.min(state.config.rangeDays, 90);
+  const dates = Grid.buildDateList(new Date(), rangeDays, state.config.includeWeekends);
+  const times = Grid.buildTimeSlots();
+  dates.forEach((date) => {
+    const dow = date.getDay();
+    const daySessions = sessionsByDow.get(dow) || [];
+    if (!daySessions.length) return;
+    const dateISO = Grid.toISODate(date);
+    times.forEach((timeLabel) => {
+      const slotStart = toMinutesLocal(timeLabel);
+      const slotEnd = slotStart + CONFIG.slotMinutes;
+      const names = daySessions.filter((s) => s.start < slotEnd && s.end > slotStart).map((s) => s.name);
+      if (names.length) overlay.set(Grid.slotKey(dateISO, timeLabel), Array.from(new Set(names)));
+    });
+  });
+  return overlay;
+}
+
 function renderGrid() {
   if (!state.config) {
     gridEl.innerHTML = "";
@@ -1919,6 +2062,7 @@ function renderGrid() {
   const times = Grid.buildTimeSlots();
   const blockedSlots = state.config.blockedSlots || [];
   const pollingSlots = new Set(state.config.pollingSlots || []);
+  const courseLabels = computeSelectedCourseLabels();
 
   gridEl.innerHTML = "";
   gridEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
@@ -1939,6 +2083,12 @@ function renderGrid() {
   Grid.renderHourRows(gridEl, dates, times, state.events, blockedSlots, (cell, { dateISO, timeLabel, blocked, events }) => {
     const key = Grid.slotKey(dateISO, timeLabel);
     cell.dataset.key = key;
+    const courseNames = courseLabels.get(key);
+    if (courseNames && courseNames.length) {
+      cell.classList.add("course-slot");
+      const courseTitle = "Cours : " + courseNames.join(", ");
+      cell.title = cell.title ? cell.title + "\n" + courseTitle : courseTitle;
+    }
     if (state.password) {
       const mark = state.marks[key];
       if (mark === "available") cell.classList.add("mark-available");

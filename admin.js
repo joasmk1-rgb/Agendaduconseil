@@ -3536,6 +3536,14 @@ function runAdmin() {
   fillModeAvailableBtn.addEventListener("click", () => setFillMode("available"));
   fillModeUnavailableBtn.addEventListener("click", () => setFillMode("unavailable"));
 
+  // Identifie une séance précise d'un cours (jour+horaire), indépendamment
+  // de sa position dans le tableau "sessions" — sert de clé stable pour les
+  // exclusions par séance (member.excludedSessions), même reconstruite dans
+  // script.js côté public avec la même formule.
+  function sessionKey(code, session) {
+    return `${code}|${session.weekday}|${session.start}|${session.end}`;
+  }
+
   // Calcule, pour un membre donné (déjà pourvu de son "programs"), les
   // cours du catalogue qui correspondent et les clés de créneaux "pas dispo"
   // en découlant — factorisé pour servir au bouton "un membre" ET au bouton
@@ -3555,7 +3563,16 @@ function runAdmin() {
       (c) => !c.code.startsWith("EVT-") && (c.programs || []).some((p) => programSet.has(p))
     );
     if (!matchingCourses.length) return { matchingCourses: [], desiredKeys: new Set() };
-    const sessions = matchingCourses.flatMap((c) => c.sessions.map((s) => ({ ...s, title: c.name })));
+    // Respecte les séances que CE membre a lui-même exclues (via "Mes cours"
+    // côté public) pour un cours à groupes parallèles — l'admin ne peut pas
+    // deviner à sa place quel groupe est le sien, donc si rien n'est encore
+    // exclu, toutes les séances du cours restent incluses comme avant.
+    const excludedSessSet = new Set((member && member.excludedSessions) || []);
+    const sessions = matchingCourses.flatMap((c) =>
+      (c.sessions || [])
+        .filter((s) => !excludedSessSet.has(sessionKey(c.code, s)))
+        .map((s) => ({ ...s, title: c.name }))
+    );
     // Plafonné à 3 mois (90 jours) même si la période affichée du site
     // (currentConfig.rangeDays) est réglée plus large : un programme entier
     // génère déjà beaucoup de créneaux par semaine, pas la peine de projeter
@@ -3591,14 +3608,17 @@ function runAdmin() {
     if ("role" in resultingDoc && resultingDoc.role != null && (typeof resultingDoc.role !== "string" || resultingDoc.role.length >= 50)) {
       return `champ "role" invalide ou trop long (≥50 caractères) : "${resultingDoc.role}"`;
     }
-    if ("courses" in resultingDoc && resultingDoc.courses != null && (!Array.isArray(resultingDoc.courses) || resultingDoc.courses.length >= 100)) {
-      return `trop de cours enregistrés (${(resultingDoc.courses || []).length}, la règle actuelle limite à 99)`;
+    if ("courses" in resultingDoc && resultingDoc.courses != null && (!Array.isArray(resultingDoc.courses) || resultingDoc.courses.length >= 300)) {
+      return `trop de cours enregistrés (${(resultingDoc.courses || []).length}, la règle actuelle limite à 299)`;
     }
-    if ("courseMarkedKeys" in resultingDoc && resultingDoc.courseMarkedKeys != null && (!Array.isArray(resultingDoc.courseMarkedKeys) || resultingDoc.courseMarkedKeys.length >= 6000)) {
-      return `trop de créneaux de cours enregistrés (${(resultingDoc.courseMarkedKeys || []).length}, la règle actuelle limite à 5999)`;
+    if ("courseMarkedKeys" in resultingDoc && resultingDoc.courseMarkedKeys != null && (!Array.isArray(resultingDoc.courseMarkedKeys) || resultingDoc.courseMarkedKeys.length >= 20000)) {
+      return `trop de créneaux de cours enregistrés (${(resultingDoc.courseMarkedKeys || []).length}, la règle actuelle limite à 19999)`;
     }
     if ("programs" in resultingDoc && resultingDoc.programs != null && (!Array.isArray(resultingDoc.programs) || resultingDoc.programs.length >= 10)) {
       return `trop de programmes sur la fiche (${(resultingDoc.programs || []).length}, la règle actuelle limite à 9)`;
+    }
+    if ("excludedSessions" in resultingDoc && resultingDoc.excludedSessions != null && (!Array.isArray(resultingDoc.excludedSessions) || resultingDoc.excludedSessions.length >= 500)) {
+      return `trop de séances exclues (${(resultingDoc.excludedSessions || []).length}, la règle actuelle limite à 499)`;
     }
     return null;
   }
@@ -3651,7 +3671,7 @@ function runAdmin() {
     if (memberViolation) throw new Error(`Blocage prévisible (fiche membre) : ${memberViolation}`);
 
     await db.saveMarks(member.id, member.name, marks);
-    await db.updateMemberCourses(member.id, member.name, coursesArr, courseMarkedKeysArr);
+    await db.updateMemberCourses(member.id, member.name, coursesArr, courseMarkedKeysArr, member.excludedSessions || []);
     return added;
   }
 

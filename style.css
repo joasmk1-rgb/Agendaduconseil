@@ -507,6 +507,20 @@ main.main-layout {
    fond vert des dispos membres, juste un liseré violet par-dessus. */
 .cell.slot.student-load-hit { box-shadow: inset 0 0 0 2px #7c3aed; }
 .cell.slot.has-event.student-load-hit { box-shadow: inset 0 0 0 2px var(--color-event), inset 0 0 0 4px #7c3aed; }
+/* Superposition "cours" (membre, sa propre grille) : identifie d'un coup
+   d'œil quel cours a généré un créneau "pas dispo" via "Mes cours". */
+.cell.slot.course-slot { box-shadow: inset 0 0 0 2px #7c3aed; }
+.cell.slot.has-event.course-slot { box-shadow: inset 0 0 0 2px var(--color-event), inset 0 0 0 4px #7c3aed; }
+
+.course-session-subpicker {
+  margin: 2px 0 8px 28px;
+  padding: 8px 10px;
+  border-left: 3px solid #7c3aed;
+  background: var(--uc-navy-soft, #f5f3ff);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.course-session-subpicker .hint { margin: 0 0 6px; font-size: 0.78rem; }
+.course-session-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; padding: 3px 0; cursor: pointer; }
 
 .bulk-mark-section { padding: 8px 20px; }
 .bulk-mark-panel {
