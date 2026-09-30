@@ -67,6 +67,8 @@ const ROLE_ADMIN_VIEWS = {
   secretaire: ["meetings", "agenda-proposals", "import", "availability"],
   tresorier: ["projects", "export"],
   communication: ["tasks", "projects"],
+  presidente: ["find-date"],
+  "vice-presidente": ["find-date"],
 };
 
 async function checkAccess() {
@@ -253,122 +255,11 @@ function runAdmin() {
   const pollChoiceOptions = document.getElementById("poll-choice-options");
   const pollOptionsInput = document.getElementById("poll-options-input");
   const pollMultipleInput = document.getElementById("poll-multiple-input");
-  const pollSlotGridEl = document.getElementById("poll-slot-grid");
-  const pollSlotAddBtn = document.getElementById("poll-slot-add-btn");
-
-  // Aide à construire un sondage type "quand es-tu dispo pour la réunion ?" :
-  // un calendrier cliquable (même grille que partout ailleurs) permet de
-  // sélectionner les créneaux candidats, puis un bouton transforme la
-  // sélection en lignes formatées ("Jeudi 24/09 — 18h00-20h00", en fusionnant
-  // les créneaux consécutifs d'une même date) dans la zone d'options du
-  // sondage. Ne fait qu'ajouter du texte à la textarea — le sondage lui-même
-  // reste un sondage "choix" tout à fait normal, aucune donnée/logique nouvelle.
-  const pollSlotSelection = new Set();
-
-  function renderPollSlotGrid() {
-    if (!pollSlotGridEl) return;
-    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
-    const times = Grid.buildTimeSlots();
-
-    pollSlotGridEl.innerHTML = "";
-    pollSlotGridEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
-    pollSlotGridEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
-    Grid.renderGridHeaders(pollSlotGridEl, dates, currentEvents);
-
-    Grid.renderHourRows(pollSlotGridEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel }) => {
-      const key = Grid.slotKey(dateISO, timeLabel);
-      cell.dataset.key = key;
-      if (pollSlotSelection.has(key)) cell.classList.add("mark-available");
-      cell.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        pollSlotPainting = true;
-        pollSlotPaintAction = pollSlotSelection.has(key) ? "clear" : "set";
-        applyPollSlotPaint(cell, key);
-      });
-      cell.addEventListener("mouseenter", () => {
-        if (pollSlotPainting) applyPollSlotPaint(cell, key);
-      });
-    });
-  }
-
-  let pollSlotPainting = false;
-  let pollSlotPaintAction = "set";
-  function applyPollSlotPaint(cell, key) {
-    if (pollSlotPaintAction === "clear") {
-      pollSlotSelection.delete(key);
-      cell.classList.remove("mark-available");
-    } else {
-      pollSlotSelection.add(key);
-      cell.classList.add("mark-available");
-    }
-  }
-  document.addEventListener("mouseup", () => {
-    pollSlotPainting = false;
-  });
-
-  // Fusionne les créneaux sélectionnés consécutifs (même date, créneaux qui
-  // se suivent) en une seule plage par bloc, pour éviter une ligne par
-  // créneau de 15min quand l'utilisateur en sélectionne plusieurs d'affilée.
-  function mergePollSlotSelection(keys) {
-    const byDate = new Map();
-    keys.forEach((key) => {
-      const [dateISO, timeLabel] = key.split("|");
-      if (!byDate.has(dateISO)) byDate.set(dateISO, []);
-      byDate.get(dateISO).push(timeLabel);
-    });
-    const times = Grid.buildTimeSlots();
-    const ranges = [];
-    Array.from(byDate.keys())
-      .sort()
-      .forEach((dateISO) => {
-        const sorted = byDate.get(dateISO).sort((a, b) => times.indexOf(a) - times.indexOf(b));
-        let rangeStart = sorted[0];
-        let prev = sorted[0];
-        for (let i = 1; i <= sorted.length; i++) {
-          const t = sorted[i];
-          const isConsecutive = t && times[times.indexOf(prev) + 1] === t;
-          if (!isConsecutive) {
-            const endIndex = times.indexOf(prev) + 1;
-            const endLabel = times[endIndex] || times[times.length - 1];
-            ranges.push({ dateISO, start: rangeStart, end: endLabel });
-            rangeStart = t;
-          }
-          prev = t;
-        }
-      });
-    return ranges;
-  }
-
-  pollSlotAddBtn.addEventListener("click", () => {
-    if (!pollSlotSelection.size) {
-      alert("Sélectionne d'abord au moins un créneau sur le calendrier.");
-      return;
-    }
-    const ranges = mergePollSlotSelection(Array.from(pollSlotSelection));
-    const labels = ranges.map(({ dateISO, start, end }) => {
-      const [y, m, d] = dateISO.split("-");
-      const dow = new Date(`${dateISO}T12:00:00`).getDay();
-      return `${Grid.WEEKDAYS_FULL[dow]} ${d}/${m} — ${start.replace(":", "h")}-${end.replace(":", "h")}`;
-    });
-    const existing = pollOptionsInput.value.split("\n").filter((l) => l.trim() !== "");
-    pollOptionsInput.value = existing.concat(labels).join("\n");
-    pollSlotSelection.clear();
-    renderPollSlotGrid();
-  });
   const pollSubmitBtn = document.getElementById("poll-submit-btn");
   const pollList = document.getElementById("poll-list");
   const agendaProposalList = document.getElementById("agenda-proposal-list");
   const eventAvailabilitySelect = document.getElementById("event-availability-select");
   const eventAvailabilityResult = document.getElementById("event-availability-result");
-
-  const bestSlotForm = document.getElementById("best-slot-form");
-  const bestSlotHeatmapEl = document.getElementById("best-slot-heatmap");
-  const bestSlotStartInput = document.getElementById("best-slot-start-input");
-  const bestSlotEndInput = document.getElementById("best-slot-end-input");
-  const bestSlotDurationInput = document.getElementById("best-slot-duration-input");
-  const bestSlotThresholdInput = document.getElementById("best-slot-threshold-input");
-  const bestSlotWeekendsInput = document.getElementById("best-slot-weekends-input");
-  const bestSlotResult = document.getElementById("best-slot-result");
 
   const studentLoadFaculteSelect = document.getElementById("student-load-faculte");
   const studentLoadNiveauSelect = document.getElementById("student-load-niveau");
@@ -456,17 +347,6 @@ function runAdmin() {
   const bulkFillModeAvailableBtn = document.getElementById("bulk-fill-mode-available");
   const bulkFillModeUnavailableBtn = document.getElementById("bulk-fill-mode-unavailable");
   const bulkFillModeClearBtn = document.getElementById("bulk-fill-mode-clear");
-  const pollingSlotGridEl = document.getElementById("polling-slot-grid");
-  const pollingSlotSaveBtn = document.getElementById("polling-slot-save-btn");
-  const pollingSlotClearBtn = document.getElementById("polling-slot-clear-btn");
-  const pollingSlotResult = document.getElementById("polling-slot-result");
-  const pollingSlotDayCheckboxes = document.getElementById("polling-slot-day-checkboxes");
-  const pollingSlotStartTime = document.getElementById("polling-slot-start-time");
-  const pollingSlotEndTime = document.getElementById("polling-slot-end-time");
-  const pollingSlotStartDate = document.getElementById("polling-slot-start-date");
-  const pollingSlotEndDate = document.getElementById("polling-slot-end-date");
-  const pollingSlotQuickselectBtn = document.getElementById("polling-slot-quickselect-btn");
-  const pollingSlotQuickselectResult = document.getElementById("polling-slot-quickselect-result");
   const bulkFillApplyBtn = document.getElementById("bulk-fill-apply-btn");
   const bulkFillResult = document.getElementById("bulk-fill-result");
 
@@ -502,10 +382,6 @@ function runAdmin() {
     tasksTabToggle.checked = !!(config && config.tasksTabEnabled);
     passwordChangeToggle.checked = !!(config && config.passwordChangeEnabled);
     focusDateInput.value = (config && config.focusDate) || "";
-    // Pré-coche "Inclure les weekends" dans "Trouver le meilleur créneau"
-    // d'après le réglage global, comme point de départ — reste modifiable
-    // pour CETTE recherche précise sans toucher au réglage du site.
-    if (bestSlotWeekendsInput) bestSlotWeekendsInput.checked = !!(config && config.includeWeekends);
   }
 
   // ---------- Vue ciblée ----------
@@ -1130,51 +1006,6 @@ function runAdmin() {
     return { all: results, top: results.slice(0, 8), dates };
   }
 
-  // ---------- Heatmap de la recherche "Trouver le meilleur créneau" ----------
-  // Un cellule par créneau de départ candidat évalué (même durée que la
-  // recherche), coloré par nombre de dispo — permet de voir en un coup d'œil
-  // comment le classement change quand on ajuste la durée (ex: le meilleur
-  // créneau à 1h n'est plus forcément le meilleur à 2h).
-  function renderBestSlotHeatmap(allResults, topResults, dateStrings) {
-    if (!bestSlotHeatmapEl) return;
-    // dateStrings vient de buildInclusiveDateRange (chaînes "YYYY-MM-DD") —
-    // renderGridHeaders/renderHourRows attendent des objets Date (comme
-    // buildDateList), d'où la conversion ici.
-    const dates = dateStrings.map((d) => new Date(`${d}T00:00:00`));
-    const times = Grid.buildTimeSlots();
-    const counts = new Map(); // "date|heure" -> { availCount, names }
-    allResults.forEach((r) => {
-      counts.set(Grid.slotKey(r.dateISO, r.startTime), { availCount: r.available.length, names: r.available });
-    });
-    const topKeys = new Set(topResults.map((r) => Grid.slotKey(r.dateISO, r.startTime)));
-    const rankByKey = new Map(topResults.map((r, i) => [Grid.slotKey(r.dateISO, r.startTime), i + 1]));
-
-    bestSlotHeatmapEl.innerHTML = "";
-    bestSlotHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
-    bestSlotHeatmapEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
-    Grid.renderGridHeaders(bestSlotHeatmapEl, dates, currentEvents);
-
-    const maxCount = currentMembers.length || 1;
-    Grid.renderHourRows(bestSlotHeatmapEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel, blocked }) => {
-      const key = Grid.slotKey(dateISO, timeLabel);
-      cell.dataset.key = key;
-      if (blocked) return;
-      const entry = counts.get(key);
-      if (!entry) return; // pas un créneau de départ valide (dépasserait la fin de journée)
-      if (entry.availCount > 0) {
-        const ratio = entry.availCount / maxCount;
-        cell.style.background = `rgba(34, 197, 94, ${(0.15 + ratio * 0.75).toFixed(2)})`;
-        cell.textContent = String(entry.availCount);
-      }
-      if (topKeys.has(key)) {
-        cell.style.boxShadow = "inset 0 0 0 2px #d97706";
-        cell.title = `#${rankByKey.get(key)} meilleur créneau — ${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
-      } else {
-        cell.title = `${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
-      }
-    });
-  }
-
   // "Lun 01/10" plutôt que "2026-10-01" — plus lisible en un coup d'œil,
   // tout en restant compact (abrégé volontairement).
   function formatDateShortWithDay(dateISO) {
@@ -1182,44 +1013,6 @@ function runAdmin() {
     const dow = new Date(`${dateISO}T12:00:00`).getDay();
     return `${Grid.WEEKDAYS_FULL[dow].slice(0, 3)} ${d}/${m}`;
   }
-
-  function renderBestSlotResults(results) {
-    if (!results.length) {
-      bestSlotResult.innerHTML = "<p>Aucun créneau trouvé (vérifie la période et la durée par rapport aux heures de la grille).</p>";
-      return;
-    }
-    bestSlotResult.innerHTML = results
-      .map((r, i) => {
-        return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo (${r.available.join(", ") || "—"}), ${r.unknown.length} pas répondu (${r.unknown.join(", ") || "—"}), ${r.unavailable.length} indispo (${r.unavailable.join(", ") || "—"}) <button type="button" class="btn btn-ghost btn-sm" data-usebest="${i}">Utiliser ce créneau</button></p>`;
-      })
-      .join("");
-    bestSlotResult.querySelectorAll("[data-usebest]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const r = results[Number(btn.dataset.usebest)];
-        if (eventAllDayInput.checked) {
-          eventAllDayInput.checked = false;
-          eventAllDayInput.dispatchEvent(new Event("change"));
-        }
-        eventDateInput.value = r.dateISO;
-        eventStartInput.value = r.startTime;
-        eventEndInput.value = r.endTime;
-        eventLabelInput.focus();
-      });
-    });
-  }
-
-  bestSlotForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const startDate = bestSlotStartInput.value;
-    const endDate = bestSlotEndInput.value;
-    if (!startDate || !endDate) return;
-    const durationMinutes = Number(bestSlotDurationInput.value) || 60;
-    const thresholdMinutes = Number(bestSlotThresholdInput.value) || 45;
-    const includeWeekends = !!(bestSlotWeekendsInput && bestSlotWeekendsInput.checked);
-    const { all, top, dates } = findBestSlots({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends });
-    renderBestSlotResults(top);
-    renderBestSlotHeatmap(all, top, dates);
-  });
 
   // ---------- Superposition "cours" sur la grille de dispo (vue Disponibilité) ----------
   // Contrairement à "Trouver le meilleur créneau" ci-dessus (basé sur les
@@ -3906,144 +3699,6 @@ function runAdmin() {
     });
   }
 
-  // ---------- Sonder des créneaux (façon Doodle intégré au calendrier) ----------
-  // Au lieu d'un sondage séparé (compliqué à utiliser pour les membres), on
-  // marque directement certains créneaux du calendrier normal en orange :
-  // config/current.pollingSlots. Chaque membre y répond simplement en
-  // cliquant dispo/pas dispo comme d'habitude (voir renderGrid / .avail-requested
-  // côté script.js) — la mise en avant orange disparaît dès qu'il a répondu.
-  let pollingSlotSelection = new Set();
-  let pollingSlotPainting = false;
-  let pollingSlotPaintAction = "set";
-
-  function applyPollingSlotPaint(cell, key) {
-    if (pollingSlotPaintAction === "clear") {
-      pollingSlotSelection.delete(key);
-      cell.classList.remove("polling-selected");
-    } else {
-      pollingSlotSelection.add(key);
-      cell.classList.add("polling-selected");
-    }
-  }
-  document.addEventListener("mouseup", () => {
-    pollingSlotPainting = false;
-  });
-
-  function renderPollingSlotGrid() {
-    if (!pollingSlotGridEl) return;
-    const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
-    const times = Grid.buildTimeSlots();
-
-    pollingSlotGridEl.innerHTML = "";
-    pollingSlotGridEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
-    pollingSlotGridEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
-    Grid.renderGridHeaders(pollingSlotGridEl, dates, currentEvents);
-
-    Grid.renderHourRows(pollingSlotGridEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel }) => {
-      const key = Grid.slotKey(dateISO, timeLabel);
-      cell.dataset.key = key;
-      if (pollingSlotSelection.has(key)) cell.classList.add("polling-selected");
-      cell.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        pollingSlotPainting = true;
-        pollingSlotPaintAction = pollingSlotSelection.has(key) ? "clear" : "set";
-        applyPollingSlotPaint(cell, key);
-      });
-      cell.addEventListener("mouseenter", () => {
-        if (pollingSlotPainting) applyPollingSlotPaint(cell, key);
-      });
-    });
-  }
-
-  if (pollingSlotSaveBtn) {
-    pollingSlotSaveBtn.addEventListener("click", async () => {
-      pollingSlotResult.textContent = "Enregistrement…";
-      pollingSlotSaveBtn.disabled = true;
-      try {
-        await db.setPollingSlots(Array.from(pollingSlotSelection));
-        pollingSlotResult.textContent = `${pollingSlotSelection.size} créneau(x) sondé(s) enregistré(s) — visible en orange pour tout le monde.`;
-      } catch (err) {
-        console.error(err);
-        pollingSlotResult.textContent = "Échec de l'enregistrement, réessaie.";
-      }
-      pollingSlotSaveBtn.disabled = false;
-    });
-  }
-
-  if (pollingSlotClearBtn) {
-    pollingSlotClearBtn.addEventListener("click", async () => {
-      pollingSlotResult.textContent = "Suppression…";
-      pollingSlotClearBtn.disabled = true;
-      try {
-        await db.clearPollingSlots();
-        pollingSlotSelection.clear();
-        renderPollingSlotGrid();
-        pollingSlotResult.textContent = "Créneaux sondés vidés.";
-      } catch (err) {
-        console.error(err);
-        pollingSlotResult.textContent = "Échec, réessaie.";
-      }
-      pollingSlotClearBtn.disabled = false;
-    });
-  }
-
-  // ---------- Marquage rapide pour le sondage de créneaux (règle) ----------
-  const POLLING_SLOT_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lundi → dimanche
-
-  function renderPollingSlotDayCheckboxes() {
-    if (!pollingSlotDayCheckboxes || pollingSlotDayCheckboxes.childElementCount) return; // construit une seule fois
-    POLLING_SLOT_DAY_ORDER.forEach((dow) => {
-      const label = document.createElement("label");
-      label.className = "checkbox-group";
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.className = "polling-slot-day-checkbox";
-      input.value = String(dow);
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(" " + Grid.WEEKDAYS_FULL[dow].slice(0, 3)));
-      pollingSlotDayCheckboxes.appendChild(label);
-    });
-  }
-  renderPollingSlotDayCheckboxes();
-
-  if (pollingSlotQuickselectBtn) {
-    pollingSlotQuickselectBtn.addEventListener("click", () => {
-      const selectedDays = new Set(
-        Array.from(pollingSlotDayCheckboxes.querySelectorAll(".polling-slot-day-checkbox:checked")).map((c) => Number(c.value))
-      );
-      if (!selectedDays.size) {
-        pollingSlotQuickselectResult.textContent = "Coche au moins un jour.";
-        return;
-      }
-      const startTime = pollingSlotStartTime.value || null;
-      const endTime = pollingSlotEndTime.value || null;
-      const startDateISO = pollingSlotStartDate.value || null;
-      const endDateISO = pollingSlotEndDate.value || null;
-
-      const dates = Grid.buildDateList(new Date(), currentConfig.rangeDays, currentConfig.includeWeekends);
-      const times = Grid.buildTimeSlots();
-      let added = 0;
-      dates.forEach((date) => {
-        const dateISO = Grid.toISODate(date);
-        if (startDateISO && dateISO < startDateISO) return;
-        if (endDateISO && dateISO > endDateISO) return;
-        if (!selectedDays.has(date.getDay())) return;
-        times.forEach((timeLabel) => {
-          if (startTime && timeLabel < startTime) return;
-          if (endTime && timeLabel >= endTime) return;
-          const key = Grid.slotKey(dateISO, timeLabel);
-          if (!pollingSlotSelection.has(key)) added++;
-          pollingSlotSelection.add(key);
-        });
-      });
-
-      renderPollingSlotGrid();
-      pollingSlotQuickselectResult.textContent = added
-        ? `${added} créneau(x) ajouté(s) à la sélection — clique "Enregistrer les créneaux sondés" pour valider.`
-        : "Aucun nouveau créneau à ajouter (déjà tous sélectionnés).";
-    });
-  }
-
   // ---------- Marquage rapide (par règle) — pour le membre affiché ----------
   // Même principe que "Règle rapide pour plusieurs membres" juste en dessous,
   // mais rattaché directement au membre choisi dans le menu déroulant
@@ -4302,6 +3957,334 @@ function runAdmin() {
     bulkFillApplyBtn.disabled = false;
   });
 
+  // ---------- Trouver une date (parcours complet) ----------
+  // Une recherche = un document "polls" de type "date" :
+  //   status "collecting" : les membres voient un bandeau + la plage en
+  //                         orange sur leur calendrier, ils remplissent leurs
+  //                         dispos ; ici, remplissage + meilleurs créneaux en
+  //                         direct, sondage en brouillon.
+  //   status "open"       : sondage publié (bandeau à cocher côté membres).
+  //   status "done"       : créneau choisi, réunion + événement créés.
+  //   status "closed"     : arrêtée sans choisir.
+  const fdForm = document.getElementById("fd-form");
+  const fdTitle = document.getElementById("fd-title");
+  const fdStart = document.getElementById("fd-start");
+  const fdEnd = document.getElementById("fd-end");
+  const fdDuration = document.getElementById("fd-duration");
+  const fdFrom = document.getElementById("fd-from");
+  const fdTo = document.getElementById("fd-to");
+  const fdWeekends = document.getElementById("fd-weekends");
+  const fdFormStatus = document.getElementById("fd-form-status");
+  const fdList = document.getElementById("fd-list");
+  const FD_SLOT_COUNT = 10;
+  const FD_MAX_PER_DAY = 3;
+  // Options décochées à la main dans un brouillon (par recherche), gardées
+  // entre deux rafraîchissements en direct.
+  const fdExcluded = new Map();
+
+  function fdDates(search) {
+    return Grid.buildInclusiveDateRange(search.start, search.end).filter((d) => {
+      if (search.weekends) return true;
+      const dow = new Date(`${d}T12:00:00`).getDay();
+      return dow !== 0 && dow !== 6;
+    });
+  }
+
+  function fdRangeKeys(search) {
+    const times = Grid.buildTimeSlots().filter((t) => t >= search.from && t < search.to);
+    const keys = [];
+    fdDates(search).forEach((d) => times.forEach((t) => keys.push(Grid.slotKey(d, t))));
+    return keys;
+  }
+
+  // "A rempli" = au moins une case marquée à la main sur la plage (les
+  // heures de cours posées automatiquement ne comptent pas comme réponse).
+  function fdParticipation(search) {
+    const keys = fdRangeKeys(search);
+    const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
+    const filled = [];
+    const missing = [];
+    currentMembers.forEach((m) => {
+      const marks = marksByMember.get(m.id) || {};
+      const auto = new Set(m.courseMarkedKeys || []);
+      const answered = keys.some((k) => marks[k] === "available" || (marks[k] === "unavailable" && !auto.has(k)));
+      (answered ? filled : missing).push(m.name);
+    });
+    return { filled: filled.sort(), missing: missing.sort() };
+  }
+
+  // Meilleurs créneaux : classés par nombre de dispos puis d'indispos, sans
+  // chevauchement entre eux, au plus FD_MAX_PER_DAY par jour pour varier.
+  function fdBestSlots(search) {
+    // "Dispo" = libre sur toute la durée ; à égalité, on préfère le créneau
+    // où le plus de minutes sont cochées dispo (couverture partielle).
+    const threshold = search.duration;
+    const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
+    const greenCount = (keys) =>
+      currentMembers.reduce((n, m) => {
+        const marks = marksByMember.get(m.id) || {};
+        return n + keys.filter((k) => marks[k] === "available").length;
+      }, 0);
+    const toMin = timeStrToMinutes(search.to);
+    const results = [];
+    fdDates(search).forEach((dateISO) => {
+      Grid.buildTimeSlots()
+        .filter((t) => t >= search.from)
+        .forEach((startTime) => {
+          const endMin = timeStrToMinutes(startTime) + search.duration;
+          if (endMin > toMin) return;
+          const endTime = minutesToTimeStr(endMin);
+          const keys = slotKeysForRange(dateISO, startTime, endTime);
+          const c = classifyMembers(keys, threshold);
+          results.push({ dateISO, startTime, endTime, green: greenCount(keys), ...c });
+        });
+    });
+    results.sort((a, b) => {
+      if (b.available.length !== a.available.length) return b.available.length - a.available.length;
+      if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
+      if (b.green !== a.green) return b.green - a.green;
+      return (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime);
+    });
+    const picked = [];
+    const perDay = new Map();
+    for (const r of results) {
+      if (picked.length >= FD_SLOT_COUNT) break;
+      if ((perDay.get(r.dateISO) || 0) >= FD_MAX_PER_DAY) continue;
+      const overlaps = picked.some((p) => p.dateISO === r.dateISO && p.startTime < r.endTime && r.startTime < p.endTime);
+      if (overlaps) continue;
+      picked.push(r);
+      perDay.set(r.dateISO, (perDay.get(r.dateISO) || 0) + 1);
+    }
+    return picked.sort((a, b) => (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime));
+  }
+
+  function fdSlotLabel(s) {
+    return `${formatDateShortWithDay(s.dateISO || s.date)} ${(s.startTime || s.start).replace(":", "h")}-${(s.endTime || s.end).replace(":", "h")}`;
+  }
+
+  function fdRangeLabel(search) {
+    return `du ${formatDateShortWithDay(search.start)} au ${formatDateShortWithDay(search.end)}, entre ${search.from.replace(":", "h")} et ${search.to.replace(":", "h")} — ${search.duration} min`;
+  }
+
+  fdForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const search = {
+      start: fdStart.value,
+      end: fdEnd.value,
+      duration: Number(fdDuration.value) || 60,
+      from: fdFrom.value || "08:30",
+      to: fdTo.value || "20:00",
+      weekends: fdWeekends.checked,
+    };
+    if (!search.start || !search.end || search.end < search.start) {
+      fdFormStatus.textContent = "Vérifie les dates (la fin doit être après le début).";
+      return;
+    }
+    if (search.from >= search.to) {
+      fdFormStatus.textContent = "Vérifie les heures (\"entre\" doit être avant \"et\").";
+      return;
+    }
+    const lastVisible = Grid.toISODate(Grid.addDays(new Date(), currentConfig.rangeDays - 1));
+    const warn = search.end > lastVisible
+      ? ` ⚠️ La période affichée du site s'arrête le ${formatDateShortWithDay(lastVisible)} : allonge la "Fenêtre glissante" (Paramètres) pour que les membres voient toute la plage.`
+      : "";
+    try {
+      await db.addPoll({
+        question: (fdTitle.value || "Réunion du conseil").trim(),
+        type: "date",
+        status: "collecting",
+        multiple: true,
+        options: [],
+        responses: [],
+        search,
+      });
+      fdFormStatus.textContent = `Recherche lancée : les membres sont prévenus sur leur calendrier.${warn}`;
+    } catch (err) {
+      console.error(err);
+      fdFormStatus.textContent = "Échec de la création, réessaie.";
+    }
+  });
+
+  function fdButton(label, cls, onClick) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `btn btn-sm ${cls}`;
+    b.textContent = label;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function renderFindDate() {
+    if (!fdList) return;
+    const searches = currentPolls
+      .filter((p) => p.type === "date")
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    fdList.innerHTML = "";
+    if (!searches.length) {
+      fdList.innerHTML = '<p class="hint">Aucune recherche en cours.</p>';
+      return;
+    }
+    searches.forEach((poll) => fdList.appendChild(renderFindDateCard(poll)));
+  }
+
+  function renderFindDateCard(poll) {
+    const search = poll.search || {};
+    const card = document.createElement("div");
+    card.className = "fd-card";
+    const statusLabel = {
+      collecting: "🟠 Les membres remplissent leurs dispos",
+      open: "🟢 Sondage publié",
+      done: "✅ Réunion fixée",
+      closed: "⚪ Arrêtée",
+    }[poll.status] || poll.status;
+    card.innerHTML = `<div class="fd-card-head"><strong>${poll.question}</strong> <span class="hint">${fdRangeLabel(search)}</span><div class="fd-status">${statusLabel}</div></div>`;
+
+    if (poll.status === "collecting" || poll.status === "open") {
+      const part = fdParticipation(search);
+      const total = currentMembers.length || 1;
+      const p = document.createElement("div");
+      p.className = "fd-participation";
+      const pct = Math.round((part.filled.length / total) * 100);
+      p.innerHTML = `<div><strong>${part.filled.length}/${currentMembers.length}</strong> membres ont rempli leurs dispos sur la plage</div>
+        <div class="fd-bar"><span style="width:${pct}%"></span></div>
+        <details><summary>Qui manque ? (${part.missing.length})</summary><p class="hint">${part.missing.join(", ") || "Personne 🎉"}</p></details>`;
+      card.appendChild(p);
+    }
+
+    if (poll.status === "collecting") {
+      const slots = fdBestSlots(search);
+      const excluded = fdExcluded.get(poll.id) || new Set();
+      fdExcluded.set(poll.id, excluded);
+      const box = document.createElement("div");
+      box.className = "fd-slots";
+      box.innerHTML = `<h4>Sondage prêt (brouillon) — ${slots.length} créneaux libres, mis à jour en direct</h4><p class="hint">Décoche ceux que tu ne veux pas proposer. ✅ dispo · ❌ pas dispo · ❔ pas encore répondu.</p>`;
+      if (!slots.length) box.innerHTML += '<p class="hint">Aucun créneau possible : vérifie la plage, les heures et la durée.</p>';
+      slots.forEach((s) => {
+        const key = `${s.dateISO}|${s.startTime}`;
+        const row = document.createElement("label");
+        row.className = "fd-slot";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !excluded.has(key);
+        cb.addEventListener("change", () => (cb.checked ? excluded.delete(key) : excluded.add(key)));
+        row.appendChild(cb);
+        const text = document.createElement("span");
+        text.innerHTML = `<strong>${fdSlotLabel(s)}</strong> <span class="fd-counts">✅ ${s.available.length} · ❌ ${s.unavailable.length} · ❔ ${s.unknown.length}</span>`;
+        text.title = `Dispo : ${s.available.join(", ") || "—"}\nPas dispo : ${s.unavailable.join(", ") || "—"}`;
+        row.appendChild(text);
+        box.appendChild(row);
+      });
+      card.appendChild(box);
+      const actions = document.createElement("div");
+      actions.className = "control-group actions";
+      actions.appendChild(
+        fdButton("📣 Publier le sondage", "btn-primary", async () => {
+          const chosen = slots.filter((s) => !excluded.has(`${s.dateISO}|${s.startTime}`));
+          if (!chosen.length) {
+            alert("Garde au moins un créneau à proposer.");
+            return;
+          }
+          if (!confirm(`Publier le sondage avec ${chosen.length} créneau(x) ? Les membres le verront tout de suite.`)) return;
+          await db.updatePoll(poll.id, {
+            status: "open",
+            options: chosen.map(fdSlotLabel),
+            slots: chosen.map((s) => ({ date: s.dateISO, start: s.startTime, end: s.endTime, label: fdSlotLabel(s) })),
+          });
+        })
+      );
+      actions.appendChild(fdButton("Annuler la recherche", "btn-ghost", async () => {
+        if (confirm("Annuler cette recherche ? Le bandeau disparaît chez les membres.")) await db.removePoll(poll.id);
+      }));
+      card.appendChild(actions);
+    }
+
+    if (poll.status === "open") {
+      const responses = poll.responses || [];
+      const box = document.createElement("div");
+      box.className = "fd-slots";
+      box.innerHTML = `<h4>Réponses au sondage (${responses.length})</h4>`;
+      const slots = (poll.slots || []).map((s) => {
+        const names = responses.filter((r) => (Array.isArray(r.answer) ? r.answer : [r.answer]).includes(s.label)).map((r) => r.name);
+        return { ...s, names };
+      });
+      const max = Math.max(0, ...slots.map((s) => s.names.length));
+      slots.forEach((s) => {
+        const row = document.createElement("div");
+        row.className = `fd-slot${s.names.length && s.names.length === max ? " fd-best" : ""}`;
+        const text = document.createElement("span");
+        text.innerHTML = `<strong>${s.label}</strong> — ${s.names.length} oui <span class="hint">(${s.names.join(", ") || "—"})</span>`;
+        row.appendChild(text);
+        row.appendChild(fdButton("Choisir ce créneau", "btn-ghost", () => fdChoose(poll, s)));
+        box.appendChild(row);
+      });
+      card.appendChild(box);
+      const actions = document.createElement("div");
+      actions.className = "control-group actions";
+      actions.appendChild(fdButton("Arrêter sans choisir", "btn-ghost", async () => {
+        if (confirm("Arrêter ce sondage sans fixer de date ?")) await db.updatePoll(poll.id, { status: "closed" });
+      }));
+      card.appendChild(actions);
+    }
+
+    if (poll.status === "done" && poll.chosen) {
+      const p = document.createElement("p");
+      p.textContent = `Réunion fixée le ${poll.chosen.label} — visible dans Réunions et dans le calendrier de tous.`;
+      card.appendChild(p);
+    }
+    if (poll.status === "done" || poll.status === "closed") {
+      const actions = document.createElement("div");
+      actions.className = "control-group actions";
+      actions.appendChild(fdButton("Retirer de la liste", "btn-ghost", async () => {
+        if (confirm("Retirer cette recherche de la liste ? (la réunion créée, elle, reste)")) await db.removePoll(poll.id);
+      }));
+      card.appendChild(actions);
+    }
+    return card;
+  }
+
+  async function fdChoose(poll, slot) {
+    if (!confirm(`Fixer la réunion le ${slot.label} ? La réunion et l'événement sont créés, le sondage est clôturé.`)) return;
+    try {
+      const eventId = await db.addEvent({
+        label: poll.question,
+        allDay: false,
+        date: slot.date,
+        startTime: slot.start,
+        endTime: slot.end,
+        status: "confirme",
+      });
+      const { available } = classifyMembers(slotKeysForRange(slot.date, slot.start, slot.end), (poll.search || {}).duration || 60);
+      const availableNames = new Set(available);
+      (poll.responses || []).forEach((r) => {
+        if ((Array.isArray(r.answer) ? r.answer : [r.answer]).includes(slot.label)) availableNames.add(r.name);
+      });
+      const attendance = {};
+      currentMembers.forEach((m) => {
+        attendance[m.id] = availableNames.has(m.name) ? "present" : "absent";
+      });
+      const meetingId = await db.addMeeting({
+        eventId,
+        date: slot.date,
+        startTime: slot.start,
+        endTime: slot.end,
+        status: "planned",
+        attendance,
+        proxies: {},
+      });
+      const odjDate = Grid.toISODate(Grid.addDays(new Date(`${slot.date}T00:00:00`), -1));
+      await db.addTask(
+        autoTaskPayload({ meetingId, label: "📋 Préparer l'ordre du jour", dateISO: odjDate, meetingLabel: `${poll.question} (${slot.date})` })
+      );
+      await db.updatePoll(poll.id, { status: "done", chosen: slot, meetingId });
+    } catch (err) {
+      console.error(err);
+      alert("Échec de la création de la réunion, réessaie.");
+    }
+  }
+
+  if (location.hash === "#find-date" && window.showAdminView) window.showAdminView("find-date");
+
+
   // ---------- Abonnements en direct ----------
   db.listenConfig((config) => {
     currentConfig = config || { rangeDays: 90, includeWeekends: false };
@@ -4309,9 +4292,7 @@ function runAdmin() {
     renderBlockedSlots();
     renderHeatmap();
     renderFillGrid();
-    renderPollSlotGrid();
-    pollingSlotSelection = new Set(currentConfig.pollingSlots || []);
-    renderPollingSlotGrid();
+    renderFindDate();
   });
 
   db.listenMembers((members) => {
@@ -4326,6 +4307,7 @@ function runAdmin() {
     renderProjects();
     renderDashboard();
     renderPolls();
+    renderFindDate();
   });
 
   db.listenEvents((events) => {
@@ -4339,9 +4321,8 @@ function runAdmin() {
     renderProjectView();
     renderHeatmap();
     renderFillGrid();
-    renderPollSlotGrid();
-    renderPollingSlotGrid();
     renderDashboard();
+    renderFindDate();
   });
 
   db.listenAllAvailability((responses) => {
@@ -4350,6 +4331,7 @@ function runAdmin() {
     renderHeatmap();
     renderOrphans();
     renderEventAvailability();
+    renderFindDate();
   });
 
   // ---------- Sondages ----------
@@ -4465,7 +4447,7 @@ function runAdmin() {
   function renderPolls() {
     pollList.innerHTML = "";
     currentPolls
-      .slice()
+      .filter((poll) => poll.type !== "date")
       .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
       .forEach((poll) => {
         const li = document.createElement("li");
@@ -4846,6 +4828,7 @@ function runAdmin() {
   db.listenPolls((polls) => {
     currentPolls = polls;
     renderPolls();
+    renderFindDate();
   });
 
   db.listenAgendaProposals((proposals) => {

@@ -349,6 +349,7 @@ export function listenEvents(callback) {
 export async function addEvent(event) {
   const id = `evt-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`;
   await setDoc(doc(firestore, "events", id), { ...event, createdAt: serverTimestamp() });
+  return id;
 }
 
 export async function removeEvent(id) {
@@ -694,6 +695,11 @@ export async function addPoll(poll) {
     ...poll,
     createdAt: serverTimestamp(),
   });
+  return id;
+}
+
+export async function updatePoll(id, patch) {
+  await updateDoc(doc(firestore, "polls", id), patch);
 }
 
 export async function closePoll(id) {

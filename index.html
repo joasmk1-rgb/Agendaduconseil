@@ -172,73 +172,9 @@
     </div>
     <div id="roles-event-result"></div>
 
-    <h2>Sonder des créneaux (façon Doodle)</h2>
-    <p class="hint">Sélectionne les créneaux sur lesquels tu veux particulièrement avoir une réponse — ils apparaissent en <strong style="color:#e08a1e">orange</strong> sur le calendrier de tout le monde, tant qu'un membre n'a pas encore cliqué dispo/pas dispo dessus (une fois répondu, la couleur normale reprend le dessus).</p>
-    <details class="polling-slot-quickselect">
-      <summary>⚡ Marquage rapide (sélectionner par règle)</summary>
-      <div class="control-group">
-        <span class="mode-label">Jour(s) :</span>
-        <div id="roles-polling-slot-day-checkboxes" class="checkbox-list"></div>
-      </div>
-      <div class="control-group">
-        <label for="roles-polling-slot-start-time">De</label>
-        <input type="time" id="roles-polling-slot-start-time" title="Heure de début (vide = toute la journée)">
-        <label for="roles-polling-slot-end-time">à</label>
-        <input type="time" id="roles-polling-slot-end-time" title="Heure de fin (vide = toute la journée)">
-      </div>
-      <div class="control-group">
-        <label for="roles-polling-slot-start-date">Du</label>
-        <input type="date" id="roles-polling-slot-start-date" title="Date de début (vide = début de la période affichée)">
-        <label for="roles-polling-slot-end-date">au</label>
-        <input type="date" id="roles-polling-slot-end-date" title="Date de fin (vide = fin de la période affichée)">
-      </div>
-      <div class="control-group actions">
-        <button type="button" id="roles-polling-slot-quickselect-btn" class="btn btn-ghost btn-sm">+ Ajouter à la sélection</button>
-      </div>
-      <p id="roles-polling-slot-quickselect-result" class="hint"></p>
-    </details>
-    <div class="grid-scroll poll-slot-grid-scroll">
-      <div id="roles-polling-slot-grid" class="grid"></div>
-    </div>
-    <div class="control-group actions">
-      <button type="button" id="roles-polling-slot-save-btn" class="btn btn-primary btn-sm">Enregistrer les créneaux sondés</button>
-      <button type="button" id="roles-polling-slot-clear-btn" class="btn btn-ghost btn-sm">Vider les créneaux sondés</button>
-    </div>
-    <p id="roles-polling-slot-result" class="hint"></p>
-
-    <h2>Trouver le meilleur créneau</h2>
-    <p class="hint">Cherche, sur une période donnée, les créneaux où le plus de monde est disponible.</p>
-    <div class="roles-bestslot-layout">
-      <form id="roles-bestslot-form" class="inline-form roles-bestslot-form">
-        <div class="control-group">
-          <label for="roles-bestslot-event-select">Autour d'un événement (optionnel)</label>
-          <select id="roles-bestslot-event-select"><option value="">— Aucun, période libre —</option></select>
-        </div>
-        <div class="control-group">
-          <label for="roles-bestslot-start-input">Du</label>
-          <input type="date" id="roles-bestslot-start-input" required>
-          <label for="roles-bestslot-end-input">au</label>
-          <input type="date" id="roles-bestslot-end-input" required>
-        </div>
-        <div class="control-group">
-          <label for="roles-bestslot-duration-input">Durée (minutes)</label>
-          <input type="number" id="roles-bestslot-duration-input" value="60" min="15" step="15">
-          <label for="roles-bestslot-threshold-input">Seuil dispo (minutes)</label>
-          <input type="number" id="roles-bestslot-threshold-input" value="45" min="15" step="15">
-        </div>
-        <div class="control-group checkbox-group">
-          <label><input type="checkbox" id="roles-bestslot-weekends-input"> Inclure les weekends</label>
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm">Chercher</button>
-      </form>
-      <div id="roles-bestslot-result" class="roles-bestslot-result">
-        <p class="hint">Le classement des meilleurs créneaux s'affichera ici après une recherche.</p>
-      </div>
-    </div>
-    <p class="hint">Heatmap de la recherche : plus c'est vert foncé, plus il y a de monde dispo pour un créneau démarrant là (à la durée choisie ci-dessus). Les meilleurs créneaux trouvés sont entourés.</p>
-    <div class="grid-scroll">
-      <div id="roles-bestslot-heatmap" class="grid"></div>
-    </div>
+    <h2>Trouver une date de réunion</h2>
+    <p class="hint">Plage de dates → les membres sont prévenus et remplissent leurs dispos → une dizaine de créneaux libres proposés → sondage à publier quand il y a assez de réponses → la réunion est créée.</p>
+    <p><a href="admin.html#find-date" class="btn btn-primary btn-sm">📆 Ouvrir "Trouver une date"</a></p>
   </section>
 
   <div id="profile-modal-overlay" class="agenda-modal-overlay hidden">

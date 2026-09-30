@@ -108,26 +108,6 @@ const tabPanels = Array.from(document.querySelectorAll("[data-tab-panel]"));
 const rolesTabBtn = document.getElementById("roles-tab-btn");
 const rolesEventSelect = document.getElementById("roles-event-select");
 const rolesEventResult = document.getElementById("roles-event-result");
-const rolesPollingSlotGridEl = document.getElementById("roles-polling-slot-grid");
-const rolesPollingSlotSaveBtn = document.getElementById("roles-polling-slot-save-btn");
-const rolesPollingSlotClearBtn = document.getElementById("roles-polling-slot-clear-btn");
-const rolesPollingSlotResult = document.getElementById("roles-polling-slot-result");
-const rolesPollingSlotDayCheckboxes = document.getElementById("roles-polling-slot-day-checkboxes");
-const rolesPollingSlotStartTime = document.getElementById("roles-polling-slot-start-time");
-const rolesPollingSlotEndTime = document.getElementById("roles-polling-slot-end-time");
-const rolesPollingSlotStartDate = document.getElementById("roles-polling-slot-start-date");
-const rolesPollingSlotEndDate = document.getElementById("roles-polling-slot-end-date");
-const rolesPollingSlotQuickselectBtn = document.getElementById("roles-polling-slot-quickselect-btn");
-const rolesPollingSlotQuickselectResult = document.getElementById("roles-polling-slot-quickselect-result");
-const rolesBestSlotForm = document.getElementById("roles-bestslot-form");
-const rolesBestSlotEventSelect = document.getElementById("roles-bestslot-event-select");
-const rolesBestSlotStartInput = document.getElementById("roles-bestslot-start-input");
-const rolesBestSlotEndInput = document.getElementById("roles-bestslot-end-input");
-const rolesBestSlotDurationInput = document.getElementById("roles-bestslot-duration-input");
-const rolesBestSlotThresholdInput = document.getElementById("roles-bestslot-threshold-input");
-const rolesBestSlotWeekendsInput = document.getElementById("roles-bestslot-weekends-input");
-const rolesBestSlotResult = document.getElementById("roles-bestslot-result");
-const rolesBestSlotHeatmapEl = document.getElementById("roles-bestslot-heatmap");
 const ROLES_WITH_AVAILABILITY_ACCESS = ["presidente", "vice-presidente"];
 const agendaMeetingInfo = document.getElementById("agenda-meeting-info");
 const agendaItemListEl = document.getElementById("agenda-item-list");
@@ -921,6 +901,52 @@ function availabilityRequestStats(ev) {
   return { total, answered };
 }
 
+// ===================== "TROUVER UNE DATE" (côté membre) =====================
+// Recherches de date lancées par l'admin (polls type "date", status
+// "collecting") : la plage demandée est mise en avant en orange sur le
+// calendrier tant que le créneau n'est pas rempli.
+function collectingSearches() {
+  const todayISO = Grid.toISODate(new Date());
+  return (state.polls || []).filter(
+    (p) => p.type === "date" && p.status === "collecting" && p.search && p.search.end >= todayISO
+  );
+}
+
+function searchCoversKey(search, key) {
+  const [dateISO, timeLabel] = key.split("|");
+  if (dateISO < search.start || dateISO > search.end) return false;
+  if (timeLabel < search.from || timeLabel >= search.to) return false;
+  if (!search.weekends) {
+    const dow = new Date(`${dateISO}T12:00:00`).getDay();
+    if (dow === 0 || dow === 6) return false;
+  }
+  return true;
+}
+
+function isKeyInCollectingSearch(key) {
+  return collectingSearches().some((p) => searchCoversKey(p.search, key));
+}
+
+function searchStats(search) {
+  let total = 0;
+  let answered = 0;
+  const times = Grid.buildTimeSlots();
+  Grid.buildInclusiveDateRange(search.start, search.end).forEach((d) => {
+    times.forEach((t) => {
+      const key = Grid.slotKey(d, t);
+      if (!searchCoversKey(search, key)) return;
+      total++;
+      if (state.marks[key]) answered++;
+    });
+  });
+  return { total, answered };
+}
+
+function formatShortFr(dateISO) {
+  const d = new Date(`${dateISO}T12:00:00`);
+  return `${Grid.WEEKDAYS_FULL[d.getDay()].toLowerCase()} ${d.getDate()}/${d.getMonth() + 1}`;
+}
+
 function renderAvailabilityBanner() {
   if (!state.password || !state.config) {
     availRequestBanner.classList.add("hidden");
@@ -929,17 +955,20 @@ function renderAvailabilityBanner() {
   }
   const todayISO = Grid.toISODate(new Date());
   const requested = (state.events || []).filter((e) => e.availabilityRequested && !e.allDay && e.date >= todayISO);
-  const pollingSlots = state.config.pollingSlots || [];
-  const pollingUnanswered = pollingSlots.filter((key) => !state.marks[key]);
-  if (!requested.length && !pollingUnanswered.length) {
+  const searches = collectingSearches();
+  if (!requested.length && !searches.length) {
     availRequestBanner.classList.add("hidden");
     availRequestBanner.innerHTML = "";
     return;
   }
   availRequestBanner.classList.remove("hidden");
-  const pollingHtml = pollingUnanswered.length
-    ? `<div class="avail-request-item">🙋 <strong>${pollingUnanswered.length}</strong> créneau(x) sondé(s) en attente de ta réponse — repère-les en <span style="color:#e08a1e">orange</span> sur le calendrier et clique dessus (dispo/pas dispo).</div>`
-    : "";
+  const pollingHtml = searches
+    .map((p) => {
+      const st = searchStats(p.search);
+      const done = st.total > 0 && st.answered >= st.total;
+      return `<div class="avail-request-item${done ? " done" : ""}">📆 Le conseil cherche une date pour <strong>${p.question}</strong> du ${formatShortFr(p.search.start)} au ${formatShortFr(p.search.end)} (entre ${p.search.from.replace(":", "h")} et ${p.search.to.replace(":", "h")}) — remplis tes dispos sur cette plage (cases en <span style="color:#e08a1e">orange</span>) : ${st.answered}/${st.total} créneaux remplis${done ? " ✅" : ""} <button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${p.search.start}">Y aller</button></div>`;
+    })
+    .join("");
   availRequestBanner.innerHTML = pollingHtml + requested
     .map((ev) => {
       const stats = availabilityRequestStats(ev);
@@ -978,7 +1007,14 @@ function renderPollBanner() {
   pollBanner.innerHTML = unanswered
     .map((poll) => {
       let fieldsHtml = "";
-      if (poll.type === "choice") {
+      if (poll.type === "date") {
+        fieldsHtml =
+          '<p class="hint">Coche tous les créneaux où tu peux venir :</p>' +
+          (poll.options || [])
+            .map((o) => `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="${o}"> ${o}</label>`)
+            .join("") +
+          `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="Aucun"> Aucun ne me convient</label>`;
+      } else if (poll.type === "choice") {
         const inputType = poll.multiple ? "checkbox" : "radio";
         fieldsHtml = (poll.options || [])
           .map(
@@ -1015,7 +1051,7 @@ function renderPollBanner() {
           alert("Choisis une réponse avant d'envoyer.");
           return;
         }
-        answer = poll.type === "choice" && poll.multiple ? checked : checked[0];
+        answer = (poll.type === "choice" && poll.multiple) || poll.type === "date" ? checked : checked[0];
       }
       btn.disabled = true;
       try {
@@ -1044,8 +1080,6 @@ function switchTab(tab) {
   if (tab === "tasks") renderMemberDashboard();
   if (tab === "roles") {
     renderRolesEventSelect();
-    rolesPollingSlotSelection = new Set((state.config && state.config.pollingSlots) || []);
-    renderRolesPollingSlotGrid();
   }
 }
 publicTabs.addEventListener("click", (e) => {
@@ -1183,300 +1217,6 @@ function renderRolesEventSelect() {
   });
   if (sorted.some((ev) => ev.id === previous)) rolesEventSelect.value = previous;
   renderRolesEventResult();
-  renderRolesBestSlotEventSelect();
-}
-
-// ---------- Sonder des créneaux (même fonctionnalité que côté admin) ----------
-// Accessible directement depuis l'onglet Disponibilités public, sans avoir à
-// aller dans le panneau admin — même mécanisme (config/current.pollingSlots).
-let rolesPollingSlotSelection = new Set();
-let rolesPollingSlotPainting = false;
-let rolesPollingSlotPaintAction = "set";
-
-function applyRolesPollingSlotPaint(cell, key) {
-  if (rolesPollingSlotPaintAction === "clear") {
-    rolesPollingSlotSelection.delete(key);
-    cell.classList.remove("polling-selected");
-  } else {
-    rolesPollingSlotSelection.add(key);
-    cell.classList.add("polling-selected");
-  }
-}
-document.addEventListener("mouseup", () => {
-  rolesPollingSlotPainting = false;
-});
-
-function renderRolesPollingSlotGrid() {
-  if (!rolesPollingSlotGridEl || !state.config) return;
-  const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-  const times = Grid.buildTimeSlots();
-
-  rolesPollingSlotGridEl.innerHTML = "";
-  rolesPollingSlotGridEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
-  rolesPollingSlotGridEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
-  Grid.renderGridHeaders(rolesPollingSlotGridEl, dates, state.events);
-
-  Grid.renderHourRows(rolesPollingSlotGridEl, dates, times, state.events, state.config.blockedSlots || [], (cell, { dateISO, timeLabel }) => {
-    const key = Grid.slotKey(dateISO, timeLabel);
-    cell.dataset.key = key;
-    if (rolesPollingSlotSelection.has(key)) cell.classList.add("polling-selected");
-    cell.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      rolesPollingSlotPainting = true;
-      rolesPollingSlotPaintAction = rolesPollingSlotSelection.has(key) ? "clear" : "set";
-      applyRolesPollingSlotPaint(cell, key);
-    });
-    cell.addEventListener("mouseenter", () => {
-      if (rolesPollingSlotPainting) applyRolesPollingSlotPaint(cell, key);
-    });
-  });
-}
-
-if (rolesPollingSlotSaveBtn) {
-  rolesPollingSlotSaveBtn.addEventListener("click", async () => {
-    rolesPollingSlotResult.textContent = "Enregistrement…";
-    rolesPollingSlotSaveBtn.disabled = true;
-    try {
-      await db.setPollingSlots(Array.from(rolesPollingSlotSelection));
-      rolesPollingSlotResult.textContent = `${rolesPollingSlotSelection.size} créneau(x) sondé(s) enregistré(s) — visible en orange pour tout le monde.`;
-    } catch (err) {
-      console.error(err);
-      rolesPollingSlotResult.textContent = "Échec de l'enregistrement, réessaie.";
-    }
-    rolesPollingSlotSaveBtn.disabled = false;
-  });
-}
-
-if (rolesPollingSlotClearBtn) {
-  rolesPollingSlotClearBtn.addEventListener("click", async () => {
-    rolesPollingSlotResult.textContent = "Suppression…";
-    rolesPollingSlotClearBtn.disabled = true;
-    try {
-      await db.clearPollingSlots();
-      rolesPollingSlotSelection.clear();
-      renderRolesPollingSlotGrid();
-      rolesPollingSlotResult.textContent = "Créneaux sondés vidés.";
-    } catch (err) {
-      console.error(err);
-      rolesPollingSlotResult.textContent = "Échec, réessaie.";
-    }
-    rolesPollingSlotClearBtn.disabled = false;
-  });
-}
-
-// ---- Marquage rapide (par règle) pour le sondage de créneaux ----
-const ROLES_POLLING_SLOT_DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // lundi → dimanche
-
-function renderRolesPollingSlotDayCheckboxes() {
-  if (!rolesPollingSlotDayCheckboxes || rolesPollingSlotDayCheckboxes.childElementCount) return; // construit une seule fois
-  ROLES_POLLING_SLOT_DAY_ORDER.forEach((dow) => {
-    const label = document.createElement("label");
-    label.className = "checkbox-group";
-    const input = document.createElement("input");
-    input.type = "checkbox";
-    input.className = "roles-polling-slot-day-checkbox";
-    input.value = String(dow);
-    label.appendChild(input);
-    label.appendChild(document.createTextNode(" " + Grid.WEEKDAYS_FULL[dow].slice(0, 3)));
-    rolesPollingSlotDayCheckboxes.appendChild(label);
-  });
-}
-renderRolesPollingSlotDayCheckboxes();
-
-if (rolesPollingSlotQuickselectBtn) {
-  rolesPollingSlotQuickselectBtn.addEventListener("click", () => {
-    const selectedDays = new Set(
-      Array.from(rolesPollingSlotDayCheckboxes.querySelectorAll(".roles-polling-slot-day-checkbox:checked")).map((c) => Number(c.value))
-    );
-    if (!selectedDays.size) {
-      rolesPollingSlotQuickselectResult.textContent = "Coche au moins un jour.";
-      return;
-    }
-    const startTime = rolesPollingSlotStartTime.value || null;
-    const endTime = rolesPollingSlotEndTime.value || null;
-    const startDateISO = rolesPollingSlotStartDate.value || null;
-    const endDateISO = rolesPollingSlotEndDate.value || null;
-
-    const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-    const times = Grid.buildTimeSlots();
-    let added = 0;
-    dates.forEach((date) => {
-      const dateISO = Grid.toISODate(date);
-      if (startDateISO && dateISO < startDateISO) return;
-      if (endDateISO && dateISO > endDateISO) return;
-      if (!selectedDays.has(date.getDay())) return;
-      times.forEach((timeLabel) => {
-        if (startTime && timeLabel < startTime) return;
-        if (endTime && timeLabel >= endTime) return;
-        const key = Grid.slotKey(dateISO, timeLabel);
-        if (!rolesPollingSlotSelection.has(key)) added++;
-        rolesPollingSlotSelection.add(key);
-      });
-    });
-
-    renderRolesPollingSlotGrid();
-    rolesPollingSlotQuickselectResult.textContent = added
-      ? `${added} créneau(x) ajouté(s) à la sélection — clique "Enregistrer les créneaux sondés" pour valider.`
-      : "Aucun nouveau créneau à ajouter (déjà tous sélectionnés).";
-  });
-}
-
-// Sélecteur d'événement optionnel dans "Trouver le meilleur créneau" : au lieu
-// de taper les dates à la main, on choisit un événement existant et ça
-// pré-remplit automatiquement Du/au (et la durée si l'événement a des heures).
-function renderRolesBestSlotEventSelect() {
-  if (!rolesBestSlotEventSelect) return;
-  const previous = rolesBestSlotEventSelect.value;
-  const sorted = (state.events || []).slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  rolesBestSlotEventSelect.innerHTML = '<option value="">— Aucun, période libre —</option>';
-  sorted.forEach((ev) => {
-    const opt = document.createElement("option");
-    opt.value = ev.id;
-    opt.textContent = `${ev.label} — ${describeEventForRoles(ev)}`;
-    rolesBestSlotEventSelect.appendChild(opt);
-  });
-  if (sorted.some((ev) => ev.id === previous)) rolesBestSlotEventSelect.value = previous;
-}
-
-if (rolesBestSlotEventSelect) {
-  rolesBestSlotEventSelect.addEventListener("change", () => {
-    const evId = rolesBestSlotEventSelect.value;
-    if (!evId) return;
-    const ev = (state.events || []).find((e) => e.id === evId);
-    if (!ev) return;
-    rolesBestSlotStartInput.value = ev.date;
-    rolesBestSlotEndInput.value = ev.endDate || ev.date;
-    if (!ev.allDay && ev.startTime && ev.endTime) {
-      const durationMinutes = rolesTimeStrToMinutes(ev.endTime) - rolesTimeStrToMinutes(ev.startTime);
-      if (durationMinutes > 0) rolesBestSlotDurationInput.value = durationMinutes;
-    }
-  });
-}
-
-// ---------- Trouver le meilleur créneau (même logique que côté admin) ----------
-// Balaie tous les créneaux de départ possibles, de la durée demandée, sur la
-// période donnée, et classe les membres (via classifyMembersForRoles) pour
-// chacun — puis retient les 8 meilleurs. Lecture seule ici (pas de bouton
-// "utiliser ce créneau" : la création d'événement reste réservée à l'admin).
-function rolesTimeStrToMinutes(t) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-function rolesMinutesToTimeStr(mins) {
-  const h = String(Math.floor(mins / 60)).padStart(2, "0");
-  const m = String(mins % 60).padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends }) {
-  const dates = Grid.buildInclusiveDateRange(startDate, endDate).filter((d) => {
-    if (includeWeekends) return true;
-    const dow = new Date(`${d}T00:00:00`).getDay();
-    return dow !== 0 && dow !== 6;
-  });
-  const times = Grid.buildTimeSlots();
-  const dayEndMinutes = CONFIG.dayEndHour * 60;
-
-  const results = [];
-  dates.forEach((dateISO) => {
-    times.forEach((startTime) => {
-      const startMin = rolesTimeStrToMinutes(startTime);
-      const endMin = startMin + durationMinutes;
-      if (endMin > dayEndMinutes) return;
-      const endTime = rolesMinutesToTimeStr(endMin);
-      const slotKeys = times.filter((t) => t >= startTime && t < endTime).map((t) => Grid.slotKey(dateISO, t));
-      const { available, unavailable, unknown } = classifyMembersForRoles(slotKeys, thresholdMinutes);
-      results.push({ dateISO, startTime, endTime, available, unavailable, unknown });
-    });
-  });
-
-  results.sort((a, b) => {
-    if (b.available.length !== a.available.length) return b.available.length - a.available.length;
-    if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
-    const dcmp = a.dateISO.localeCompare(b.dateISO);
-    if (dcmp !== 0) return dcmp;
-    return a.startTime.localeCompare(b.startTime);
-  });
-  return { all: results, top: results.slice(0, 8), dates };
-}
-
-// ---------- Heatmap de la recherche "Trouver le meilleur créneau" (public) ----------
-// Même logique que côté admin (voir admin.js) : un cellule par créneau de
-// départ candidat, coloré par nombre de dispo, pour voir en un coup d'œil
-// l'effet d'un changement de durée sur le classement.
-function renderRolesBestSlotHeatmap(allResults, topResults, dateStrings) {
-  if (!rolesBestSlotHeatmapEl) return;
-  // dateStrings vient de buildInclusiveDateRange (chaînes "YYYY-MM-DD") —
-  // renderGridHeaders/renderHourRows attendent des objets Date (comme
-  // buildDateList), d'où la conversion ici.
-  const dates = dateStrings.map((d) => new Date(`${d}T00:00:00`));
-  const times = Grid.buildTimeSlots();
-  const counts = new Map();
-  allResults.forEach((r) => {
-    counts.set(Grid.slotKey(r.dateISO, r.startTime), { availCount: r.available.length, names: r.available });
-  });
-  const topKeys = new Set(topResults.map((r) => Grid.slotKey(r.dateISO, r.startTime)));
-  const rankByKey = new Map(topResults.map((r, i) => [Grid.slotKey(r.dateISO, r.startTime), i + 1]));
-
-  rolesBestSlotHeatmapEl.innerHTML = "";
-  rolesBestSlotHeatmapEl.style.gridTemplateColumns = Grid.gridTemplateColumns(dates.length);
-  rolesBestSlotHeatmapEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
-  Grid.renderGridHeaders(rolesBestSlotHeatmapEl, dates, state.events);
-
-  const maxCount = (state.rolesMembers || []).length || 1;
-  Grid.renderHourRows(rolesBestSlotHeatmapEl, dates, times, state.events, (state.config && state.config.blockedSlots) || [], (cell, { dateISO, timeLabel, blocked }) => {
-    const key = Grid.slotKey(dateISO, timeLabel);
-    cell.dataset.key = key;
-    if (blocked) return;
-    const entry = counts.get(key);
-    if (!entry) return;
-    if (entry.availCount > 0) {
-      const ratio = entry.availCount / maxCount;
-      cell.style.background = `rgba(34, 197, 94, ${(0.15 + ratio * 0.75).toFixed(2)})`;
-      cell.textContent = String(entry.availCount);
-    }
-    if (topKeys.has(key)) {
-      cell.style.boxShadow = "inset 0 0 0 2px #d97706";
-      cell.title = `#${rankByKey.get(key)} meilleur créneau — ${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
-    } else {
-      cell.title = `${entry.availCount} dispo : ${entry.names.join(", ") || "—"}`;
-    }
-  });
-}
-
-// "Lun 01/10" plutôt que "2026-10-01" — plus lisible en un coup d'œil dans
-// une liste de résultats, tout en restant compact (abrégé volontairement).
-function formatDateShortWithDay(dateISO) {
-  const [y, m, d] = dateISO.split("-");
-  const dow = new Date(`${dateISO}T12:00:00`).getDay();
-  return `${Grid.WEEKDAYS_FULL[dow].slice(0, 3)} ${d}/${m}`;
-}
-
-function renderRolesBestSlotResults(results) {
-  if (!results.length) {
-    rolesBestSlotResult.innerHTML = "<p>Aucun créneau trouvé (vérifie la période et la durée par rapport aux heures de la grille).</p>";
-    return;
-  }
-  rolesBestSlotResult.innerHTML = results
-    .map((r, i) => {
-      return `<p><strong>${i + 1}.</strong> ${formatDateShortWithDay(r.dateISO)} ${r.startTime}-${r.endTime} — ${r.available.length} dispo (${r.available.join(", ") || "—"}), ${r.unknown.length} pas répondu (${r.unknown.join(", ") || "—"}), ${r.unavailable.length} indispo (${r.unavailable.join(", ") || "—"})</p>`;
-    })
-    .join("");
-}
-
-if (rolesBestSlotForm) {
-  rolesBestSlotForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const startDate = rolesBestSlotStartInput.value;
-    const endDate = rolesBestSlotEndInput.value;
-    if (!startDate || !endDate) return;
-    const durationMinutes = Number(rolesBestSlotDurationInput.value) || 60;
-    const thresholdMinutes = Number(rolesBestSlotThresholdInput.value) || 45;
-    const includeWeekends = !!(rolesBestSlotWeekendsInput && rolesBestSlotWeekendsInput.checked);
-    const { all, top, dates } = findBestSlotsForRoles({ startDate, endDate, durationMinutes, thresholdMinutes, includeWeekends });
-    renderRolesBestSlotResults(top);
-    renderRolesBestSlotHeatmap(all, top, dates);
-  });
 }
 
 // Les disponibilités de tout le monde (et la liste des membres, pour avoir
@@ -2193,7 +1933,7 @@ function renderGrid() {
   const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
   const times = Grid.buildTimeSlots();
   const blockedSlots = state.config.blockedSlots || [];
-  const pollingSlots = new Set(state.config.pollingSlots || []);
+  const searchesForGrid = collectingSearches();
   const courseLabels = computeSelectedCourseLabels();
 
   gridEl.innerHTML = "";
@@ -2227,7 +1967,7 @@ function renderGrid() {
       if (mark === "unavailable") cell.classList.add("mark-unavailable");
       // "Dispo demandée" par l'admin sur ce créneau précis (via un événement
       // flaggé availabilityRequested) et pas encore répondu par ce membre.
-      if (!mark && (events.some((e) => e.availabilityRequested) || pollingSlots.has(key))) {
+      if (!mark && (events.some((e) => e.availabilityRequested) || searchesForGrid.some((p) => searchCoversKey(p.search, key)))) {
         cell.classList.add("avail-requested");
       }
       // Un créneau "bloqué" (cours récurrent) reste marquable à la main : ça
@@ -2274,7 +2014,7 @@ function applyPaint(cell) {
     // (pas besoin d'attendre un rechargement complet de la grille).
     const [dateISO, timeLabel] = key.split("|");
     const stillRequested =
-      (state.config.pollingSlots || []).includes(key) ||
+      isKeyInCollectingSearch(key) ||
       (state.events || []).some(
         (e) => e.availabilityRequested && !e.allDay && e.date === dateISO && timeLabel >= (e.startTime || "00:00") && timeLabel < (e.endTime || "23:59")
       );
@@ -2417,29 +2157,17 @@ gridEl.addEventListener("touchmove", onTouchMove, { passive: false });
 // ===================== INITIALISATION =====================
 // Le calendrier (cours bloqués + événements admin) se charge et s'affiche
 // tout de suite, sans attendre de connexion.
-let bestSlotWeekendsDefaulted = false;
 db.listenConfig((config) => {
   state.config = config;
   renderGrid();
   if (state.marksLoaded) maybeAutoApplyCourses();
   applyPublicTabsVisibility();
-  rolesPollingSlotSelection = new Set((state.config && state.config.pollingSlots) || []);
-  if (state.activeTab === "roles") renderRolesPollingSlotGrid();
-  // Pré-coche "Inclure les weekends" dans "Trouver le meilleur créneau"
-  // d'après le réglage global, une seule fois au chargement — comme point de
-  // départ, sans écraser un choix que la personne aurait fait entre-temps
-  // pour cette recherche précise.
-  if (!bestSlotWeekendsDefaulted && rolesBestSlotWeekendsInput) {
-    rolesBestSlotWeekendsInput.checked = !!(config && config.includeWeekends);
-    bestSlotWeekendsDefaulted = true;
-  }
 });
 db.listenEvents((events) => {
   state.events = events;
   eventsLoaded = true;
   renderGrid();
   renderMemberDashboard();
-  if (state.activeTab === "roles") renderRolesPollingSlotGrid();
 });
 db.listenTasks((tasks) => {
   state.tasks = tasks;
@@ -2450,6 +2178,8 @@ db.listenTasks((tasks) => {
 db.listenPolls((polls) => {
   state.polls = polls;
   renderPollBanner();
+  renderAvailabilityBanner();
+  if (state.password) renderGrid();
 });
 // Lecture seule côté membre — juste pour afficher "prochaine réunion" dans
 // le tableau de bord, aucune action possible dessus ici (ça reste réservé à

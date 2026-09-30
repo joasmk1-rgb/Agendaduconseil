@@ -18,6 +18,7 @@
   <div id="nav-overlay" class="nav-overlay hidden"></div>
   <nav id="nav-drawer" class="nav-drawer hidden" aria-label="Navigation">
     <button type="button" class="nav-item active" data-view="dashboard"><span class="nav-icon">📊</span> Tableau de bord</button>
+    <button type="button" class="nav-item" data-view="find-date"><span class="nav-icon">📆</span> Trouver une date</button>
     <button type="button" class="nav-item" data-view="meetings"><span class="nav-icon">🗓️</span> Réunions</button>
     <button type="button" class="nav-item" data-view="tasks"><span class="nav-icon">📋</span> Tâches</button>
     <button type="button" class="nav-item" data-view="projects"><span class="nav-icon">📁</span> Dossiers</button>
@@ -226,59 +227,6 @@
           <div id="event-availability-result" class="hint"></div>
         </section>
 
-        <section class="admin-panel full-width" aria-label="Sonder des créneaux">
-          <h2>Sonder des créneaux (façon Doodle)</h2>
-          <p class="hint">Sélectionne les créneaux sur lesquels tu veux particulièrement avoir une réponse — ils apparaissent en <strong style="color:#e08a1e">orange</strong> sur le calendrier de tout le monde, tant qu'un membre n'a pas encore cliqué dispo/pas dispo dessus (une fois répondu, la couleur normale reprend le dessus).</p>
-          <details class="polling-slot-quickselect">
-            <summary>⚡ Marquage rapide (sélectionner par règle)</summary>
-            <div class="control-group">
-              <span class="mode-label">Jour(s) :</span>
-              <div id="polling-slot-day-checkboxes" class="checkbox-list"></div>
-            </div>
-            <div class="control-group">
-              <label for="polling-slot-start-time">De</label>
-              <input type="time" id="polling-slot-start-time" title="Heure de début (vide = toute la journée)">
-              <label for="polling-slot-end-time">à</label>
-              <input type="time" id="polling-slot-end-time" title="Heure de fin (vide = toute la journée)">
-            </div>
-            <div class="control-group">
-              <label for="polling-slot-start-date">Du</label>
-              <input type="date" id="polling-slot-start-date" title="Date de début (vide = début de la période affichée)">
-              <label for="polling-slot-end-date">au</label>
-              <input type="date" id="polling-slot-end-date" title="Date de fin (vide = fin de la période affichée)">
-            </div>
-            <div class="control-group actions">
-              <button type="button" id="polling-slot-quickselect-btn" class="btn btn-ghost btn-sm">+ Ajouter à la sélection</button>
-            </div>
-            <p id="polling-slot-quickselect-result" class="hint"></p>
-          </details>
-          <div class="grid-scroll poll-slot-grid-scroll">
-            <div id="polling-slot-grid" class="grid"></div>
-          </div>
-          <div class="control-group actions">
-            <button type="button" id="polling-slot-save-btn" class="btn btn-primary btn-sm">Enregistrer les créneaux sondés</button>
-            <button type="button" id="polling-slot-clear-btn" class="btn btn-ghost btn-sm">Vider les créneaux sondés</button>
-          </div>
-          <p id="polling-slot-result" class="hint"></p>
-        </section>
-
-        <section class="admin-panel full-width" aria-label="Trouver le meilleur créneau">
-          <h2>Trouver le meilleur créneau pour une réunion</h2>
-          <p class="hint">Cherche, dans la période donnée, le(s) créneau(x) de la durée choisie où le plus de monde est disponible.</p>
-          <form id="best-slot-form" class="inline-form">
-            <input type="date" id="best-slot-start-input" title="Début de la période à explorer" required>
-            <input type="date" id="best-slot-end-input" title="Fin de la période à explorer" required>
-            <input type="number" id="best-slot-duration-input" min="15" step="15" value="60" placeholder="Durée (min)" title="Durée de la réunion en minutes">
-            <input type="number" id="best-slot-threshold-input" min="1" value="45" placeholder="Seuil dispo (min)" title="Minutes dispo minimum pour compter quelqu'un comme disponible">
-            <label class="checkbox-group"><input type="checkbox" id="best-slot-weekends-input"> Inclure les weekends</label>
-            <button type="submit" class="btn btn-primary btn-sm">Chercher</button>
-          </form>
-          <div id="best-slot-result" class="hint"></div>
-          <p class="hint">Heatmap de la recherche : plus c'est vert foncé, plus il y a de monde dispo pour un créneau démarrant là (à la durée choisie ci-dessus) — pratique pour voir l'effet d'un changement de durée d'un coup d'œil. Les meilleurs créneaux trouvés sont entourés.</p>
-          <div class="grid-scroll">
-            <div id="best-slot-heatmap" class="grid"></div>
-          </div>
-        </section>
       </section>
     </div>
 
@@ -377,15 +325,6 @@
           <label>Options (une par ligne)</label>
           <textarea id="poll-options-input" rows="3" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
           <label class="checkbox-group"><input type="checkbox" id="poll-multiple-input"> Autoriser plusieurs choix à la fois</label>
-          <div class="control-group poll-slot-picker">
-            <label>Ajouter des créneaux candidats aux options :</label>
-            <p class="hint">Clique (ou clique-glisse) sur les cases du calendrier ci-dessous pour choisir les créneaux à proposer, puis "Ajouter la sélection aux options".</p>
-            <div class="grid-scroll poll-slot-grid-scroll">
-              <div id="poll-slot-grid" class="grid"></div>
-            </div>
-            <button type="button" id="poll-slot-add-btn" class="btn btn-ghost btn-sm">+ Ajouter la sélection aux options</button>
-          </div>
-          <p class="hint">Pratique pour un "sondage-Doodle" ("Quand es-tu dispo pour la réunion ?") : sélectionne 2-4 créneaux candidats sur le calendrier ci-dessus, coche "Autoriser plusieurs choix", crée le sondage — chaque membre coche ce qui lui va, tu vois qui est dispo sur quel créneau.</p>
         </div>
         <div class="control-group actions">
           <button type="button" id="poll-submit-btn" class="btn btn-primary btn-sm">Créer le sondage</button>
@@ -452,6 +391,33 @@
           <button type="button" id="decision-cancel-edit-btn" class="btn btn-ghost btn-sm hidden">Annuler la modification</button>
         </form>
         <ul id="decision-list" class="item-list"></ul>
+      </section>
+    </div>
+
+    <div class="view" data-view="find-date">
+      <section class="admin-panel full-width" aria-label="Trouver une date">
+        <h2>Trouver une date de réunion</h2>
+        <p class="hint">1. Donne la plage de dates : les membres voient un bandeau et remplissent leurs dispos sur cette plage. 2. Suis le remplissage et les meilleurs créneaux, qui se recalculent tout seuls. 3. Publie le sondage quand il y a assez de monde. 4. Choisis le créneau gagnant : la réunion et l'événement sont créés.</p>
+        <form id="fd-form" class="fd-form">
+          <label>Titre <input type="text" id="fd-title" value="Réunion du conseil" required></label>
+          <label>Du <input type="date" id="fd-start" required></label>
+          <label>au <input type="date" id="fd-end" required></label>
+          <label>Durée
+            <select id="fd-duration">
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60" selected>1 h</option>
+              <option value="90">1 h 30</option>
+              <option value="120">2 h</option>
+            </select>
+          </label>
+          <label>Entre <input type="time" id="fd-from" value="08:30"></label>
+          <label>et <input type="time" id="fd-to" value="20:00"></label>
+          <label class="checkbox-group"><input type="checkbox" id="fd-weekends"> Weekends</label>
+          <button type="submit" class="btn btn-primary btn-sm">Lancer la recherche</button>
+        </form>
+        <p id="fd-form-status" class="hint"></p>
+        <div id="fd-list" class="fd-list"></div>
       </section>
     </div>
 
