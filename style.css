@@ -837,3 +837,12 @@ body.phone-view .grid-row { background: var(--uc-navy-soft); border-radius: 0 8p
 body.phone-view .grid-row > .grid-scroll { flex: 0 0 auto; }
 body.phone-view .grid-row::after { content: "⇕"; position: sticky; top: 45vh; align-self: flex-start; flex: 1 1 auto; min-width: 20px; text-align: center; color: var(--uc-blue-gray); font-size: 1rem; pointer-events: none; }
 .profile-display { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+/* Ligne de dates collée en haut (téléphone), quand la vraie est sortie de l'écran. */
+.date-strip { flex-basis: 100%; order: 10; overflow: hidden; position: relative; margin: 2px -12px -4px; background: var(--color-surface); border-top: 1px solid var(--color-border); border-bottom: 2px solid var(--uc-navy); }
+.date-strip.hidden { display: none; }
+.date-strip-inner { display: grid; will-change: transform; }
+.date-strip-inner span { font-size: 0.6rem; text-transform: uppercase; color: var(--color-muted); text-align: center; padding: 3px 0; border-right: 1px solid var(--color-border); white-space: nowrap; }
+.date-strip-inner span b { font-size: 0.8rem; color: var(--uc-navy); }
+.date-strip-inner span.today b { color: var(--uc-cyan); }
+
+.date-strip::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--tc, 34px); background: var(--uc-navy); z-index: 1; }

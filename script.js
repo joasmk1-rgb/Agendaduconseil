@@ -2103,6 +2103,46 @@ function updateTouchTools() {
   tools.querySelectorAll(".touch-only").forEach((el) => el.classList.toggle("hidden", !IS_TOUCH));
 }
 
+// Téléphone : la grille défile avec la page, donc sa ligne de dates sort de
+// l'écran quand on descend vers le soir. Une copie compacte des dates reste
+// collée sous la barre d'outils (et suit le défilement horizontal).
+function buildDateStrip(dates) {
+  const strip = document.getElementById("date-strip");
+  const inner = document.getElementById("date-strip-inner");
+  if (!strip || !inner) return;
+  if (!isPhoneView()) {
+    strip.classList.add("hidden");
+    return;
+  }
+  inner.style.gridTemplateColumns = `${Grid.LAYOUT.timeColWidth}px repeat(${dates.length}, ${Grid.LAYOUT.dayColWidth}px)`;
+  strip.style.setProperty("--tc", `${Grid.LAYOUT.timeColWidth}px`);
+  strip.style.maxWidth = `${Grid.LAYOUT.timeColWidth + PHONE_DAYS * Grid.LAYOUT.dayColWidth}px`;
+  inner.innerHTML = "<span></span>" + dates.map((d) => {
+    const iso = Grid.toISODate(d);
+    const wd = Grid.WEEKDAYS_FULL[d.getDay()].slice(0, 3);
+    const today = iso === Grid.toISODate(new Date()) ? " today" : "";
+    return `<span class="ds-day${today}">${wd} <b>${d.getDate()}</b></span>`;
+  }).join("");
+  syncDateStrip();
+}
+function syncDateStrip() {
+  const strip = document.getElementById("date-strip");
+  const inner = document.getElementById("date-strip-inner");
+  if (!strip || !inner) return;
+  if (!isPhoneView() || !state.password) {
+    strip.classList.add("hidden");
+    return;
+  }
+  inner.style.transform = `translateX(${-gridScrollEl.scrollLeft}px)`;
+  // Visible seulement quand la vraie ligne de dates de la grille est passée
+  // sous la barre d'outils.
+  const header = gridEl.querySelector(".cell.day-header");
+  const tools = document.getElementById("touch-tools");
+  const hide = header && tools ? header.getBoundingClientRect().bottom > tools.getBoundingClientRect().bottom - (strip.classList.contains("hidden") ? 0 : strip.offsetHeight) : true;
+  strip.classList.toggle("hidden", hide);
+}
+window.addEventListener("scroll", () => syncDateStrip(), { passive: true });
+
 function renderGrid() {
   updateTouchTools();
   applyPhoneLayout();
@@ -2176,6 +2216,7 @@ function renderGrid() {
 
   applyViewWidth();
   maybeApplyStartPosition(dates);
+  buildDateStrip(dates);
   renderAvailabilityBanner();
   renderPollBanner();
   renderMemberDashboard();
@@ -2401,6 +2442,7 @@ touchTools.querySelectorAll(".touch-arrow").forEach((btn) => {
   });
 });
 applyTouchMode();
+gridScrollEl.addEventListener("scroll", () => syncDateStrip(), { passive: true });
 
 
 // ===================== INITIALISATION =====================
