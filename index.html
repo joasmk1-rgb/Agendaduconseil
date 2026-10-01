@@ -21,22 +21,8 @@
 
   <section class="controls">
     <div id="calendar-tab-panel" class="calendar-only-controls" data-tab-panel="calendar">
-      <div class="control-group view-range-group">
-        <span class="mode-label">Afficher :</span>
-        <div class="mode-toggle" id="view-range-toggle">
-          <button type="button" class="mode-btn" data-weeks="1">1 semaine</button>
-          <button type="button" class="mode-btn active" data-weeks="2">2 semaines</button>
-        </div>
-      </div>
 
       <div id="member-controls" class="member-controls hidden">
-        <div class="control-group column-visibility-group">
-          <span class="mode-label">Afficher :</span>
-          <div class="mode-toggle">
-            <button type="button" id="toggle-col-bulk" class="mode-btn active" data-col="bulk" title="Afficher/masquer le marquage rapide">⚡ Marquage</button>
-            <button type="button" id="toggle-col-grid" class="mode-btn active" data-col="grid" title="Afficher/masquer le calendrier">🗓️ Calendrier</button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -194,6 +180,25 @@
           <button type="button" id="profile-reset-btn" class="btn btn-ghost btn-sm">🔄 Tout effacer et recommencer</button>
         </div>
         <p id="profile-status" class="hint"></p>
+        <details class="profile-password">
+          <summary>🖥️ Affichage</summary>
+          <div class="profile-display">
+            <div class="control-group view-range-group">
+              <span class="mode-label">Largeur du calendrier :</span>
+              <div class="mode-toggle" id="view-range-toggle">
+                <button type="button" class="mode-btn" data-weeks="1">1 semaine</button>
+                <button type="button" class="mode-btn active" data-weeks="2">2 semaines</button>
+              </div>
+            </div>
+            <div class="control-group column-visibility-group">
+              <span class="mode-label">Afficher :</span>
+              <div class="mode-toggle">
+                <button type="button" id="toggle-col-bulk" class="mode-btn active" data-col="bulk" title="Afficher/masquer le marquage rapide">⚡ Marquage rapide</button>
+                <button type="button" id="toggle-col-grid" class="mode-btn active" data-col="grid" title="Afficher/masquer le calendrier">🗓️ Calendrier</button>
+              </div>
+            </div>
+          </div>
+        </details>
         <details class="profile-password">
           <summary>📅 Importer un autre calendrier (.ics)</summary>
           <p class="hint">Pour un horaire qui n'est pas dans la liste (job, autre établissement…) : importe un fichier .ics, ses créneaux passent en « pas dispo ».</p>

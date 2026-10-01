@@ -841,3 +841,4 @@ body.phone-view .cell { padding: 0 1px; }
 .v-thumb { position: absolute; left: 2px; right: 2px; top: 18px; border-radius: 11px; background: var(--uc-navy); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
 .v-thumb::before { content: "⇕"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 0.8rem; }
 body.phone-view #grid-scroll { max-height: calc(100vh - 150px); max-height: calc(100dvh - 150px); }
+.profile-display { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
