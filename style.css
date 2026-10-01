@@ -336,6 +336,7 @@ main.main-layout {
      (via `order`) plutôt qu'en réordonnant le HTML, pour rester simple si on
      veut la remettre à droite un jour. */
   #grid-scroll { flex: 0 1 auto; order: 2; }
+  .grid-area { flex: 0 1 auto; order: 2; }
   .bulk-mark-section {
     flex: 1 1 260px;
     max-width: 340px;
@@ -794,3 +795,23 @@ label.fd-slot { justify-content: flex-start; cursor: pointer; }
 .poll-me { font-size: 0.8rem; color: var(--color-muted); }
 .poll-me-yes { color: #15803d; }
 .poll-me-no { color: #b42323; }
+
+/* Tactile : mode coloriage — le doigt colorie les cases au lieu de faire
+   défiler ; on se déplace via la colonne des heures, les dates ou les flèches. */
+.grid-area { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; min-width: 0; }
+.touch-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 20px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--color-bg); box-shadow: 0 2px 4px rgba(0, 33, 78, 0.08); }
+.touch-tools.hidden { display: none; }
+.touch-mode-btn { border: 2px solid var(--color-border); background: var(--color-surface); }
+.touch-mode-btn.active { border-color: var(--color-primary); background: var(--uc-navy-soft); font-weight: 600; }
+.touch-hint { flex: 1 1 200px; font-size: 0.75rem; color: var(--color-muted); }
+.touch-arrows { display: flex; gap: 4px; }
+.touch-arrow { min-width: 40px; min-height: 36px; font-size: 1rem; }
+.grid-scroll.touch-paint .cell.slot { touch-action: none; }
+.grid-scroll .cell.time-label, .grid-scroll .cell.day-header, .grid-scroll .cell.month-band { touch-action: pan-x pan-y; }
+/* Petit écran tactile : la grille tient dans l'écran et défile à l'intérieur,
+   pour garder les dates et les heures visibles pendant qu'on colorie. */
+@media (max-width: 899px) and (pointer: coarse) {
+  #grid-scroll { max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); }
+  .touch-tools { padding: 4px 12px; gap: 4px 8px; }
+  .touch-hint { flex-basis: 100%; order: 3; }
+}

@@ -127,8 +127,20 @@
       </div>
     </aside>
 
-    <div id="grid-scroll" class="grid-scroll">
-      <div id="grid" class="grid"></div>
+    <div id="grid-area" class="grid-area">
+      <div id="touch-tools" class="touch-tools hidden">
+        <button type="button" id="touch-mode-btn" class="btn btn-sm touch-mode-btn">✏️ Mode coloriage</button>
+        <span class="touch-hint" id="touch-hint"></span>
+        <div class="touch-arrows" role="group" aria-label="Se déplacer dans le calendrier">
+          <button type="button" class="btn btn-sm touch-arrow" data-dir="left" aria-label="Jours précédents">◀</button>
+          <button type="button" class="btn btn-sm touch-arrow" data-dir="up" aria-label="Heures plus tôt">▲</button>
+          <button type="button" class="btn btn-sm touch-arrow" data-dir="down" aria-label="Heures plus tard">▼</button>
+          <button type="button" class="btn btn-sm touch-arrow" data-dir="right" aria-label="Jours suivants">▶</button>
+        </div>
+      </div>
+      <div id="grid-scroll" class="grid-scroll">
+        <div id="grid" class="grid"></div>
+      </div>
     </div>
 
   </main>

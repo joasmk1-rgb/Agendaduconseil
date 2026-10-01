@@ -6,6 +6,7 @@ import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
 const LOGIN_KEY = "agenda-conseil:password";
+const IS_TOUCH = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
 const VIEW_WEEKS_KEY = "agenda-conseil:viewWeeks";
 // Doit rester synchronisé avec le "@media (min-width: 900px)" de style.css
 // (colonne fixe "Marquage rapide" à partir de cette largeur).
@@ -2040,7 +2041,13 @@ function computeSelectedCourseLabels() {
   return overlay;
 }
 
+function updateTouchTools() {
+  const tools = document.getElementById("touch-tools");
+  if (tools) tools.classList.toggle("hidden", !(IS_TOUCH && state.password));
+}
+
 function renderGrid() {
+  updateTouchTools();
   if (!state.config) {
     gridEl.innerHTML = "";
     return;
@@ -2166,6 +2173,7 @@ function beginPaint(cell) {
 
 function onCellMouseDown(e) {
   e.preventDefault();
+  if (Date.now() - lastTouchAt < 800) return;
   beginPaint(e.currentTarget);
 }
 function onCellMouseEnter(e) {
@@ -2183,6 +2191,12 @@ function onCellMouseEnter(e) {
 // on laisse le scroll natif du navigateur prendre le relais. Un tap simple
 // (relâché avant le délai, sans bouger) bascule juste la case touchée.
 const TOUCH_LONG_PRESS_MS = 300;
+// Mode coloriage (écrans tactiles) : le doigt colorie directement les cases
+// (touch-action: none sur les cases, voir CSS) ; on se déplace en glissant
+// sur la colonne des heures / les dates, ou avec les flèches. Sinon, mode
+// "défiler" : tap = une case, appui long puis glisser = plusieurs cases.
+let touchPaintMode = IS_TOUCH;
+let lastTouchAt = 0;
 const TOUCH_MOVE_CANCEL_PX = 10;
 let touchGesture = null; // { cell, startX, startY, timer, longPressStarted, moved }
 
@@ -2194,7 +2208,12 @@ function clearTouchGesture() {
 function onCellTouchStart(e) {
   const touch = e.touches[0];
   if (!touch) return;
+  lastTouchAt = Date.now();
   clearTouchGesture();
+  if (touchPaintMode) {
+    beginPaint(e.currentTarget);
+    return;
+  }
   const cell = e.currentTarget;
   touchGesture = { cell, startX: touch.clientX, startY: touch.clientY, longPressStarted: false, moved: false };
   touchGesture.timer = setTimeout(() => {
@@ -2205,6 +2224,13 @@ function onCellTouchStart(e) {
 }
 
 function onCellTouchEnd(e) {
+  lastTouchAt = Date.now();
+  // Empêche les clics souris "simulés" après un tap, qui re-basculeraient la case.
+  if (e.cancelable) e.preventDefault();
+  if (touchPaintMode) {
+    stopPainting();
+    return;
+  }
   if (!touchGesture || touchGesture.cell !== e.currentTarget) return;
   const wasTap = !touchGesture.longPressStarted && !touchGesture.moved;
   clearTouchGesture();
@@ -2281,6 +2307,35 @@ document.addEventListener("touchcancel", () => {
   stopPainting();
 });
 gridEl.addEventListener("touchmove", onTouchMove, { passive: false });
+
+const touchTools = document.getElementById("touch-tools");
+const touchModeBtn = document.getElementById("touch-mode-btn");
+const touchHint = document.getElementById("touch-hint");
+function applyTouchMode() {
+  gridScrollEl.classList.toggle("touch-paint", touchPaintMode);
+  touchModeBtn.textContent = touchPaintMode ? "✏️ Mode coloriage" : "✋ Mode défilement";
+  touchModeBtn.classList.toggle("active", touchPaintMode);
+  touchHint.textContent = touchPaintMode
+    ? "Le doigt colorie. Pour bouger : glisse sur les heures ou les dates, ou les flèches."
+    : "Le doigt fait défiler. Tape une case pour la colorier.";
+}
+
+touchModeBtn.addEventListener("click", () => {
+  touchPaintMode = !touchPaintMode;
+  applyTouchMode();
+});
+touchTools.querySelectorAll(".touch-arrow").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const dx = gridScrollEl.clientWidth * 0.7;
+    const dy = gridScrollEl.clientHeight * 0.6;
+    const move = { left: [-dx, 0], right: [dx, 0], up: [0, -dy], down: [0, dy] }[btn.dataset.dir];
+    // Selon l'écran, c'est la grille ou la page entière qui défile en hauteur.
+    const gridScrollsY = gridScrollEl.scrollHeight > gridScrollEl.clientHeight + 2;
+    if (move[0]) gridScrollEl.scrollBy({ left: move[0], behavior: "smooth" });
+    if (move[1]) (gridScrollsY ? gridScrollEl : window).scrollBy({ top: gridScrollsY ? move[1] : window.innerHeight * 0.6 * Math.sign(move[1]), behavior: "smooth" });
+  });
+});
+applyTouchMode();
 
 // ===================== INITIALISATION =====================
 // Le calendrier (cours bloqués + événements admin) se charge et s'affiche
