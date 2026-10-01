@@ -818,3 +818,13 @@ label.fd-slot { justify-content: flex-start; cursor: pointer; }
 /* Barre "Je marque : Dispo / Pas dispo" collée au-dessus du calendrier. */
 .paint-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .touch-tools .touch-only.hidden { display: none; }
+/* Téléphone portrait : semaine complète dans la largeur, en-têtes compacts. */
+body.phone-view .grid-scroll { padding: 0 6px 8px; scroll-snap-type: x proximity; }
+body.phone-view .view-range-group { display: none; }
+body.phone-view .cell.day-header .weekday { font-size: 0; }
+body.phone-view .cell.day-header .weekday::after { content: attr(data-short); font-size: 0.55rem; }
+body.phone-view .cell.day-header .day-number { font-size: 0.8rem; }
+body.phone-view .cell.time-label { font-size: 0.5rem; padding: 0 1px; }
+body.phone-view .cell.time-label.hour-mark { font-size: 0.56rem; }
+body.phone-view .cell.month-band { font-size: 0.62rem; }
+body.phone-view .cell { padding: 0 1px; }

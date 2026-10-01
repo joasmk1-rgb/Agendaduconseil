@@ -135,7 +135,41 @@ function syncViewRangeButtons() {
     btn.classList.toggle("active", Number(btn.dataset.weeks) === state.viewWeeks);
   });
 }
+// Téléphone en portrait : une semaine entière tient dans la largeur de
+// l'écran (colonnes resserrées, heures et jours figés), on passe d'une
+// semaine à l'autre en glissant sur les dates ou avec les flèches.
+const DEFAULT_LAYOUT = { timeColWidth: Grid.LAYOUT.timeColWidth, dayColWidth: Grid.LAYOUT.dayColWidth };
+function isPhoneView() {
+  return window.innerWidth < 600;
+}
+function applyPhoneLayout() {
+  const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
+  document.body.classList.toggle("phone-view", isPhoneView());
+  if (!isPhoneView()) {
+    Grid.LAYOUT.timeColWidth = DEFAULT_LAYOUT.timeColWidth;
+    Grid.LAYOUT.dayColWidth = DEFAULT_LAYOUT.dayColWidth;
+    return;
+  }
+  const timeCol = 34;
+  const avail = Math.max(240, document.documentElement.clientWidth - 12);
+  Grid.LAYOUT.timeColWidth = timeCol;
+  Grid.LAYOUT.dayColWidth = Math.max(32, Math.floor((avail - timeCol) / perWeek));
+}
+let phoneResizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(phoneResizeTimer);
+  phoneResizeTimer = setTimeout(() => {
+    const before = Grid.LAYOUT.dayColWidth;
+    applyPhoneLayout();
+    if (Grid.LAYOUT.dayColWidth !== before && state.config) renderGrid();
+  }, 200);
+});
+
 function applyViewWidth() {
+  if (isPhoneView()) {
+    gridScrollEl.style.maxWidth = "none";
+    return;
+  }
   const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
   const cols = state.viewWeeks * perWeek;
   gridScrollEl.style.maxWidth = `${Grid.LAYOUT.timeColWidth + cols * Grid.LAYOUT.dayColWidth}px`;
@@ -2050,6 +2084,7 @@ function updateTouchTools() {
 
 function renderGrid() {
   updateTouchTools();
+  applyPhoneLayout();
   if (!state.config) {
     gridEl.innerHTML = "";
     return;
@@ -2328,7 +2363,9 @@ touchModeBtn.addEventListener("click", () => {
 });
 touchTools.querySelectorAll(".touch-arrow").forEach((btn) => {
   btn.addEventListener("click", () => {
-    const dx = gridScrollEl.clientWidth * 0.7;
+    // Sur téléphone : une semaine pile à chaque flèche.
+    const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
+    const dx = isPhoneView() ? perWeek * Grid.LAYOUT.dayColWidth : gridScrollEl.clientWidth * 0.7;
     const dy = gridScrollEl.clientHeight * 0.6;
     const move = { left: [-dx, 0], right: [dx, 0], up: [0, -dy], down: [0, dy] }[btn.dataset.dir];
     // Selon l'écran, c'est la grille ou la page entière qui défile en hauteur.

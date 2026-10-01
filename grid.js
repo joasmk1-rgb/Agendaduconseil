@@ -188,6 +188,7 @@ export function buildDayHeaderCell(date) {
   const weekdayLabel = document.createElement("span");
   weekdayLabel.className = "weekday";
   weekdayLabel.textContent = WEEKDAYS_FULL[dow];
+  weekdayLabel.dataset.short = WEEKDAYS_FULL[dow].slice(0, 3);
   const dayNumber = document.createElement("span");
   dayNumber.className = "day-number";
   dayNumber.textContent = String(date.getDate());
