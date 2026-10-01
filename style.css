@@ -869,3 +869,9 @@ body.phone-view .grid-row::after { content: "⇕"; position: sticky; top: 45vh; 
 .dp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .dp-none { font-size: 0.85rem; display: inline-flex; gap: 6px; align-items: center; }
 .dp-count { font-size: 0.85rem; font-weight: 600; color: #2563eb; }
+/* Pas de marge intérieure horizontale sur la grille publique : sinon on
+   voyait un bout de colonne défiler à gauche de la colonne des heures figée,
+   et la dernière colonne était coupée à droite. La marge passe à l'extérieur. */
+#grid-scroll { padding-left: 0; padding-right: 0; }
+.grid-row { padding: 0 20px; }
+body.phone-view .grid-row { padding: 0; }

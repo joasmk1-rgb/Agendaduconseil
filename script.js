@@ -167,6 +167,7 @@ window.addEventListener("resize", () => {
     const before = Grid.LAYOUT.dayColWidth;
     applyPhoneLayout();
     if (Grid.LAYOUT.dayColWidth !== before && state.config) renderGrid();
+    else applyViewWidth();
   }, 200);
 });
 
@@ -177,7 +178,17 @@ function applyViewWidth() {
     return;
   }
   const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
-  const cols = state.viewWeeks * perWeek;
+  let cols = state.viewWeeks * perWeek;
+  // Jamais de colonne coupée à droite : on n'affiche que des jours entiers
+  // dans la place réellement disponible à côté du marquage rapide.
+  const main = gridScrollEl.closest("main");
+  if (main) {
+    const row = getComputedStyle(main).flexDirection === "row";
+    const side = row && bulkMarkSection && !bulkMarkSection.classList.contains("hidden") && bulkMarkSection.offsetWidth ? bulkMarkSection.offsetWidth + 16 : 0;
+    const avail = main.clientWidth - side - 40;
+    const fit = Math.floor((avail - Grid.LAYOUT.timeColWidth) / Grid.LAYOUT.dayColWidth);
+    if (fit >= 1) cols = Math.min(cols, fit);
+  }
   gridScrollEl.style.maxWidth = `${Grid.LAYOUT.timeColWidth + cols * Grid.LAYOUT.dayColWidth}px`;
 }
 viewRangeToggle.addEventListener("click", (e) => {
@@ -589,7 +600,10 @@ function centerGridOnRange(dates, startISO, endISO) {
   const left = gr.left + parseFloat(cs.paddingLeft || 0) + Grid.LAYOUT.timeColWidth;
   const right = gr.left + gridScrollEl.clientWidth - parseFloat(cs.paddingRight || 0);
   const delta = (ra.left + rb.right) / 2 - (left + right) / 2;
-  gridScrollEl.scrollTo({ left: Math.max(0, gridScrollEl.scrollLeft + delta), behavior: "smooth" });
+  // On cale le bord gauche sur une colonne entière (pas de bout de jour visible).
+  const day = Grid.LAYOUT.dayColWidth;
+  const target = Math.round((gridScrollEl.scrollLeft + delta) / day) * day;
+  gridScrollEl.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
 }
 
 function maybeApplyStartPosition(dates) {
