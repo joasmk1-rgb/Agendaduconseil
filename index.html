@@ -48,13 +48,10 @@
       <p id="login-error" class="login-error hidden">Mot de passe incorrect.</p>
       <div id="session-connected" class="session-connected hidden">
         <span class="greeting">Bonjour, <strong id="member-name"></strong></span>
-        <button type="button" id="ics-import-btn" class="btn btn-ghost btn-sm" title="Importe un fichier .ics (ex: export de ton horaire de cours) pour marquer automatiquement ces créneaux en pas dispo">📅 Importer mon calendrier</button>
-        <input type="file" id="ics-file-input" accept=".ics,text/calendar" class="hidden">
         <a id="admin-link" href="admin.html" class="btn btn-ghost btn-sm hidden">Panneau admin</a>
         <button type="button" id="profile-btn" class="btn btn-ghost btn-sm" title="Ton programme, tes langues, tes groupes de TP : tes cours se bloquent tout seuls">👤 Mon profil</button>
         <button type="button" id="logout-btn" class="btn btn-ghost btn-sm">Se déconnecter</button>
       </div>
-      <p id="ics-status" class="hint hidden"></p>
     </div>
   </section>
 
@@ -197,6 +194,13 @@
           <button type="button" id="profile-reset-btn" class="btn btn-ghost btn-sm">🔄 Tout effacer et recommencer</button>
         </div>
         <p id="profile-status" class="hint"></p>
+        <details class="profile-password">
+          <summary>📅 Importer un autre calendrier (.ics)</summary>
+          <p class="hint">Pour un horaire qui n'est pas dans la liste (job, autre établissement…) : importe un fichier .ics, ses créneaux passent en « pas dispo ».</p>
+          <button type="button" id="ics-import-btn" class="btn btn-ghost btn-sm">Choisir un fichier .ics</button>
+          <input type="file" id="ics-file-input" accept=".ics,text/calendar" class="hidden">
+          <p id="ics-status" class="hint hidden"></p>
+        </details>
         <details class="profile-password">
           <summary>🔑 Changer mon mot de passe</summary>
           <form id="password-change-form" class="inline-form">
