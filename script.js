@@ -573,6 +573,25 @@ function scrollGridToDate(dates, targetISO) {
   gridScrollEl.scrollLeft = Math.max(0, left);
 }
 
+// Centre la grille sur le milieu d'une plage de dates (ex : 19 → 23 octobre
+// = mercredi au centre de l'écran), en tenant compte de la colonne des heures.
+function centerGridOnRange(dates, startISO, endISO) {
+  const a = gridEl.querySelector(`.cell.day-header[data-date-iso="${snapToRenderedDate(dates, startISO)}"]`);
+  const endSnap = dates.map((d) => Grid.toISODate(d)).filter((d) => d <= (endISO || startISO)).pop();
+  const b = gridEl.querySelector(`.cell.day-header[data-date-iso="${endSnap}"]`) || a;
+  if (!a) return;
+  // Tout en coordonnées écran : milieu de la plage vs milieu de la zone des
+  // jours visible (à droite de la colonne des heures figée).
+  const ra = a.getBoundingClientRect();
+  const rb = b.getBoundingClientRect();
+  const gr = gridScrollEl.getBoundingClientRect();
+  const cs = getComputedStyle(gridScrollEl);
+  const left = gr.left + parseFloat(cs.paddingLeft || 0) + Grid.LAYOUT.timeColWidth;
+  const right = gr.left + gridScrollEl.clientWidth - parseFloat(cs.paddingRight || 0);
+  const delta = (ra.left + rb.right) / 2 - (left + right) / 2;
+  gridScrollEl.scrollTo({ left: Math.max(0, gridScrollEl.scrollLeft + delta), behavior: "smooth" });
+}
+
 function maybeApplyStartPosition(dates) {
   const focusDate = state.config && state.config.focusDate;
   if (focusDate) {
@@ -2096,8 +2115,10 @@ function updateTouchTools() {
     gotoBtn.classList.toggle("hidden", !searches.length);
     if (searches.length) {
       const first = searches.map((p) => p.search.start).sort()[0];
+      const last = searches.map((p) => p.search.end).sort().slice(-1)[0];
       const todayISO = Grid.toISODate(new Date());
       gotoBtn.dataset.date = first < todayISO ? todayISO : first;
+      gotoBtn.dataset.end = last;
     }
   }
   tools.querySelectorAll(".touch-only").forEach((el) => el.classList.toggle("hidden", !IS_TOUCH));
@@ -2422,7 +2443,7 @@ function applyTouchMode() {
 document.getElementById("goto-search-btn").addEventListener("click", (e) => {
   if (!state.config) return;
   const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-  scrollGridToDate(dates, e.currentTarget.dataset.date);
+  centerGridOnRange(dates, e.currentTarget.dataset.date, e.currentTarget.dataset.end);
   document.getElementById("grid-area").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 touchModeBtn.addEventListener("click", () => {
