@@ -815,3 +815,6 @@ label.fd-slot { justify-content: flex-start; cursor: pointer; }
   .touch-tools { padding: 4px 12px; gap: 4px 8px; }
   .touch-hint { flex-basis: 100%; order: 3; }
 }
+/* Barre "Je marque : Dispo / Pas dispo" collée au-dessus du calendrier. */
+.paint-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.touch-tools .touch-only.hidden { display: none; }

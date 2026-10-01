@@ -2043,7 +2043,9 @@ function computeSelectedCourseLabels() {
 
 function updateTouchTools() {
   const tools = document.getElementById("touch-tools");
-  if (tools) tools.classList.toggle("hidden", !(IS_TOUCH && state.password));
+  if (!tools) return;
+  tools.classList.toggle("hidden", !state.password);
+  tools.querySelectorAll(".touch-only").forEach((el) => el.classList.toggle("hidden", !IS_TOUCH));
 }
 
 function renderGrid() {

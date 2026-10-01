@@ -37,16 +37,6 @@
             <button type="button" id="toggle-col-grid" class="mode-btn active" data-col="grid" title="Afficher/masquer le calendrier">🗓️ Calendrier</button>
           </div>
         </div>
-        <div class="control-group mode-group">
-          <span class="mode-label">Je marque :</span>
-          <div class="mode-toggle">
-            <button type="button" id="mode-available" class="mode-btn active" data-mode="available">✅ Dispo</button>
-            <button type="button" id="mode-unavailable" class="mode-btn" data-mode="unavailable">❌ Pas dispo</button>
-          </div>
-        </div>
-        <div class="control-group save-indicator">
-          <span id="save-status" class="save-status"></span>
-        </div>
       </div>
     </div>
 
@@ -129,9 +119,17 @@
 
     <div id="grid-area" class="grid-area">
       <div id="touch-tools" class="touch-tools hidden">
-        <button type="button" id="touch-mode-btn" class="btn btn-sm touch-mode-btn">✏️ Mode coloriage</button>
-        <span class="touch-hint" id="touch-hint"></span>
-        <div class="touch-arrows" role="group" aria-label="Se déplacer dans le calendrier">
+        <div class="paint-modes">
+          <span class="mode-label">Je marque :</span>
+          <div class="mode-toggle">
+            <button type="button" id="mode-available" class="mode-btn active" data-mode="available">✅ Dispo</button>
+            <button type="button" id="mode-unavailable" class="mode-btn" data-mode="unavailable">❌ Pas dispo</button>
+          </div>
+          <span id="save-status" class="save-status"></span>
+        </div>
+        <button type="button" id="touch-mode-btn" class="btn btn-sm touch-mode-btn touch-only">✏️ Mode coloriage</button>
+        <span class="touch-hint touch-only" id="touch-hint"></span>
+        <div class="touch-arrows touch-only" role="group" aria-label="Se déplacer dans le calendrier">
           <button type="button" class="btn btn-sm touch-arrow" data-dir="left" aria-label="Jours précédents">◀</button>
           <button type="button" class="btn btn-sm touch-arrow" data-dir="up" aria-label="Heures plus tôt">▲</button>
           <button type="button" class="btn btn-sm touch-arrow" data-dir="down" aria-label="Heures plus tard">▼</button>
