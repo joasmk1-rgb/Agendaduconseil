@@ -580,8 +580,13 @@ function scrollGridToDate(dates, targetISO) {
   const snapped = snapToRenderedDate(dates, targetISO);
   const headerCell = gridEl.querySelector(`.cell.day-header[data-date-iso="${snapped}"]`);
   if (!headerCell) return;
-  const left = headerCell.offsetLeft - Grid.LAYOUT.timeColWidth - (isPhoneView() ? 0 : 12);
-  gridScrollEl.scrollLeft = Math.max(0, left);
+  // Même calcul que centerGridOnRange (coordonnées écran + calage sur une
+  // colonne entière), pour que tous les "aller à" atterrissent proprement.
+  const gr = gridScrollEl.getBoundingClientRect();
+  const left = gr.left + parseFloat(getComputedStyle(gridScrollEl).paddingLeft || 0) + Grid.LAYOUT.timeColWidth;
+  const delta = headerCell.getBoundingClientRect().left - left;
+  const day = Grid.LAYOUT.dayColWidth;
+  gridScrollEl.scrollLeft = Math.max(0, Math.round((gridScrollEl.scrollLeft + delta) / day) * day);
 }
 
 // Tous les boutons "aller aux dates" (bandeaux + barre au-dessus du
