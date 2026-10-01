@@ -140,14 +140,12 @@ function syncViewRangeButtons() {
 // semaine à l'autre en glissant sur les dates ou avec les flèches.
 const DEFAULT_LAYOUT = { timeColWidth: Grid.LAYOUT.timeColWidth, dayColWidth: Grid.LAYOUT.dayColWidth, hourRowHeight: Grid.LAYOUT.hourRowHeight };
 const PHONE_DAYS = 5; // jours visibles d'un coup sur téléphone
-const PHONE_RAIL = 30; // largeur du curseur vertical à droite
+const PHONE_RAIL = 30; // marge libre à droite, pour faire défiler la page au doigt
 function isPhoneView() {
   return window.innerWidth < 600;
 }
 function applyPhoneLayout() {
   document.body.classList.toggle("phone-view", isPhoneView());
-  const rail = document.getElementById("v-rail");
-  if (rail) rail.classList.toggle("hidden", !isPhoneView());
   if (!isPhoneView()) {
     Grid.LAYOUT.timeColWidth = DEFAULT_LAYOUT.timeColWidth;
     Grid.LAYOUT.dayColWidth = DEFAULT_LAYOUT.dayColWidth;
@@ -158,8 +156,9 @@ function applyPhoneLayout() {
   const avail = Math.max(240, document.documentElement.clientWidth - 4 - PHONE_RAIL);
   Grid.LAYOUT.timeColWidth = timeCol;
   Grid.LAYOUT.dayColWidth = Math.max(36, Math.floor((avail - timeCol) / PHONE_DAYS));
-  // Cases plus hautes = plus faciles à toucher ; on descend avec le curseur.
-  Grid.LAYOUT.hourRowHeight = 20;
+  // Journée entière visible : la page défile normalement en glissant le doigt
+  // dans la marge à droite (hors de la grille), jamais bloquée sur les cases.
+  Grid.LAYOUT.hourRowHeight = 14;
 }
 let phoneResizeTimer = null;
 window.addEventListener("resize", () => {
@@ -173,7 +172,8 @@ window.addEventListener("resize", () => {
 
 function applyViewWidth() {
   if (isPhoneView()) {
-    gridScrollEl.style.maxWidth = "none";
+    // Pile PHONE_DAYS jours : le reste de la largeur sert de marge de défilement.
+    gridScrollEl.style.maxWidth = `${Grid.LAYOUT.timeColWidth + PHONE_DAYS * Grid.LAYOUT.dayColWidth}px`;
     return;
   }
   const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
@@ -2176,7 +2176,6 @@ function renderGrid() {
 
   applyViewWidth();
   maybeApplyStartPosition(dates);
-  requestAnimationFrame(() => { try { syncRail(); } catch (err) { /* pas encore prêt */ } });
   renderAvailabilityBanner();
   renderPollBanner();
   renderMemberDashboard();
@@ -2375,7 +2374,7 @@ function applyTouchMode() {
   touchModeBtn.textContent = touchPaintMode ? "✏️ Mode coloriage" : "✋ Mode défilement";
   touchModeBtn.classList.toggle("active", touchPaintMode);
   touchHint.textContent = touchPaintMode
-    ? "Le doigt colorie. Pour bouger : glisse sur les heures ou les dates, ou les flèches."
+    ? "Le doigt colorie. Pour faire défiler : glisse dans la bande à droite, ou utilise les flèches."
     : "Le doigt fait défiler. Tape une case pour la colorier.";
 }
 
@@ -2403,37 +2402,6 @@ touchTools.querySelectorAll(".touch-arrow").forEach((btn) => {
 });
 applyTouchMode();
 
-// Curseur vertical (téléphone) : on le fait glisser pour monter/descendre
-// dans les heures sans toucher aux cases.
-const vRail = document.getElementById("v-rail");
-const vThumb = document.getElementById("v-thumb");
-function syncRail() {
-  if (!vRail || vRail.classList.contains("hidden")) return;
-  const max = gridScrollEl.scrollHeight - gridScrollEl.clientHeight;
-  const railH = vRail.clientHeight - 36; // marge pour les flèches ▲ ▼
-  const thumbH = Math.max(40, railH * (gridScrollEl.clientHeight / Math.max(1, gridScrollEl.scrollHeight)));
-  vThumb.style.height = `${thumbH}px`;
-  vThumb.style.transform = `translateY(${max > 0 ? (gridScrollEl.scrollTop / max) * (railH - thumbH) : 0}px)`;
-  vRail.classList.toggle("disabled", max <= 0);
-}
-function railTo(clientY) {
-  const r = vRail.getBoundingClientRect();
-  const thumbH = vThumb.offsetHeight;
-  const ratio = Math.min(1, Math.max(0, (clientY - r.top - 20 - thumbH / 2) / Math.max(1, r.height - 40 - thumbH)));
-  gridScrollEl.scrollTop = ratio * (gridScrollEl.scrollHeight - gridScrollEl.clientHeight);
-}
-let railDragging = false;
-vRail.addEventListener("pointerdown", (e) => {
-  railDragging = true;
-  try { vRail.setPointerCapture(e.pointerId); } catch (err) {}
-  railTo(e.clientY);
-  e.preventDefault();
-});
-vRail.addEventListener("pointermove", (e) => { if (railDragging) railTo(e.clientY); });
-vRail.addEventListener("pointerup", () => { railDragging = false; });
-vRail.addEventListener("pointercancel", () => { railDragging = false; });
-gridScrollEl.addEventListener("scroll", syncRail, { passive: true });
-window.addEventListener("resize", syncRail);
 
 // ===================== INITIALISATION =====================
 // Le calendrier (cours bloqués + événements admin) se charge et s'affiche

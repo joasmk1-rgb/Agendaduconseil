@@ -811,7 +811,6 @@ label.fd-slot { justify-content: flex-start; cursor: pointer; }
 /* Petit écran tactile : la grille tient dans l'écran et défile à l'intérieur,
    pour garder les dates et les heures visibles pendant qu'on colorie. */
 @media (max-width: 899px) and (pointer: coarse) {
-  #grid-scroll { max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); }
   .touch-tools { padding: 4px 12px; gap: 4px 8px; }
   .touch-hint { flex-basis: 100%; order: 3; }
 }
@@ -832,13 +831,9 @@ body.phone-view .cell { padding: 0 1px; }
 /* Ligne grille + curseur vertical (téléphone). */
 .grid-row { display: flex; align-items: stretch; min-height: 0; flex: 1 1 auto; min-width: 0; }
 .grid-row > .grid-scroll { flex: 1 1 auto; min-width: 0; }
-.v-rail { flex: 0 0 30px; margin: 0 2px; border-radius: 15px; background: repeating-linear-gradient(180deg, var(--uc-navy-soft) 0 6px, #dfe8f5 6px 7px); border: 2px solid var(--uc-blue-gray); position: relative; touch-action: none; cursor: grab; padding: 18px 0; }
-.v-rail::before, .v-rail::after { position: absolute; left: 0; right: 0; text-align: center; font-size: 0.7rem; color: var(--uc-navy); pointer-events: none; }
-.v-rail::before { content: "▲"; top: 2px; }
-.v-rail::after { content: "▼"; bottom: 2px; }
-.v-rail.hidden { display: none; }
-.v-rail.disabled { opacity: 0.35; }
-.v-thumb { position: absolute; left: 2px; right: 2px; top: 18px; border-radius: 11px; background: var(--uc-navy); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
-.v-thumb::before { content: "⇕"; position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 0.8rem; }
-body.phone-view #grid-scroll { max-height: calc(100vh - 150px); max-height: calc(100dvh - 150px); }
+body.phone-view #grid-scroll { max-height: none; }
+/* Marge libre à droite de la grille : on y glisse le doigt pour faire défiler la page. */
+body.phone-view .grid-row { background: var(--uc-navy-soft); border-radius: 0 8px 8px 0; }
+body.phone-view .grid-row > .grid-scroll { flex: 0 0 auto; }
+body.phone-view .grid-row::after { content: "⇕"; position: sticky; top: 45vh; align-self: flex-start; flex: 1 1 auto; min-width: 20px; text-align: center; color: var(--uc-blue-gray); font-size: 1rem; pointer-events: none; }
 .profile-display { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
