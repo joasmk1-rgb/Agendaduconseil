@@ -151,7 +151,7 @@ function applyPhoneLayout() {
     return;
   }
   const timeCol = 34;
-  const avail = Math.max(240, document.documentElement.clientWidth - 12);
+  const avail = Math.max(240, document.documentElement.clientWidth - 4);
   Grid.LAYOUT.timeColWidth = timeCol;
   Grid.LAYOUT.dayColWidth = Math.max(32, Math.floor((avail - timeCol) / perWeek));
 }
@@ -563,7 +563,7 @@ function scrollGridToDate(dates, targetISO) {
   const snapped = snapToRenderedDate(dates, targetISO);
   const headerCell = gridEl.querySelector(`.cell.day-header[data-date-iso="${snapped}"]`);
   if (!headerCell) return;
-  const left = headerCell.offsetLeft - Grid.LAYOUT.timeColWidth - 12;
+  const left = headerCell.offsetLeft - Grid.LAYOUT.timeColWidth - (isPhoneView() ? 0 : 12);
   gridScrollEl.scrollLeft = Math.max(0, left);
 }
 
@@ -2079,6 +2079,18 @@ function updateTouchTools() {
   const tools = document.getElementById("touch-tools");
   if (!tools) return;
   tools.classList.toggle("hidden", !state.password);
+  // Bouton "Aller aux dates du sondage" : visible tant qu'une recherche de
+  // date est en cours (collecte ou sondage publié).
+  const gotoBtn = document.getElementById("goto-search-btn");
+  if (gotoBtn) {
+    const searches = state.password ? collectingSearches() : [];
+    gotoBtn.classList.toggle("hidden", !searches.length);
+    if (searches.length) {
+      const first = searches.map((p) => p.search.start).sort()[0];
+      const todayISO = Grid.toISODate(new Date());
+      gotoBtn.dataset.date = first < todayISO ? todayISO : first;
+    }
+  }
   tools.querySelectorAll(".touch-only").forEach((el) => el.classList.toggle("hidden", !IS_TOUCH));
 }
 
@@ -2357,6 +2369,12 @@ function applyTouchMode() {
     : "Le doigt fait défiler. Tape une case pour la colorier.";
 }
 
+document.getElementById("goto-search-btn").addEventListener("click", (e) => {
+  if (!state.config) return;
+  const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+  scrollGridToDate(dates, e.currentTarget.dataset.date);
+  document.getElementById("grid-area").scrollIntoView({ behavior: "smooth", block: "start" });
+});
 touchModeBtn.addEventListener("click", () => {
   touchPaintMode = !touchPaintMode;
   applyTouchMode();
