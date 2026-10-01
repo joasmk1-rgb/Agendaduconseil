@@ -1123,7 +1123,7 @@ function renderPollBanner() {
           : "";
         if (mine && !editingPolls.has(poll.id)) {
           const picked = (Array.isArray(mine.answer) ? mine.answer : [mine.answer]).filter((a) => a !== "Aucun");
-          return `<div class="avail-request-item done" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong> — tu as répondu ✅ (${picked.length ? picked.join(", ") : "aucun créneau ne te convient"}) <button type="button" class="btn btn-ghost btn-sm poll-edit-btn" data-poll="${poll.id}">Modifier</button> ${calBtn}</div>`;
+          return `<div class="avail-request-item done" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong> — tu as répondu ✅ (${picked.length ? `${picked.length} créneau${picked.length > 1 ? "x" : ""}` : "aucun ne te convient"}) <button type="button" class="btn btn-ghost btn-sm poll-edit-btn" data-poll="${poll.id}">Modifier</button> ${calBtn}</div>`;
         }
         const prev = new Set(mine ? (Array.isArray(mine.answer) ? mine.answer : [mine.answer]) : []);
         const slotByLabel = new Map((poll.slots || []).map((s, i) => [s.label, { ...s, n: i + 1 }]));
@@ -1133,19 +1133,36 @@ function renderPollBanner() {
           const s = slotByLabel.get(o);
           return s && mySlotStatus(s).code === "yes" ? " checked" : "";
         };
-        fieldsHtml =
-          '<p class="hint">Coche tous les créneaux où tu peux venir. Ils sont aussi encadrés en bleu (🗳️ + numéro) sur ton calendrier, par-dessus tes dispos.</p>' +
-          (poll.options || [])
-            .map((o) => {
-              const s = slotByLabel.get(o);
-              const st = s ? mySlotStatus(s) : null;
-              const num = s ? `<span class="poll-num">${s.n}</span>` : "";
-              const me = st ? ` <span class="poll-me poll-me-${st.code}">${st.text}</span>` : "";
-              return `<label class="checkbox-group poll-date-option"><input type="checkbox" name="poll-${poll.id}" value="${o}"${ck(o)}> ${num}${o}${me}</label>`;
-            })
-            .join("") +
-          `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="Aucun"${ck("Aucun")}> Aucun ne me convient</label>`;
-        return `<div class="avail-request-item poll-banner-item" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong><div class="poll-banner-fields">${fieldsHtml}</div><button type="button" class="btn btn-primary btn-sm poll-submit-btn" data-poll="${poll.id}">${mine ? "Mettre à jour" : "Répondre"}</button> ${calBtn}</div>`;
+        // Créneaux regroupés par jour, en colonnes : on clique sur une pastille
+        // pour la sélectionner (plus lisible qu'une longue liste de cases).
+        const shortStatus = { yes: "✅ dispo", no: "❌ pas dispo", part: "🟡 en partie", unknown: "❔ à remplir" };
+        const byDay = new Map();
+        (poll.options || []).forEach((o) => {
+          const sl = slotByLabel.get(o);
+          const dayKey = sl ? sl.date : o.split(" ").slice(0, 2).join(" ");
+          if (!byDay.has(dayKey)) byDay.set(dayKey, { title: o.split(" ").slice(0, 2).join(" "), items: [] });
+          byDay.get(dayKey).items.push(o);
+        });
+        const daysHtml = [...byDay.values()].map((d) => `
+          <div class="dp-day">
+            <div class="dp-day-title">${d.title}</div>
+            ${d.items.map((o) => {
+              const sl = slotByLabel.get(o);
+              const st = sl ? mySlotStatus(sl) : null;
+              const time = o.split(" ").slice(2).join(" ").replace("-", " – ");
+              return `<label class="dp-chip${st ? " st-" + st.code : ""}"><input type="checkbox" name="poll-${poll.id}" value="${o}"${ck(o)}>${sl ? `<span class="poll-num">${sl.n}</span>` : ""}<span class="dp-time">${time}</span>${st ? `<span class="dp-st">${shortStatus[st.code]}</span>` : ""}</label>`;
+            }).join("")}
+          </div>`).join("");
+        return `<div class="dp" data-poll-id="${poll.id}">
+          <div class="dp-head"><strong>🗳️ ${poll.question}</strong><span class="dp-hint">Clique sur tous les créneaux où tu peux venir (ils sont aussi encadrés en bleu sur ton calendrier).</span></div>
+          <div class="dp-days">${daysHtml}</div>
+          <div class="dp-actions">
+            <label class="dp-none"><input type="checkbox" name="poll-${poll.id}" value="Aucun"${ck("Aucun")}> Aucun ne me convient</label>
+            <span class="dp-count"></span>
+            <button type="button" class="btn btn-primary poll-submit-btn" data-poll="${poll.id}">${mine ? "Mettre à jour ma réponse" : "Envoyer ma réponse"}</button>
+            ${calBtn}
+          </div>
+        </div>`;
       } else if (poll.type === "choice") {
         const inputType = poll.multiple ? "checkbox" : "radio";
         fieldsHtml = (poll.options || [])
@@ -1163,6 +1180,16 @@ function renderPollBanner() {
     })
     .join("");
 
+  pollBanner.querySelectorAll(".dp").forEach((box) => {
+    const update = () => {
+      const n = box.querySelectorAll(".dp-chip input:checked").length;
+      const out = box.querySelector(".dp-count");
+      if (out) out.textContent = n ? `${n} créneau${n > 1 ? "x" : ""} sélectionné${n > 1 ? "s" : ""}` : "";
+      box.querySelectorAll(".dp-chip").forEach((c) => c.classList.toggle("on", c.querySelector("input").checked));
+    };
+    box.addEventListener("change", update);
+    update();
+  });
   pollBanner.querySelectorAll(".poll-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       editingPolls.add(btn.dataset.poll);
