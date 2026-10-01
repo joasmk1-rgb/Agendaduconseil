@@ -1026,7 +1026,10 @@ function renderAvailabilityBanner() {
   }
   const todayISO = Grid.toISODate(new Date());
   const requested = (state.events || []).filter((e) => e.availabilityRequested && !e.allDay && e.date >= todayISO);
-  const searches = collectingSearches();
+  // Une fois le sondage publié, c'est le bandeau du sondage qui prend le
+  // relais (avec son bouton "je préfère remplir mon calendrier") : pas de
+  // second bandeau jaune qui répète la même chose.
+  const searches = collectingSearches().filter((p) => p.status !== "open");
   if (!requested.length && !searches.length) {
     availRequestBanner.classList.add("hidden");
     availRequestBanner.innerHTML = "";
@@ -2407,7 +2410,7 @@ const vThumb = document.getElementById("v-thumb");
 function syncRail() {
   if (!vRail || vRail.classList.contains("hidden")) return;
   const max = gridScrollEl.scrollHeight - gridScrollEl.clientHeight;
-  const railH = vRail.clientHeight;
+  const railH = vRail.clientHeight - 36; // marge pour les flèches ▲ ▼
   const thumbH = Math.max(40, railH * (gridScrollEl.clientHeight / Math.max(1, gridScrollEl.scrollHeight)));
   vThumb.style.height = `${thumbH}px`;
   vThumb.style.transform = `translateY(${max > 0 ? (gridScrollEl.scrollTop / max) * (railH - thumbH) : 0}px)`;
@@ -2416,7 +2419,7 @@ function syncRail() {
 function railTo(clientY) {
   const r = vRail.getBoundingClientRect();
   const thumbH = vThumb.offsetHeight;
-  const ratio = Math.min(1, Math.max(0, (clientY - r.top - thumbH / 2) / Math.max(1, r.height - thumbH)));
+  const ratio = Math.min(1, Math.max(0, (clientY - r.top - 20 - thumbH / 2) / Math.max(1, r.height - 40 - thumbH)));
   gridScrollEl.scrollTop = ratio * (gridScrollEl.scrollHeight - gridScrollEl.clientHeight);
 }
 let railDragging = false;
