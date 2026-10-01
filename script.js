@@ -584,6 +584,17 @@ function scrollGridToDate(dates, targetISO) {
   gridScrollEl.scrollLeft = Math.max(0, left);
 }
 
+// Tous les boutons "aller aux dates" (bandeaux + barre au-dessus du
+// calendrier) : centre la plage et amène le calendrier à l'écran.
+function jumpToRange(startISO, endISO) {
+  if (!state.config || !startISO) return;
+  const todayISO = Grid.toISODate(new Date());
+  const start = startISO < todayISO ? todayISO : startISO;
+  const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
+  centerGridOnRange(dates, start, endISO || start);
+  document.getElementById("grid-area").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 // Centre la grille sur le milieu d'une plage de dates (ex : 19 → 23 octobre
 // = mercredi au centre de l'écran), en tenant compte de la colonne des heures.
 function centerGridOnRange(dates, startISO, endISO) {
@@ -1077,7 +1088,7 @@ function renderAvailabilityBanner() {
       const pollBtn = p.status === "open"
         ? ` <button type="button" class="btn btn-ghost btn-sm poll-jump" data-poll="${p.id}">🗳️ ${voted ? "Modifier ma réponse au sondage" : "Pas le temps ? Réponds directement au sondage"}</button>`
         : "";
-      return `<div class="avail-request-item${done ? " done" : ""}">📆 Le conseil cherche une date pour <strong>${p.question}</strong> du ${formatShortFr(p.search.start)} au ${formatShortFr(p.search.end)} (entre ${p.search.from.replace(":", "h")} et ${p.search.to.replace(":", "h")}) — remplis tes dispos sur cette plage (cases en <span style="color:#e08a1e">orange</span>) : ${st.answered}/${st.total} créneaux remplis${voted ? " · sondage répondu" : ""}${done ? " ✅" : ""} <button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${p.search.start}">📅 Y aller</button>${pollBtn}</div>`;
+      return `<div class="avail-request-item${done ? " done" : ""}">📆 Le conseil cherche une date pour <strong>${p.question}</strong> du ${formatShortFr(p.search.start)} au ${formatShortFr(p.search.end)} (entre ${p.search.from.replace(":", "h")} et ${p.search.to.replace(":", "h")}) — remplis tes dispos sur cette plage (cases en <span style="color:#e08a1e">orange</span>) : ${st.answered}/${st.total} créneaux remplis${voted ? " · sondage répondu" : ""}${done ? " ✅" : ""} <button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${p.search.start}" data-end="${p.search.end}">📅 Y aller</button>${pollBtn}</div>`;
     })
     .join("");
   availRequestBanner.innerHTML = pollingHtml + requested
@@ -1096,10 +1107,7 @@ function renderAvailabilityBanner() {
     });
   });
   availRequestBanner.querySelectorAll(".avail-request-jump").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-      scrollGridToDate(dates, btn.dataset.date);
-    });
+    btn.addEventListener("click", () => jumpToRange(btn.dataset.date, btn.dataset.end));
   });
 }
 
@@ -1133,7 +1141,7 @@ function renderPollBanner() {
       if (poll.type === "date") {
         const mine = myAnswer(poll);
         const calBtn = poll.search
-          ? `<button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${poll.search.start}">📅 Je préfère remplir mon calendrier</button>`
+          ? `<button type="button" class="btn btn-ghost btn-sm avail-request-jump" data-date="${poll.search.start}" data-end="${poll.search.end}">📅 Je préfère remplir mon calendrier</button>`
           : "";
         if (mine && !editingPolls.has(poll.id)) {
           const picked = (Array.isArray(mine.answer) ? mine.answer : [mine.answer]).filter((a) => a !== "Aucun");
@@ -1211,10 +1219,7 @@ function renderPollBanner() {
     });
   });
   pollBanner.querySelectorAll(".avail-request-jump").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-      scrollGridToDate(dates, btn.dataset.date);
-    });
+    btn.addEventListener("click", () => jumpToRange(btn.dataset.date, btn.dataset.end));
   });
   pollBanner.querySelectorAll(".poll-submit-btn").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -2482,10 +2487,7 @@ function applyTouchMode() {
 }
 
 document.getElementById("goto-search-btn").addEventListener("click", (e) => {
-  if (!state.config) return;
-  const dates = Grid.buildDateList(new Date(), state.config.rangeDays, state.config.includeWeekends);
-  centerGridOnRange(dates, e.currentTarget.dataset.date, e.currentTarget.dataset.end);
-  document.getElementById("grid-area").scrollIntoView({ behavior: "smooth", block: "start" });
+  jumpToRange(e.currentTarget.dataset.date, e.currentTarget.dataset.end);
 });
 touchModeBtn.addEventListener("click", () => {
   touchPaintMode = !touchPaintMode;
