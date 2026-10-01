@@ -138,22 +138,28 @@ function syncViewRangeButtons() {
 // Téléphone en portrait : une semaine entière tient dans la largeur de
 // l'écran (colonnes resserrées, heures et jours figés), on passe d'une
 // semaine à l'autre en glissant sur les dates ou avec les flèches.
-const DEFAULT_LAYOUT = { timeColWidth: Grid.LAYOUT.timeColWidth, dayColWidth: Grid.LAYOUT.dayColWidth };
+const DEFAULT_LAYOUT = { timeColWidth: Grid.LAYOUT.timeColWidth, dayColWidth: Grid.LAYOUT.dayColWidth, hourRowHeight: Grid.LAYOUT.hourRowHeight };
+const PHONE_DAYS = 5; // jours visibles d'un coup sur téléphone
+const PHONE_RAIL = 30; // largeur du curseur vertical à droite
 function isPhoneView() {
   return window.innerWidth < 600;
 }
 function applyPhoneLayout() {
-  const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
   document.body.classList.toggle("phone-view", isPhoneView());
+  const rail = document.getElementById("v-rail");
+  if (rail) rail.classList.toggle("hidden", !isPhoneView());
   if (!isPhoneView()) {
     Grid.LAYOUT.timeColWidth = DEFAULT_LAYOUT.timeColWidth;
     Grid.LAYOUT.dayColWidth = DEFAULT_LAYOUT.dayColWidth;
+    Grid.LAYOUT.hourRowHeight = DEFAULT_LAYOUT.hourRowHeight;
     return;
   }
   const timeCol = 34;
-  const avail = Math.max(240, document.documentElement.clientWidth - 4);
+  const avail = Math.max(240, document.documentElement.clientWidth - 4 - PHONE_RAIL);
   Grid.LAYOUT.timeColWidth = timeCol;
-  Grid.LAYOUT.dayColWidth = Math.max(32, Math.floor((avail - timeCol) / perWeek));
+  Grid.LAYOUT.dayColWidth = Math.max(36, Math.floor((avail - timeCol) / PHONE_DAYS));
+  // Cases plus hautes = plus faciles à toucher ; on descend avec le curseur.
+  Grid.LAYOUT.hourRowHeight = 20;
 }
 let phoneResizeTimer = null;
 window.addEventListener("resize", () => {
@@ -2167,6 +2173,7 @@ function renderGrid() {
 
   applyViewWidth();
   maybeApplyStartPosition(dates);
+  requestAnimationFrame(() => { try { syncRail(); } catch (err) { /* pas encore prêt */ } });
   renderAvailabilityBanner();
   renderPollBanner();
   renderMemberDashboard();
@@ -2381,9 +2388,8 @@ touchModeBtn.addEventListener("click", () => {
 });
 touchTools.querySelectorAll(".touch-arrow").forEach((btn) => {
   btn.addEventListener("click", () => {
-    // Sur téléphone : une semaine pile à chaque flèche.
-    const perWeek = state.config && state.config.includeWeekends ? 7 : 5;
-    const dx = isPhoneView() ? perWeek * Grid.LAYOUT.dayColWidth : gridScrollEl.clientWidth * 0.7;
+    // Sur téléphone : PHONE_DAYS jours pile à chaque flèche.
+    const dx = isPhoneView() ? PHONE_DAYS * Grid.LAYOUT.dayColWidth : gridScrollEl.clientWidth * 0.7;
     const dy = gridScrollEl.clientHeight * 0.6;
     const move = { left: [-dx, 0], right: [dx, 0], up: [0, -dy], down: [0, dy] }[btn.dataset.dir];
     // Selon l'écran, c'est la grille ou la page entière qui défile en hauteur.
@@ -2393,6 +2399,38 @@ touchTools.querySelectorAll(".touch-arrow").forEach((btn) => {
   });
 });
 applyTouchMode();
+
+// Curseur vertical (téléphone) : on le fait glisser pour monter/descendre
+// dans les heures sans toucher aux cases.
+const vRail = document.getElementById("v-rail");
+const vThumb = document.getElementById("v-thumb");
+function syncRail() {
+  if (!vRail || vRail.classList.contains("hidden")) return;
+  const max = gridScrollEl.scrollHeight - gridScrollEl.clientHeight;
+  const railH = vRail.clientHeight;
+  const thumbH = Math.max(40, railH * (gridScrollEl.clientHeight / Math.max(1, gridScrollEl.scrollHeight)));
+  vThumb.style.height = `${thumbH}px`;
+  vThumb.style.transform = `translateY(${max > 0 ? (gridScrollEl.scrollTop / max) * (railH - thumbH) : 0}px)`;
+  vRail.classList.toggle("disabled", max <= 0);
+}
+function railTo(clientY) {
+  const r = vRail.getBoundingClientRect();
+  const thumbH = vThumb.offsetHeight;
+  const ratio = Math.min(1, Math.max(0, (clientY - r.top - thumbH / 2) / Math.max(1, r.height - thumbH)));
+  gridScrollEl.scrollTop = ratio * (gridScrollEl.scrollHeight - gridScrollEl.clientHeight);
+}
+let railDragging = false;
+vRail.addEventListener("pointerdown", (e) => {
+  railDragging = true;
+  try { vRail.setPointerCapture(e.pointerId); } catch (err) {}
+  railTo(e.clientY);
+  e.preventDefault();
+});
+vRail.addEventListener("pointermove", (e) => { if (railDragging) railTo(e.clientY); });
+vRail.addEventListener("pointerup", () => { railDragging = false; });
+vRail.addEventListener("pointercancel", () => { railDragging = false; });
+gridScrollEl.addEventListener("scroll", syncRail, { passive: true });
+window.addEventListener("resize", syncRail);
 
 // ===================== INITIALISATION =====================
 // Le calendrier (cours bloqués + événements admin) se charge et s'affiche
