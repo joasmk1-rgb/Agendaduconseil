@@ -895,3 +895,7 @@ body.embedded footer, body.embedded .footer { display: none !important; }
 body.embedded { min-height: 0 !important; }
 .hidden-tools-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 12px; margin: 8px 0; }
 .tools-picker .tool-btn.is-hidden { opacity: 0.6; border-style: dashed; }
+.role-tools-table { border-collapse: collapse; font-size: 0.85rem; min-width: 560px; }
+.role-tools-table th, .role-tools-table td { padding: 5px 10px; border-bottom: 1px solid var(--color-border); text-align: center; }
+.role-tools-table td:first-child, .role-tools-table th:first-child { text-align: left; }
+.hidden-tools-list { display: block; overflow-x: auto; }

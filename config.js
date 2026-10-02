@@ -40,18 +40,35 @@ export const TOOL_LABELS = {
   settings: "⚙️ Paramètres",
 };
 const ALL_TOOLS = Object.keys(TOOL_LABELS);
-export const ROLE_TOOLS = {
-  presidente: ALL_TOOLS,
-  "vice-presidente": ALL_TOOLS,
+export const ROLE_LABELS = {
+  presidente: "Présidente",
+  "vice-presidente": "Vice-présidente",
+  secretaire: "Secrétaire",
+  tresorier: "Trésorier",
+  communication: "Communication",
+};
+// Valeurs par défaut tant que l'admin n'a rien réglé dans Paramètres
+// (config/current.roleTools = { poste: [outils...] }). "tab:roles" = l'onglet
+// public "👥 Disponibilités".
+export const DEFAULT_ROLE_TOOLS = {
+  presidente: ["find-date", "polls", "tab:roles"],
+  "vice-presidente": ["find-date", "polls", "tab:roles"],
   secretaire: ["find-date", "polls", "meetings", "agenda-proposals", "availability", "import"],
   tresorier: ["projects", "export"],
   communication: ["tasks", "projects"],
 };
-// hiddenTools (config/current.hiddenTools, réglé dans Paramètres) : outils
-// pas encore aboutis, masqués pour tout le monde sauf les admins.
-export function toolsFor(member, hiddenTools = []) {
+function roleList(member, roleTools) {
+  const conf = roleTools && roleTools[member.role];
+  return Array.isArray(conf) ? conf : DEFAULT_ROLE_TOOLS[member.role] || [];
+}
+// Seul un membre coché Admin a tout ; les postes ont ce que l'admin a coché.
+export function toolsFor(member, roleTools) {
   if (!member) return [];
   if (member.isAdmin) return ALL_TOOLS;
-  const hidden = new Set(hiddenTools || []);
-  return (ROLE_TOOLS[member.role] || []).filter((t) => !hidden.has(t));
+  return roleList(member, roleTools).filter((t) => ALL_TOOLS.includes(t));
+}
+export function hasRolesTab(member, roleTools) {
+  if (!member) return false;
+  if (member.isAdmin) return true;
+  return roleList(member, roleTools).includes("tab:roles");
 }

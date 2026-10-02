@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -72,14 +72,14 @@ import * as Courses from "./courses.js";
 // perturber quelqu'un avec des sections qui ne le concernent pas.
 // Postes → outils : défini une seule fois dans config.js (ROLE_TOOLS),
 // partagé avec l'onglet "🛠️ Outils" du site public.
-const ROLE_ADMIN_VIEWS = Object.fromEntries(["presidente", "vice-presidente", "secretaire", "tresorier", "communication"].map((r) => [r, toolsFor({ role: r })]));
+const ROLE_ADMIN_VIEWS = Object.fromEntries(Object.keys(TOOL_ROLE_LABELS).map((r) => [r, true]));
 
 async function checkEmbedAccess() {
   const pw = localStorage.getItem("agenda-conseil:password");
   if (!pw) return null;
   const member = await db.findMemberByPassword(pw);
   const cfg = await db.getConfig().catch(() => null);
-  if (!member || !toolsFor(member, (cfg && cfg.hiddenTools) || []).includes(EMBED)) return null;
+  if (!member || !toolsFor(member, cfg && cfg.roleTools).includes(EMBED)) return null;
   return { isAdmin: !!member.isAdmin, role: member.role || "", embed: EMBED };
 }
 
@@ -134,7 +134,7 @@ async function checkAccess() {
 // admin complet (isAdmin) n'est jamais restreint, quel que soit son poste.
 function applyAdminPermissions(access) {
   if (access.isAdmin) return;
-  const allowed = new Set(["dashboard", ...(ROLE_ADMIN_VIEWS[access.role] || [])]);
+  const allowed = new Set(["dashboard", ...(access.embed ? [access.embed] : [])]);
   document.querySelectorAll(".nav-item").forEach((btn) => {
     if (!btn.dataset.view) return; // ex: le lien "Retour au site public", jamais restreint
     if (access.embed) return;
@@ -419,23 +419,29 @@ function runAdmin() {
   let currentAgendaProposals = [];
 
   // ---------- Fenêtre glissante ----------
-  // ---------- Onglets / outils masqués (pas encore aboutis) ----------
+  // ---------- Outils par poste (grille poste × outil) ----------
   const HIDEABLE = [
-    ...Object.entries(TOOL_LABELS).map(([id, label]) => ({ id, label: `Outil ${label}` })),
-    { id: "tab:roles", label: "Onglet 👥 Disponibilités (présidente / VP)" },
+    ...Object.entries(TOOL_LABELS).map(([id, label]) => ({ id, label })),
+    { id: "tab:roles", label: "👥 Onglet Disponibilités" },
   ];
   const hiddenToolsList = document.getElementById("hidden-tools-list");
   const hiddenToolsStatus = document.getElementById("hidden-tools-status");
   function renderHiddenTools(config) {
-    const hidden = new Set((config && config.hiddenTools) || []);
-    hiddenToolsList.innerHTML = HIDEABLE.map((t) => `<label class="checkbox-group"><input type="checkbox" value="${t.id}"${hidden.has(t.id) ? "" : " checked"}> ${t.label}</label>`).join("");
+    const conf = (config && config.roleTools) || {};
+    const roles = Object.keys(TOOL_ROLE_LABELS);
+    const has = (r, t) => (Array.isArray(conf[r]) ? conf[r] : DEFAULT_ROLE_TOOLS[r] || []).includes(t);
+    hiddenToolsList.innerHTML = `<table class="role-tools-table"><thead><tr><th>Outil</th>${roles.map((r) => `<th>${TOOL_ROLE_LABELS[r]}</th>`).join("")}</tr></thead><tbody>${HIDEABLE.map(
+      (t) => `<tr><td>${t.label}</td>${roles.map((r) => `<td><input type="checkbox" data-role="${r}" value="${t.id}" aria-label="${TOOL_ROLE_LABELS[r]} : ${t.label}"${has(r, t.id) ? " checked" : ""}></td>`).join("")}</tr>`
+    ).join("")}</tbody></table>`;
   }
   document.getElementById("hidden-tools-save").addEventListener("click", async () => {
-    const hiddenTools = [...hiddenToolsList.querySelectorAll("input")].filter((i) => !i.checked).map((i) => i.value);
+    const roleTools = {};
+    Object.keys(TOOL_ROLE_LABELS).forEach((r) => { roleTools[r] = []; });
+    hiddenToolsList.querySelectorAll("input:checked").forEach((i) => roleTools[i.dataset.role].push(i.value));
     hiddenToolsStatus.textContent = "Enregistrement…";
     try {
-      await db.saveConfig({ ...currentConfig, hiddenTools });
-      hiddenToolsStatus.textContent = hiddenTools.length ? `Enregistré ✓ — ${hiddenTools.length} élément(s) masqué(s) pour les conseillers.` : "Enregistré ✓ — tout est visible.";
+      await db.saveConfig({ ...currentConfig, roleTools });
+      hiddenToolsStatus.textContent = "Enregistré ✓ — les conseillers voient tout de suite leurs nouveaux outils.";
     } catch (err) {
       console.error(err);
       hiddenToolsStatus.textContent = "Échec de l'enregistrement.";
