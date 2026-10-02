@@ -4527,6 +4527,7 @@ function runAdmin() {
   // (pas besoin de le stocker en base, c'est une préférence d'affichage du
   // moment).
   const pollDetailView = new Set();
+  const openVoteEntry = new Set(); // panneaux "saisir les votes" laissés ouverts
 
   function summarizePoll(poll) {
     const responses = poll.responses || [];
@@ -4651,6 +4652,48 @@ function runAdmin() {
         resultsDiv.className = "poll-results";
         resultsDiv.innerHTML = pollResultsHTML(poll);
         li.appendChild(resultsDiv);
+
+        // Vote en réunion : celui qui anime (et a donc accès à cet outil)
+        // peut saisir le vote d'un présent à sa place — ex : quelqu'un sur
+        // Teams qui lève juste la main.
+        if (poll.type === "vote" && poll.status === "open") {
+          const meeting = currentMeetings.find((m) => m.id === poll.meetingId);
+          const proxies = (meeting && meeting.proxies) || {};
+          const byId = new Map((poll.responses || []).map((r) => [r.password, r.answer]));
+          const box = document.createElement("details");
+          box.className = "vote-proxy-box";
+          box.open = openVoteEntry.has(poll.id);
+          box.addEventListener("toggle", () => (box.open ? openVoteEntry.add(poll.id) : openVoteEntry.delete(poll.id)));
+          box.innerHTML = `<summary>✋ Saisir les votes à la place des membres (Teams, main levée…)</summary>`;
+          const list = document.createElement("div");
+          list.className = "vote-entry-list";
+          voteEligible(poll).forEach((m) => {
+            const holder = proxies[m.id] ? currentMembers.find((x) => x.id === proxies[m.id]) : null;
+            const row = document.createElement("div");
+            row.className = "vote-row";
+            row.innerHTML = `<span class="vote-who">${m.name}${holder ? ` <span class="hint">(procuration → ${holder.name})</span>` : ""}</span>`;
+            ["Pour", "Contre", "Abstention"].forEach((o) => {
+              const b = document.createElement("button");
+              b.type = "button";
+              b.className = `btn btn-sm vote-btn vote-${o.toLowerCase()}${byId.get(m.id) === o ? " on" : ""}`;
+              b.textContent = o;
+              b.addEventListener("click", async () => {
+                b.disabled = true;
+                try {
+                  await db.submitPollResponse(poll.id, m.id, m.name, o);
+                } catch (err) {
+                  alert(err.message || "Échec, réessaie.");
+                }
+                b.disabled = false;
+              });
+              row.appendChild(b);
+            });
+            list.appendChild(row);
+          });
+          if (!list.children.length) list.innerHTML = '<p class="hint">Personne n\'est marqué présent dans cette réunion (outil Réunions).</p>';
+          box.appendChild(list);
+          li.appendChild(box);
+        }
 
         pollList.appendChild(li);
       });
