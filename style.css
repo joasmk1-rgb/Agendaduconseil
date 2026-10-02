@@ -893,3 +893,5 @@ body.embedded { background: var(--color-bg); }
 body.embedded #access-denied::after { content: " Connecte-toi d'abord sur le site."; }
 body.embedded footer, body.embedded .footer { display: none !important; }
 body.embedded { min-height: 0 !important; }
+.hidden-tools-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 12px; margin: 8px 0; }
+.tools-picker .tool-btn.is-hidden { opacity: 0.6; border-style: dashed; }

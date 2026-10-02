@@ -47,8 +47,11 @@ export const ROLE_TOOLS = {
   tresorier: ["projects", "export"],
   communication: ["tasks", "projects"],
 };
-export function toolsFor(member) {
+// hiddenTools (config/current.hiddenTools, réglé dans Paramètres) : outils
+// pas encore aboutis, masqués pour tout le monde sauf les admins.
+export function toolsFor(member, hiddenTools = []) {
   if (!member) return [];
   if (member.isAdmin) return ALL_TOOLS;
-  return ROLE_TOOLS[member.role] || [];
+  const hidden = new Set(hiddenTools || []);
+  return (ROLE_TOOLS[member.role] || []).filter((t) => !hidden.has(t));
 }

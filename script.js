@@ -1304,11 +1304,12 @@ const toolsHint = document.getElementById("tools-hint");
 let currentTool = null;
 let renderedToolsKey = "";
 function renderToolsPicker(tools) {
-  const key = tools.join(",");
+  const hidden = new Set((state.config && state.config.hiddenTools) || []);
+  const key = tools.join(",") + "|" + [...hidden].join(",");
   if (key === renderedToolsKey) return;
   renderedToolsKey = key;
   toolsPicker.innerHTML = tools
-    .map((t) => `<button type="button" class="mode-btn tool-btn${t === currentTool ? " active" : ""}" data-tool="${t}">${TOOL_LABELS[t] || t}</button>`)
+    .map((t) => `<button type="button" class="mode-btn tool-btn${t === currentTool ? " active" : ""}${hidden.has(t) ? " is-hidden" : ""}" data-tool="${t}">${TOOL_LABELS[t] || t}${hidden.has(t) ? " · masqué" : ""}</button>`)
     .join("");
   if (currentTool && !tools.includes(currentTool)) {
     currentTool = null;
@@ -1339,12 +1340,13 @@ function applyPublicTabsVisibility() {
   const tasksEnabled = !!(state.config && state.config.tasksTabEnabled);
   // L'admin voit toujours tout ce que verrait un conseiller avec un poste
   // particulier — jamais moins d'accès qu'eux.
-  const rolesEnabled = state.isAdmin || ROLES_WITH_AVAILABILITY_ACCESS.includes(state.role);
+  const hiddenTools = (state.config && state.config.hiddenTools) || [];
+  const rolesEnabled = state.isAdmin || (ROLES_WITH_AVAILABILITY_ACCESS.includes(state.role) && !hiddenTools.includes("tab:roles"));
   agendaTabBtn.classList.toggle("hidden", !agendaEnabled);
   tasksTabBtn.classList.toggle("hidden", !tasksEnabled);
   rolesTabBtn.classList.toggle("hidden", !rolesEnabled);
   if (rolesEnabled) ensureRolesDataLoaded();
-  const tools = state.password ? toolsFor({ isAdmin: state.isAdmin, role: state.role }) : [];
+  const tools = state.password ? toolsFor({ isAdmin: state.isAdmin, role: state.role }, hiddenTools) : [];
   toolsTabBtn.classList.toggle("hidden", !tools.length);
   renderToolsPicker(tools);
   if (!tools.length && state.activeTab === "tools") switchTab("calendar");

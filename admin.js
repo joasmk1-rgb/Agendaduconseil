@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -78,7 +78,8 @@ async function checkEmbedAccess() {
   const pw = localStorage.getItem("agenda-conseil:password");
   if (!pw) return null;
   const member = await db.findMemberByPassword(pw);
-  if (!member || !toolsFor(member).includes(EMBED)) return null;
+  const cfg = await db.getConfig().catch(() => null);
+  if (!member || !toolsFor(member, (cfg && cfg.hiddenTools) || []).includes(EMBED)) return null;
   return { isAdmin: !!member.isAdmin, role: member.role || "", embed: EMBED };
 }
 
@@ -418,7 +419,31 @@ function runAdmin() {
   let currentAgendaProposals = [];
 
   // ---------- Fenêtre glissante ----------
+  // ---------- Onglets / outils masqués (pas encore aboutis) ----------
+  const HIDEABLE = [
+    ...Object.entries(TOOL_LABELS).map(([id, label]) => ({ id, label: `Outil ${label}` })),
+    { id: "tab:roles", label: "Onglet 👥 Disponibilités (présidente / VP)" },
+  ];
+  const hiddenToolsList = document.getElementById("hidden-tools-list");
+  const hiddenToolsStatus = document.getElementById("hidden-tools-status");
+  function renderHiddenTools(config) {
+    const hidden = new Set((config && config.hiddenTools) || []);
+    hiddenToolsList.innerHTML = HIDEABLE.map((t) => `<label class="checkbox-group"><input type="checkbox" value="${t.id}"${hidden.has(t.id) ? "" : " checked"}> ${t.label}</label>`).join("");
+  }
+  document.getElementById("hidden-tools-save").addEventListener("click", async () => {
+    const hiddenTools = [...hiddenToolsList.querySelectorAll("input")].filter((i) => !i.checked).map((i) => i.value);
+    hiddenToolsStatus.textContent = "Enregistrement…";
+    try {
+      await db.saveConfig({ ...currentConfig, hiddenTools });
+      hiddenToolsStatus.textContent = hiddenTools.length ? `Enregistré ✓ — ${hiddenTools.length} élément(s) masqué(s) pour les conseillers.` : "Enregistré ✓ — tout est visible.";
+    } catch (err) {
+      console.error(err);
+      hiddenToolsStatus.textContent = "Échec de l'enregistrement.";
+    }
+  });
+
   function fillConfigForm(config) {
+    renderHiddenTools(config);
     rangeSelect.value = String((config && config.rangeDays) || 90);
     weekendToggle.checked = !!(config && config.includeWeekends);
     agendaTabToggle.checked = !!(config && config.agendaTabEnabled);
