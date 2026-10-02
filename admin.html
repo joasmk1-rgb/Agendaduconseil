@@ -329,7 +329,16 @@
             <button type="button" id="poll-type-choice" class="mode-btn active" data-polltype="choice">Choix (options)</button>
             <button type="button" id="poll-type-yesno" class="mode-btn" data-polltype="yesno">Oui / Non</button>
             <button type="button" id="poll-type-text" class="mode-btn" data-polltype="text">Réponse libre</button>
+            <button type="button" id="poll-type-vote" class="mode-btn" data-polltype="vote">🗳️ Vote en réunion</button>
           </div>
+        </div>
+        <div id="poll-vote-options" class="control-group hidden">
+          <p class="hint">Pour / Contre / Abstention. Seuls les membres marqués <strong>présents</strong> dans la réunion peuvent voter, et celui qui porte une procuration vote aussi pour l'absent (présences et procurations : outil Réunions).</p>
+          <label>Réunion <select id="poll-vote-meeting"></select></label>
+          <label>Adoption <select id="poll-vote-majority">
+            <option value="simple">Majorité simple (plus de Pour que de Contre)</option>
+            <option value="2/3">Majorité des 2/3 (abstentions non comptées)</option>
+          </select></label>
         </div>
         <div id="poll-choice-options" class="control-group">
           <label>Options (une par ligne)</label>

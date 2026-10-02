@@ -1123,6 +1123,34 @@ function renderAvailabilityBanner() {
 // voit (côté admin.js).
 const editingPolls = new Set();
 
+// Vote en réunion : je vote si je suis marqué présent, et je porte aussi la
+// voix de ceux qui m'ont donné procuration (meeting.proxies = { absent: porteur }).
+const voterNames = new Map();
+function myVoters(poll) {
+  const meeting = (state.meetings || []).find((m) => m.id === poll.meetingId);
+  if (!meeting || !state.password) return [];
+  const att = meeting.attendance || {};
+  if (att[state.password] !== "present") return [];
+  const out = [{ id: state.password }];
+  Object.entries(meeting.proxies || {}).forEach(([absent, holder]) => {
+    if (holder === state.password) out.push({ id: absent });
+  });
+  out.forEach((v) => {
+    if (v.id !== state.password && !voterNames.has(v.id)) {
+      voterNames.set(v.id, "…");
+      db.findMemberByPassword(v.id).then((m) => {
+        voterNames.set(v.id, (m && m.name) || "un absent");
+        renderPollBanner();
+      }).catch(() => {});
+    }
+  });
+  return out;
+}
+function voterName(id) {
+  if (id === state.password) return state.name;
+  return voterNames.get(id) || "un absent";
+}
+
 function renderPollBanner() {
   if (!state.password) {
     pollBanner.classList.add("hidden");
@@ -1133,7 +1161,7 @@ function renderPollBanner() {
   const myAnswer = (p) => (p.responses || []).find((r) => r.password === state.password);
   // Les sondages de date restent visibles après réponse (réduits, avec
   // "Modifier") : on peut changer d'avis ou passer au calendrier.
-  const unanswered = open.filter((p) => !myAnswer(p) || p.type === "date");
+  const unanswered = open.filter((p) => (p.type === "vote" ? myVoters(p).length > 0 : !myAnswer(p) || p.type === "date"));
   if (!unanswered.length) {
     pollBanner.classList.add("hidden");
     pollBanner.innerHTML = "";
@@ -1143,6 +1171,17 @@ function renderPollBanner() {
   pollBanner.innerHTML = unanswered
     .map((poll) => {
       let fieldsHtml = "";
+      if (poll.type === "vote") {
+        const meeting = (state.meetings || []).find((m) => m.id === poll.meetingId);
+        const rows = myVoters(poll).map((v) => {
+          const cur = ((poll.responses || []).find((r) => r.password === v.id) || {}).answer;
+          const who = v.id === state.password ? "Mon vote" : `Procuration : vote pour ${voterName(v.id)}`;
+          return `<div class="vote-row"><span class="vote-who">${who}</span>${["Pour", "Contre", "Abstention"]
+            .map((o) => `<button type="button" class="btn btn-sm vote-btn vote-${o.toLowerCase()}${cur === o ? " on" : ""}" data-poll="${poll.id}" data-voter="${v.id}" data-answer="${o}">${{ Pour: "👍 Pour", Contre: "👎 Contre", Abstention: "🤷 Abstention" }[o]}</button>`)
+            .join("")}${cur ? '<span class="vote-done">✓ enregistré</span>' : ""}</div>`;
+        }).join("");
+        return `<div class="avail-request-item vote-item" data-poll-id="${poll.id}"><div class="vote-head">🗳️ <strong>Vote en cours</strong> : ${poll.question}${meeting ? ` <span class="hint">(réunion du ${meeting.date})</span>` : ""}</div>${rows}<p class="hint">Tu peux changer ton vote tant qu'il est ouvert.</p></div>`;
+      }
       if (poll.type === "date") {
         const mine = myAnswer(poll);
         const calBtn = poll.search
@@ -1207,6 +1246,17 @@ function renderPollBanner() {
     })
     .join("");
 
+  pollBanner.querySelectorAll(".vote-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        await db.submitPollResponse(btn.dataset.poll, btn.dataset.voter, voterName(btn.dataset.voter), btn.dataset.answer);
+      } catch (err) {
+        alert(err.message || "Échec du vote, réessaie.");
+      }
+      btn.disabled = false;
+    });
+  });
   pollBanner.querySelectorAll(".dp").forEach((box) => {
     const update = () => {
       const n = box.querySelectorAll(".dp-chip input:checked").length;
@@ -2593,6 +2643,7 @@ db.listenPolls((polls) => {
 db.listenMeetings((meetings) => {
   state.meetings = meetings;
   renderMemberDashboard();
+  renderPollBanner();
   if (state.activeTab === "agenda") renderAgendaTab();
 });
 db.listenAgendaItems((items) => {

@@ -899,3 +899,15 @@ body.embedded { min-height: 0 !important; }
 .role-tools-table th, .role-tools-table td { padding: 5px 10px; border-bottom: 1px solid var(--color-border); text-align: center; }
 .role-tools-table td:first-child, .role-tools-table th:first-child { text-align: left; }
 .hidden-tools-list { display: block; overflow-x: auto; }
+
+/* Vote en réunion */
+.vote-item { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.vote-head { font-size: 1rem; }
+.vote-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.vote-who { min-width: 160px; font-weight: 600; font-size: 0.9rem; }
+.vote-btn { border: 2px solid var(--color-border); background: #fff; min-height: 40px; padding: 6px 14px; font-weight: 600; }
+.vote-btn.vote-pour.on { background: #16a34a; border-color: #16a34a; color: #fff; }
+.vote-btn.vote-contre.on { background: #dc2626; border-color: #dc2626; color: #fff; }
+.vote-btn.vote-abstention.on { background: #64748b; border-color: #64748b; color: #fff; }
+.vote-done { font-size: 0.8rem; color: #15803d; }
+.vote-summary { margin: 4px 0 8px; }

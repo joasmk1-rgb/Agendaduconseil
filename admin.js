@@ -297,6 +297,10 @@ function runAdmin() {
   const pollTypeYesnoBtn = document.getElementById("poll-type-yesno");
   const pollTypeTextBtn = document.getElementById("poll-type-text");
   const pollChoiceOptions = document.getElementById("poll-choice-options");
+  const pollTypeVoteBtn = document.getElementById("poll-type-vote");
+  const pollVoteOptions = document.getElementById("poll-vote-options");
+  const pollVoteMeeting = document.getElementById("poll-vote-meeting");
+  const pollVoteMajority = document.getElementById("poll-vote-majority");
   const pollOptionsInput = document.getElementById("poll-options-input");
   const pollMultipleInput = document.getElementById("poll-multiple-input");
   const pollSubmitBtn = document.getElementById("poll-submit-btn");
@@ -4426,7 +4430,10 @@ function runAdmin() {
 
   function setPollType(type) {
     pollType = type;
-    [pollTypeChoiceBtn, pollTypeYesnoBtn, pollTypeTextBtn].forEach((btn) => btn.classList.remove("active"));
+    [pollTypeChoiceBtn, pollTypeYesnoBtn, pollTypeTextBtn, pollTypeVoteBtn].forEach((btn) => btn.classList.remove("active"));
+    if (type === "vote") pollTypeVoteBtn.classList.add("active");
+    pollVoteOptions.classList.toggle("hidden", type !== "vote");
+    if (type === "vote") fillVoteMeetingSelect();
     if (type === "choice") pollTypeChoiceBtn.classList.add("active");
     if (type === "yesno") pollTypeYesnoBtn.classList.add("active");
     if (type === "text") pollTypeTextBtn.classList.add("active");
@@ -4435,6 +4442,42 @@ function runAdmin() {
   pollTypeChoiceBtn.addEventListener("click", () => setPollType("choice"));
   pollTypeYesnoBtn.addEventListener("click", () => setPollType("yesno"));
   pollTypeTextBtn.addEventListener("click", () => setPollType("text"));
+  pollTypeVoteBtn.addEventListener("click", () => setPollType("vote"));
+
+  // ---------- Vote en réunion ----------
+  // Un sondage de type "vote" lié à une réunion : votants = membres
+  // "present" dans meeting.attendance ; une procuration (meeting.proxies =
+  // { absent: porteur }) donne au porteur la voix de l'absent. Les votes
+  // d'un absent sont enregistrés à son nom (r.password = l'absent).
+  function meetingLabel(m) {
+    const ev = currentEvents.find((e) => e.id === m.eventId);
+    return `${m.date || "?"} — ${ev ? ev.label : "Réunion"}`;
+  }
+  function fillVoteMeetingSelect() {
+    const todayISO = Grid.toISODate(new Date());
+    const list = currentMeetings.slice().sort((a, b) => Math.abs(Date.parse(a.date) - Date.parse(todayISO)) - Math.abs(Date.parse(b.date) - Date.parse(todayISO)));
+    pollVoteMeeting.innerHTML = list.length
+      ? list.map((m) => `<option value="${m.id}">${meetingLabel(m)}</option>`).join("")
+      : `<option value="">Aucune réunion — crée-la d'abord dans Réunions</option>`;
+  }
+  function voteEligible(poll) {
+    const meeting = currentMeetings.find((m) => m.id === poll.meetingId);
+    if (!meeting) return [];
+    const att = meeting.attendance || {};
+    const proxies = meeting.proxies || {};
+    const ids = new Set(Object.keys(att).filter((id) => att[id] === "present"));
+    Object.entries(proxies).forEach(([absent, holder]) => {
+      if (att[holder] === "present") ids.add(absent);
+    });
+    return currentMembers.filter((m) => ids.has(m.id));
+  }
+  function voteVerdict(poll, counts) {
+    const pour = counts.Pour || 0;
+    const contre = counts.Contre || 0;
+    if (!pour && !contre) return "—";
+    const ok = poll.majority === "2/3" ? pour * 3 >= (pour + contre) * 2 : pour > contre;
+    return ok ? "✅ Adopté" : "❌ Rejeté";
+  }
 
   pollSubmitBtn.addEventListener("click", async () => {
     const question = pollQuestionInput.value.trim();
@@ -4443,6 +4486,16 @@ function runAdmin() {
       return;
     }
     const payload = { question, type: pollType };
+    if (pollType === "vote") {
+      if (!pollVoteMeeting.value) {
+        alert("Choisis la réunion (ou crée-la d'abord dans Réunions).");
+        return;
+      }
+      payload.meetingId = pollVoteMeeting.value;
+      payload.majority = pollVoteMajority.value;
+      payload.options = ["Pour", "Contre", "Abstention"];
+      payload.status = "open";
+    }
     if (pollType === "choice") {
       const options = pollOptionsInput.value
         .split("\n")
@@ -4478,12 +4531,13 @@ function runAdmin() {
   function summarizePoll(poll) {
     const responses = poll.responses || [];
     const respondedIds = new Set(responses.map((r) => r.password));
-    const notResponded = currentMembers.filter((m) => !respondedIds.has(m.id));
+    const expected = poll.type === "vote" ? voteEligible(poll) : currentMembers;
+    const notResponded = expected.filter((m) => !respondedIds.has(m.id));
     if (poll.type === "text") {
       return { notResponded, texts: responses.map((r) => ({ name: r.name, answer: r.answer })) };
     }
     // choice / yesno : compte par option
-    const options = poll.type === "yesno" ? ["Oui", "Non"] : poll.options || [];
+    const options = poll.type === "yesno" ? ["Oui", "Non"] : poll.type === "vote" ? ["Pour", "Contre", "Abstention"] : poll.options || [];
     const counts = {};
     options.forEach((o) => (counts[o] = 0));
     responses.forEach((r) => {
@@ -4528,6 +4582,12 @@ function runAdmin() {
           : "<li>Aucune réponse.</li>") +
         "</ul>";
     }
+    if (poll.type === "vote") {
+      const expected = voteEligible(poll).length;
+      const head = `<p class="vote-summary"><strong>${(poll.responses || []).length} / ${expected}</strong> votes · ${poll.majority === "2/3" ? "majorité des 2/3" : "majorité simple"} · <strong>${voteVerdict(poll, summary.counts)}</strong>${poll.status === "open" ? " (provisoire, vote ouvert)" : ""}</p>`;
+      const noVoters = expected ? "" : '<p class="hint">⚠️ Personne n\'est marqué présent dans cette réunion : coche les présences dans Réunions pour que les membres puissent voter.</p>';
+      return `${head}${noVoters}${barsHtml}${detailHtml}${notRespondedHtml.replace("N'ont pas répondu", "N'ont pas encore voté")}`;
+    }
     return `${barsHtml}${detailHtml}${notRespondedHtml}`;
   }
 
@@ -4539,7 +4599,7 @@ function runAdmin() {
       .forEach((poll) => {
         const li = document.createElement("li");
         li.className = "poll-item";
-        const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre" }[poll.type] || poll.type;
+        const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre", vote: "🗳️ Vote" }[poll.type] || poll.type;
         const statusLabel = poll.status === "open" ? "🟢 ouvert" : "⚪ fermé";
         li.innerHTML = `<div class="poll-item-header"><strong>${poll.question}</strong> <span class="hint">(${typeLabel} — ${statusLabel})</span></div>`;
 
@@ -4882,6 +4942,7 @@ function runAdmin() {
 
   db.listenMeetings((meetings) => {
     currentMeetings = meetings;
+    renderPolls();
     renderMeetings();
     renderDecisionMeetingSelect();
     renderProjectView();
