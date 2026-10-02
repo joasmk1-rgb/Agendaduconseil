@@ -17,6 +17,7 @@
     <button type="button" class="public-tab-btn hidden" id="agenda-tab-btn" data-tab="agenda">📝 Ordre du jour</button>
     <button type="button" class="public-tab-btn hidden" id="tasks-tab-btn" data-tab="tasks">📋 Tâches</button>
     <button type="button" class="public-tab-btn hidden" id="roles-tab-btn" data-tab="roles">👥 Disponibilités</button>
+    <button type="button" class="public-tab-btn hidden" id="tools-tab-btn" data-tab="tools">🛠️ Outils</button>
   </nav>
 
   <section class="controls">
@@ -161,10 +162,12 @@
       <select id="roles-event-select"></select>
     </div>
     <div id="roles-event-result"></div>
+  </section>
 
-    <h2>Trouver une date de réunion</h2>
-    <p class="hint">Plage de dates → les membres sont prévenus et remplissent leurs dispos → une dizaine de créneaux libres proposés → sondage à publier quand il y a assez de réponses → la réunion est créée.</p>
-    <p><a href="admin.html#find-date" class="btn btn-primary btn-sm">📆 Ouvrir "Trouver une date"</a></p>
+  <section id="tools-tab-panel" class="tools-tab-panel hidden" data-tab-panel="tools">
+    <div id="tools-picker" class="tools-picker" role="tablist" aria-label="Outils"></div>
+    <p id="tools-hint" class="hint">Choisis un outil ci-dessus.</p>
+    <iframe id="tools-frame" class="tools-frame hidden" title="Outil du conseil"></iframe>
   </section>
 
   <div id="profile-modal-overlay" class="agenda-modal-overlay hidden">

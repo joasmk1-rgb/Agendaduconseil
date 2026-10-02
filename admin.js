@@ -1,5 +1,12 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor } from "./config.js";
+
+// Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
+// "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
+// Pas de menu, pas de mot de passe redemandé : on reprend la connexion du
+// membre sur le site, et seul l'outil demandé est affiché.
+const EMBED = new URLSearchParams(location.search).get("embed");
+if (EMBED) document.body.classList.add("embedded");
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
 import * as Courses from "./courses.js";
@@ -63,19 +70,29 @@ import * as Courses from "./courses.js";
 // vraie barrière de sécurité (les règles Firestore, elles, autorisent déjà
 // ces lectures/écritures à tout le monde) — juste pour ne pas encombrer/
 // perturber quelqu'un avec des sections qui ne le concernent pas.
-const ROLE_ADMIN_VIEWS = {
-  secretaire: ["meetings", "agenda-proposals", "import", "availability"],
-  tresorier: ["projects", "export"],
-  communication: ["tasks", "projects"],
-  presidente: ["find-date"],
-  "vice-presidente": ["find-date"],
-};
+// Postes → outils : défini une seule fois dans config.js (ROLE_TOOLS),
+// partagé avec l'onglet "🛠️ Outils" du site public.
+const ROLE_ADMIN_VIEWS = Object.fromEntries(["presidente", "vice-presidente", "secretaire", "tresorier", "communication"].map((r) => [r, toolsFor({ role: r })]));
+
+async function checkEmbedAccess() {
+  const pw = localStorage.getItem("agenda-conseil:password");
+  if (!pw) return null;
+  const member = await db.findMemberByPassword(pw);
+  if (!member || !toolsFor(member).includes(EMBED)) return null;
+  return { isAdmin: !!member.isAdmin, role: member.role || "", embed: EMBED };
+}
 
 async function checkAccess() {
+  if (EMBED) return checkEmbedAccess();
   const cachedRaw = sessionStorage.getItem("agenda-admin-access");
   if (sessionStorage.getItem("agenda-admin-auth") === "ok" && cachedRaw) {
     try {
-      return JSON.parse(cachedRaw);
+      const cached = JSON.parse(cachedRaw);
+      // Ancien accès "poste" mémorisé : la page admin est désormais réservée
+      // aux admins, on redemande.
+      if (cached && cached.isAdmin) return cached;
+      sessionStorage.removeItem("agenda-admin-auth");
+      sessionStorage.removeItem("agenda-admin-access");
     } catch (err) {
       // valeur corrompue : on retombe sur une nouvelle demande de mot de passe
     }
@@ -85,7 +102,12 @@ async function checkAccess() {
     if (entered === null) break;
     const trimmed = entered.trim();
     const member = await db.findMemberByPassword(trimmed);
-    if (member && (member.isAdmin || ROLE_ADMIN_VIEWS[member.role])) {
+    if (member && !member.isAdmin && ROLE_ADMIN_VIEWS[member.role]) {
+      alert("Tes outils sont maintenant directement sur le site : connecte-toi et ouvre l'onglet « 🛠️ Outils ». La page admin est réservée aux admins.");
+      location.href = "index.html";
+      return null;
+    }
+    if (member && member.isAdmin) {
       const access = { isAdmin: !!member.isAdmin, role: member.role || "" };
       sessionStorage.setItem("agenda-admin-auth", "ok");
       sessionStorage.setItem("agenda-admin-access", JSON.stringify(access));
@@ -114,6 +136,7 @@ function applyAdminPermissions(access) {
   const allowed = new Set(["dashboard", ...(ROLE_ADMIN_VIEWS[access.role] || [])]);
   document.querySelectorAll(".nav-item").forEach((btn) => {
     if (!btn.dataset.view) return; // ex: le lien "Retour au site public", jamais restreint
+    if (access.embed) return;
     if (!allowed.has(btn.dataset.view)) btn.classList.add("hidden");
   });
 }
@@ -126,8 +149,28 @@ checkAccess().then((access) => {
     document.getElementById("admin-app").classList.remove("hidden");
     applyAdminPermissions(access);
     runAdmin();
+    if (access.embed && window.showAdminView) {
+      window.showAdminView(access.embed);
+      reportEmbedHeight();
+    }
   }
 });
+
+// En mode intégré : on signale sa hauteur à la page publique pour que le
+// cadre s'ajuste (pas de double barre de défilement).
+function reportEmbedHeight() {
+  const send = () => {
+    try {
+      // Hauteur du contenu seul (pas de la fenêtre, sinon le cadre grandirait à l'infini).
+      const app = document.getElementById("admin-app");
+      const h = app ? app.getBoundingClientRect().height + app.offsetTop + 24 : document.body.scrollHeight;
+      window.parent.postMessage({ type: "agenda-embed-height", height: h }, location.origin);
+    } catch (err) { /* pas dans un cadre */ }
+  };
+  send();
+  if (window.ResizeObserver) new ResizeObserver(send).observe(document.body);
+  setInterval(send, 1500);
+}
 
 // ---------- Parseur CSV maison (pas de librairie, même esprit que ics.js) ----------
 // Détecte automatiquement le séparateur (, ou ;) sur la ligne d'en-tête —

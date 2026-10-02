@@ -875,3 +875,21 @@ body.phone-view .grid-row::after { content: "⇕"; position: sticky; top: 45vh; 
 .grid-scroll { padding-left: 0; padding-right: 0; }
 .grid-row { padding: 0 20px; }
 body.phone-view .grid-row { padding: 0; }
+
+/* ---------- Onglet "🛠️ Outils" (site public) ---------- */
+.tools-tab-panel { padding: 10px 20px 30px; display: flex; flex-direction: column; gap: 10px; }
+.tools-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.tools-picker .tool-btn { border: 1px solid var(--color-border); border-radius: 999px; padding: 6px 12px; background: var(--color-surface); }
+.tools-picker .tool-btn.active { background: var(--uc-navy); color: #fff; border-color: var(--uc-navy); }
+.tools-frame { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-bg); min-height: 200px; }
+.tools-frame.hidden { display: none; }
+
+/* ---------- admin.html intégré dans l'onglet Outils ---------- */
+body.embedded .app-header.admin,
+body.embedded #nav-drawer,
+body.embedded #nav-overlay,
+body.embedded .nav-item-link { display: none !important; }
+body.embedded { background: var(--color-bg); }
+body.embedded #access-denied::after { content: " Connecte-toi d'abord sur le site."; }
+body.embedded footer, body.embedded .footer { display: none !important; }
+body.embedded { min-height: 0 !important; }

@@ -18,3 +18,37 @@ export const CONFIG = {
 // admin se fait avec le mot de passe personnel du·de la membre coché·e Admin,
 // il n'y a plus aucun mot de passe admin écrit en clair dans le code.
 export const ADMIN_PASSPHRASE = "conseil2026";
+
+// Outils de l'admin accessibles depuis le site public (onglet "🛠️ Outils")
+// selon le poste. Un membre coché "Admin" a tout, y compris la page admin.
+// Les postes n'ont PAS accès à admin.html : seulement à ces outils, intégrés
+// dans le site (admin.html?embed=<outil>).
+export const TOOL_LABELS = {
+  dashboard: "📊 Tableau de bord",
+  "find-date": "📆 Trouver une date",
+  polls: "📝 Sondages",
+  meetings: "🗓️ Réunions",
+  "agenda-proposals": "💬 Suggestions ODJ",
+  tasks: "📋 Tâches",
+  projects: "📁 Dossiers",
+  decisions: "🗳️ Décisions",
+  events: "📅 Événements",
+  availability: "✅ Disponibilités",
+  members: "👥 Membres",
+  import: "📥 Import",
+  export: "📤 Export",
+  settings: "⚙️ Paramètres",
+};
+const ALL_TOOLS = Object.keys(TOOL_LABELS);
+export const ROLE_TOOLS = {
+  presidente: ALL_TOOLS,
+  "vice-presidente": ALL_TOOLS,
+  secretaire: ["find-date", "polls", "meetings", "agenda-proposals", "availability", "import"],
+  tresorier: ["projects", "export"],
+  communication: ["tasks", "projects"],
+};
+export function toolsFor(member) {
+  if (!member) return [];
+  if (member.isAdmin) return ALL_TOOLS;
+  return ROLE_TOOLS[member.role] || [];
+}

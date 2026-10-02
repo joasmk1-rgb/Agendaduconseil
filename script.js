@@ -1,7 +1,7 @@
 // ===================== SCRIPT.JS (page membre) =====================
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { CONFIG } from "./config.js";
+import { CONFIG, TOOL_LABELS, toolsFor } from "./config.js";
 import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
@@ -1293,6 +1293,47 @@ publicTabs.addEventListener("click", (e) => {
 // ne sert à rien tant que l'admin n'a activé aucun onglet optionnel et que le
 // membre connecté n'a pas un poste donnant accès à "Disponibilités" — dans ce
 // cas, un seul bouton "Calendrier" cliquable n'apporterait rien.
+// ===================== ONGLET "🛠️ OUTILS" (postes) =====================
+// Les outils de l'admin, intégrés dans le site selon le poste (config.js →
+// ROLE_TOOLS) : un sélecteur + un cadre qui affiche admin.html?embed=<outil>.
+// Personne d'autre que les admins n'a besoin d'aller sur la page admin.
+const toolsTabBtn = document.getElementById("tools-tab-btn");
+const toolsPicker = document.getElementById("tools-picker");
+const toolsFrame = document.getElementById("tools-frame");
+const toolsHint = document.getElementById("tools-hint");
+let currentTool = null;
+let renderedToolsKey = "";
+function renderToolsPicker(tools) {
+  const key = tools.join(",");
+  if (key === renderedToolsKey) return;
+  renderedToolsKey = key;
+  toolsPicker.innerHTML = tools
+    .map((t) => `<button type="button" class="mode-btn tool-btn${t === currentTool ? " active" : ""}" data-tool="${t}">${TOOL_LABELS[t] || t}</button>`)
+    .join("");
+  if (currentTool && !tools.includes(currentTool)) {
+    currentTool = null;
+    toolsFrame.classList.add("hidden");
+    toolsFrame.removeAttribute("src");
+    toolsHint.classList.remove("hidden");
+  }
+}
+function openTool(tool) {
+  currentTool = tool;
+  toolsPicker.querySelectorAll(".tool-btn").forEach((b) => b.classList.toggle("active", b.dataset.tool === tool));
+  toolsHint.classList.add("hidden");
+  toolsFrame.classList.remove("hidden");
+  toolsFrame.style.height = "300px";
+  toolsFrame.src = `admin.html?embed=${encodeURIComponent(tool)}`;
+}
+toolsPicker.addEventListener("click", (e) => {
+  const btn = e.target.closest(".tool-btn");
+  if (btn) openTool(btn.dataset.tool);
+});
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== "agenda-embed-height") return;
+  toolsFrame.style.height = `${Math.max(200, Math.ceil(e.data.height) + 8)}px`;
+});
+
 function applyPublicTabsVisibility() {
   const agendaEnabled = !!(state.config && state.config.agendaTabEnabled);
   const tasksEnabled = !!(state.config && state.config.tasksTabEnabled);
@@ -1303,7 +1344,11 @@ function applyPublicTabsVisibility() {
   tasksTabBtn.classList.toggle("hidden", !tasksEnabled);
   rolesTabBtn.classList.toggle("hidden", !rolesEnabled);
   if (rolesEnabled) ensureRolesDataLoaded();
-  publicTabs.classList.toggle("hidden", !agendaEnabled && !tasksEnabled && !rolesEnabled);
+  const tools = state.password ? toolsFor({ isAdmin: state.isAdmin, role: state.role }) : [];
+  toolsTabBtn.classList.toggle("hidden", !tools.length);
+  renderToolsPicker(tools);
+  if (!tools.length && state.activeTab === "tools") switchTab("calendar");
+  publicTabs.classList.toggle("hidden", !agendaEnabled && !tasksEnabled && !rolesEnabled && !tools.length);
   if (!agendaEnabled && state.activeTab === "agenda") switchTab("calendar");
   if (!tasksEnabled && state.activeTab === "tasks") switchTab("calendar");
   if (!rolesEnabled && state.activeTab === "roles") switchTab("calendar");
