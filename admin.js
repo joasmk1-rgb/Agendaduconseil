@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -301,6 +301,10 @@ function runAdmin() {
   const pollVoteOptions = document.getElementById("poll-vote-options");
   const pollVoteMeeting = document.getElementById("poll-vote-meeting");
   const pollVoteMajority = document.getElementById("poll-vote-majority");
+  const pollPlanMode = document.getElementById("poll-plan-mode");
+  const pollPlanLink = document.getElementById("poll-plan-link");
+  const pollPlanOpen = document.getElementById("poll-plan-open");
+  const pollPlanOpenWrap = document.getElementById("poll-plan-open-wrap");
   const pollOptionsInput = document.getElementById("poll-options-input");
   const pollMultipleInput = document.getElementById("poll-multiple-input");
   const pollSubmitBtn = document.getElementById("poll-submit-btn");
@@ -4367,6 +4371,10 @@ function runAdmin() {
         autoTaskPayload({ meetingId, label: "📋 Préparer l'ordre du jour", dateISO: odjDate, meetingLabel: `${poll.question} (${slot.date})` })
       );
       await db.updatePoll(poll.id, { status: "done", chosen: slot, meetingId });
+      // Votes / sondages préparés pour cette réunion avant que la date soit fixée.
+      await Promise.all(
+        currentPolls.filter((p) => p.searchId === poll.id).map((p) => db.updatePoll(p.id, { meetingId, searchId: null }))
+      );
     } catch (err) {
       console.error(err);
       alert("Échec de la création de la réunion, réessaie.");
@@ -4444,6 +4452,49 @@ function runAdmin() {
   pollTypeTextBtn.addEventListener("click", () => setPollType("text"));
   pollTypeVoteBtn.addEventListener("click", () => setPollType("vote"));
 
+  // ---------- Planification des sondages ----------
+  const pollPlanClose = document.getElementById("poll-plan-close");
+  function fillPlanLinkSelect() {
+    const todayISO = Grid.toISODate(new Date());
+    const meetings = currentMeetings.filter((m) => (m.date || "") >= todayISO).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    const events = currentEvents.filter((e) => (e.date || "") >= todayISO).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    const searches = currentPolls.filter((p) => p.type === "date" && (p.status === "collecting" || p.status === "open"));
+    const keep = pollPlanLink.value;
+    pollPlanLink.innerHTML =
+      '<option value="">Rien de particulier</option>' +
+      searches.map((p) => `<option value="search:${p.id}">📆 ${p.question} (date pas encore fixée)</option>`).join("") +
+      meetings.map((m) => `<option value="meeting:${m.id}">🗓️ Réunion du ${m.date}</option>`).join("") +
+      events.map((e) => `<option value="event:${e.id}">📅 ${e.label} (${e.date})</option>`).join("");
+    if ([...pollPlanLink.options].some((o) => o.value === keep)) pollPlanLink.value = keep;
+  }
+  function syncPlanUi() {
+    pollPlanOpenWrap.classList.toggle("hidden", pollPlanMode.value !== "time");
+    fillPlanLinkSelect();
+  }
+  pollPlanMode.addEventListener("change", syncPlanUi);
+  pollPlanLink.addEventListener("focus", fillPlanLinkSelect);
+  syncPlanUi();
+  function fmtDT(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return `${d.toLocaleDateString("fr-BE", { weekday: "short", day: "numeric", month: "short" })} à ${d.toTimeString().slice(0, 5).replace(":", "h")}`;
+  }
+  function pollLinkLabel(poll) {
+    if (poll.meetingId) {
+      const m = currentMeetings.find((x) => x.id === poll.meetingId);
+      return m ? `réunion du ${m.date}` : "réunion";
+    }
+    if (poll.searchId) {
+      const p = currentPolls.find((x) => x.id === poll.searchId);
+      return p ? `« ${p.question} » (date pas encore fixée)` : "réunion à planifier";
+    }
+    if (poll.eventId) {
+      const e = currentEvents.find((x) => x.id === poll.eventId);
+      return e ? `${e.label} (${e.date})` : "événement";
+    }
+    return "";
+  }
+
   // ---------- Vote en réunion ----------
   // Un sondage de type "vote" lié à une réunion : votants = membres
   // "present" dans meeting.attendance ; une procuration (meeting.proxies =
@@ -4456,9 +4507,11 @@ function runAdmin() {
   function fillVoteMeetingSelect() {
     const todayISO = Grid.toISODate(new Date());
     const list = currentMeetings.slice().sort((a, b) => Math.abs(Date.parse(a.date) - Date.parse(todayISO)) - Math.abs(Date.parse(b.date) - Date.parse(todayISO)));
-    pollVoteMeeting.innerHTML = list.length
-      ? list.map((m) => `<option value="${m.id}">${meetingLabel(m)}</option>`).join("")
-      : `<option value="">Aucune réunion — crée-la d'abord dans Réunions</option>`;
+    const searches = currentPolls.filter((p) => p.type === "date" && (p.status === "collecting" || p.status === "open"));
+    pollVoteMeeting.innerHTML =
+      list.map((m) => `<option value="${m.id}">${meetingLabel(m)}</option>`).join("") +
+      searches.map((p) => `<option value="search:${p.id}">📆 ${p.question} (date pas encore fixée)</option>`).join("") ||
+      `<option value="">Aucune réunion — crée-la d'abord dans Réunions</option>`;
   }
   function voteEligible(poll) {
     const meeting = currentMeetings.find((m) => m.id === poll.meetingId);
@@ -4491,11 +4544,28 @@ function runAdmin() {
         alert("Choisis la réunion (ou crée-la d'abord dans Réunions).");
         return;
       }
-      payload.meetingId = pollVoteMeeting.value;
+      if (pollVoteMeeting.value.startsWith("search:")) payload.searchId = pollVoteMeeting.value.slice(7);
+      else payload.meetingId = pollVoteMeeting.value;
       payload.majority = pollVoteMajority.value;
       payload.options = ["Pour", "Contre", "Abstention"];
       payload.status = "open";
     }
+    // Planification
+    const mode = pollPlanMode.value;
+    if (mode === "manual") payload.status = "planned";
+    if (mode === "time") {
+      if (!pollPlanOpen.value) {
+        alert("Choisis la date et l'heure d'ouverture.");
+        return;
+      }
+      payload.status = "planned";
+      payload.openAt = pollPlanOpen.value;
+    }
+    if (pollPlanClose.value) payload.closeAt = pollPlanClose.value;
+    const link = pollPlanLink.value;
+    if (link.startsWith("event:")) payload.eventId = link.slice(6);
+    if (link.startsWith("meeting:") && !payload.meetingId) payload.meetingId = link.slice(8);
+    if (link.startsWith("search:") && !payload.searchId && !payload.meetingId) payload.searchId = link.slice(7);
     if (pollType === "choice") {
       const options = pollOptionsInput.value
         .split("\n")
@@ -4514,6 +4584,10 @@ function runAdmin() {
       pollForm.reset();
       pollOptionsInput.value = "";
       pollMultipleInput.checked = false;
+      pollPlanMode.value = "now";
+      pollPlanOpen.value = "";
+      pollPlanClose.value = "";
+      syncPlanUi();
       setPollType("choice");
     } catch (err) {
       console.error(err);
@@ -4528,6 +4602,8 @@ function runAdmin() {
   // moment).
   const pollDetailView = new Set();
   const openVoteEntry = new Set(); // panneaux "saisir les votes" laissés ouverts
+  // Les sondages planifiés s'ouvrent / se ferment à l'heure : on rafraîchit.
+  setInterval(() => renderPolls(), 60000);
 
   function summarizePoll(poll) {
     const responses = poll.responses || [];
@@ -4585,7 +4661,7 @@ function runAdmin() {
     }
     if (poll.type === "vote") {
       const expected = voteEligible(poll).length;
-      const head = `<p class="vote-summary"><strong>${(poll.responses || []).length} / ${expected}</strong> votes · ${poll.majority === "2/3" ? "majorité des 2/3" : "majorité simple"} · <strong>${voteVerdict(poll, summary.counts)}</strong>${poll.status === "open" ? " (provisoire, vote ouvert)" : ""}</p>`;
+      const head = `<p class="vote-summary"><strong>${(poll.responses || []).length} / ${expected}</strong> votes · ${poll.majority === "2/3" ? "majorité des 2/3" : "majorité simple"} · <strong>${voteVerdict(poll, summary.counts)}</strong>${pollStatus(poll) === "open" ? " (provisoire, vote ouvert)" : ""}</p>`;
       const noVoters = expected ? "" : '<p class="hint">⚠️ Personne n\'est marqué présent dans cette réunion : coche les présences dans Réunions pour que les membres puissent voter.</p>';
       return `${head}${noVoters}${barsHtml}${detailHtml}${notRespondedHtml.replace("N'ont pas répondu", "N'ont pas encore voté")}`;
     }
@@ -4601,7 +4677,12 @@ function runAdmin() {
         const li = document.createElement("li");
         li.className = "poll-item";
         const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre", vote: "🗳️ Vote" }[poll.type] || poll.type;
-        const statusLabel = poll.status === "open" ? "🟢 ouvert" : "⚪ fermé";
+        const st = pollStatus(poll);
+        const link = pollLinkLabel(poll);
+        const statusLabel =
+          (st === "open" ? "🟢 ouvert" : st === "planned" ? `📅 planifié${poll.openAt ? ` — s'ouvre ${fmtDT(poll.openAt)}` : " — à ouvrir toi-même"}` : "⚪ fermé") +
+          (poll.closeAt && st !== "closed" ? ` · se ferme ${fmtDT(poll.closeAt)}` : "") +
+          (link ? ` · lié à ${link}` : "");
         li.innerHTML = `<div class="poll-item-header"><strong>${poll.question}</strong> <span class="hint">(${typeLabel} — ${statusLabel})</span></div>`;
 
         const actions = document.createElement("span");
@@ -4610,10 +4691,10 @@ function runAdmin() {
         const toggleStatusBtn = document.createElement("button");
         toggleStatusBtn.type = "button";
         toggleStatusBtn.className = "btn btn-ghost btn-sm";
-        toggleStatusBtn.textContent = poll.status === "open" ? "Fermer" : "Rouvrir";
+        toggleStatusBtn.textContent = st === "open" ? "Fermer" : st === "planned" ? "▶️ Ouvrir maintenant" : "Rouvrir";
         toggleStatusBtn.addEventListener("click", async () => {
-          if (poll.status === "open") await db.closePoll(poll.id);
-          else await db.reopenPoll(poll.id);
+          if (st === "open") await db.updatePoll(poll.id, { status: "closed", closeAt: null });
+          else await db.updatePoll(poll.id, { status: "open", openAt: null, closeAt: st === "closed" ? null : poll.closeAt || null });
         });
         actions.appendChild(toggleStatusBtn);
 
@@ -4656,7 +4737,7 @@ function runAdmin() {
         // Vote en réunion : celui qui anime (et a donc accès à cet outil)
         // peut saisir le vote d'un présent à sa place — ex : quelqu'un sur
         // Teams qui lève juste la main.
-        if (poll.type === "vote" && poll.status === "open") {
+        if (poll.type === "vote" && st === "open") {
           const meeting = currentMeetings.find((m) => m.id === poll.meetingId);
           const proxies = (meeting && meeting.proxies) || {};
           const byId = new Map((poll.responses || []).map((r) => [r.password, r.answer]));

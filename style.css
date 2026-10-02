@@ -914,3 +914,6 @@ body.embedded { min-height: 0 !important; }
 .vote-proxy-box { margin-top: 8px; border: 1px dashed var(--color-border); border-radius: 8px; padding: 6px 10px; }
 .vote-proxy-box summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
 .vote-entry-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.poll-plan { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; }
+.poll-plan label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; }
+.poll-plan .hidden { display: none; }

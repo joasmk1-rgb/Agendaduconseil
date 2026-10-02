@@ -1,7 +1,7 @@
 // ===================== SCRIPT.JS (page membre) =====================
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab } from "./config.js";
+import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus } from "./config.js";
 import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
@@ -1122,6 +1122,8 @@ function renderAvailabilityBanner() {
 // page séparée). Les résultats ne sont jamais montrés ici : seul l'admin les
 // voit (côté admin.js).
 const editingPolls = new Set();
+// Sondages planifiés : ils apparaissent / disparaissent à l'heure prévue.
+setInterval(() => { if (state.password) renderPollBanner(); }, 60000);
 
 // Vote en réunion : je vote si je suis marqué présent, et je porte aussi la
 // voix de ceux qui m'ont donné procuration (meeting.proxies = { absent: porteur }).
@@ -1157,7 +1159,7 @@ function renderPollBanner() {
     pollBanner.innerHTML = "";
     return;
   }
-  const open = (state.polls || []).filter((p) => p.status === "open");
+  const open = (state.polls || []).filter((p) => (p.type === "date" ? p.status === "open" : pollStatus(p) === "open"));
   const myAnswer = (p) => (p.responses || []).find((r) => r.password === state.password);
   // Les sondages de date restent visibles après réponse (réduits, avec
   // "Modifier") : on peut changer d'avis ou passer au calendrier.

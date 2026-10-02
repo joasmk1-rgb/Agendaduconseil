@@ -722,7 +722,11 @@ export async function submitPollResponse(id, password, name, answer) {
     const snap = await tx.get(ref);
     if (!snap.exists()) throw new Error("Ce sondage n'existe plus.");
     const data = snap.data();
-    if (data.status !== "open") throw new Error("Ce sondage est fermé.");
+    const now = Date.now();
+    let st = data.status || "open";
+    if (st === "planned" && data.openAt && now >= new Date(data.openAt).getTime()) st = "open";
+    if (st === "open" && data.closeAt && now >= new Date(data.closeAt).getTime()) st = "closed";
+    if (st !== "open") throw new Error(st === "planned" ? "Ce vote n'est pas encore ouvert." : "Ce sondage est fermé.");
     const current = (data.responses || []).filter((r) => r.password !== password);
     tx.update(ref, { responses: [...current, { password, name, answer }] });
   });

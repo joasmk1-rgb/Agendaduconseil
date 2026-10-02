@@ -72,3 +72,15 @@ export function hasRolesTab(member, roleTools) {
   if (member.isAdmin) return true;
   return roleList(member, roleTools).includes("tab:roles");
 }
+
+// Sondages planifiés : status "planned" + openAt / closeAt (ISO "YYYY-MM-DDTHH:MM",
+// heure locale). Le statut réel se calcule à la lecture (pas de serveur) :
+// un sondage planifié dont l'heure d'ouverture est passée est ouvert, un
+// sondage ouvert dont l'heure de fin est passée est fermé.
+export function pollStatus(poll, now = new Date()) {
+  const t = (iso) => (iso ? new Date(iso).getTime() : NaN);
+  let st = poll.status || "open";
+  if (st === "planned" && poll.openAt && now.getTime() >= t(poll.openAt)) st = "open";
+  if (st === "open" && poll.closeAt && now.getTime() >= t(poll.closeAt)) st = "closed";
+  return st;
+}

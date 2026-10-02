@@ -327,9 +327,9 @@
           <span class="mode-label">Type de réponse :</span>
           <div class="mode-toggle">
             <button type="button" id="poll-type-choice" class="mode-btn active" data-polltype="choice">Choix (options)</button>
-            <button type="button" id="poll-type-yesno" class="mode-btn" data-polltype="yesno">Oui / Non</button>
+            <button type="button" id="poll-type-yesno" class="mode-btn" data-polltype="yesno">Oui / Non (avis de tous)</button>
             <button type="button" id="poll-type-text" class="mode-btn" data-polltype="text">Réponse libre</button>
-            <button type="button" id="poll-type-vote" class="mode-btn" data-polltype="vote">🗳️ Vote en réunion</button>
+            <button type="button" id="poll-type-vote" class="mode-btn" data-polltype="vote">🗳️ Vote officiel (présents)</button>
           </div>
         </div>
         <div id="poll-vote-options" class="control-group hidden">
@@ -344,6 +344,20 @@
           <label>Options (une par ligne)</label>
           <textarea id="poll-options-input" rows="3" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
           <label class="checkbox-group"><input type="checkbox" id="poll-multiple-input"> Autoriser plusieurs choix à la fois</label>
+        </div>
+        <div class="control-group poll-plan">
+          <label>Ouverture
+            <select id="poll-plan-mode">
+              <option value="now">Tout de suite</option>
+              <option value="manual">Plus tard, je l'ouvre moi-même (ex : pendant la réunion)</option>
+              <option value="time">À une date et heure précises</option>
+            </select>
+          </label>
+          <label id="poll-plan-link-wrap">Lié à
+            <select id="poll-plan-link"></select>
+          </label>
+          <label id="poll-plan-open-wrap" class="hidden">S'ouvre le <input type="datetime-local" id="poll-plan-open"></label>
+          <label id="poll-plan-close-wrap">Se ferme le (optionnel) <input type="datetime-local" id="poll-plan-close"></label>
         </div>
         <div class="control-group actions">
           <button type="button" id="poll-submit-btn" class="btn btn-primary btn-sm">Créer le sondage</button>
