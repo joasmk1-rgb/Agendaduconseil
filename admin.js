@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -4121,9 +4121,9 @@ function runAdmin() {
   // Meilleurs créneaux : classés par nombre de dispos puis d'indispos, sans
   // chevauchement entre eux, au plus FD_MAX_PER_DAY par jour pour varier.
   function fdBestSlots(search) {
-    // "Dispo" = libre sur toute la durée ; à égalité, on préfère le créneau
+    // "Dispo" = libre au moins 45 min sur le créneau ; à égalité, on préfère le créneau
     // où le plus de minutes sont cochées dispo (couverture partielle).
-    const threshold = search.duration;
+    const threshold = presenceThreshold(search.duration);
     const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
     const greenCount = (keys) =>
       currentMembers.reduce((n, m) => {
@@ -4320,7 +4320,7 @@ function runAdmin() {
       const dur = (search && search.duration) || 60;
       const slots = (poll.slots || []).map((s) => {
         const names = responses.filter((r) => (Array.isArray(r.answer) ? r.answer : [r.answer]).includes(s.label)).map((r) => r.name);
-        const cal = classifyMembers(slotKeysForRange(s.date, s.start, s.end), dur).available.filter((n) => !voterNames.has(n));
+        const cal = classifyMembers(slotKeysForRange(s.date, s.start, s.end), presenceThreshold(dur)).available.filter((n) => !voterNames.has(n));
         return { ...s, names, cal, total: names.length + cal.length };
       });
       const max = Math.max(0, ...slots.map((s) => s.total));
@@ -4369,7 +4369,7 @@ function runAdmin() {
         endTime: slot.end,
         status: "confirme",
       });
-      const { available } = classifyMembers(slotKeysForRange(slot.date, slot.start, slot.end), (poll.search || {}).duration || 60);
+      const { available } = classifyMembers(slotKeysForRange(slot.date, slot.start, slot.end), presenceThreshold((poll.search || {}).duration || 60));
       const availableNames = new Set(available);
       (poll.responses || []).forEach((r) => {
         if ((Array.isArray(r.answer) ? r.answer : [r.answer]).includes(slot.label)) availableNames.add(r.name);

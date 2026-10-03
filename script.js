@@ -1,7 +1,7 @@
 // ===================== SCRIPT.JS (page membre) =====================
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus } from "./config.js";
+import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold } from "./config.js";
 import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
@@ -1034,6 +1034,9 @@ function pollSlotCellMap() {
 function mySlotStatus(slot) {
   const keys = pollSlotKeys(slot);
   const marks = keys.map((k) => state.marks[k]);
+  // Même règle que côté organisateur : dispo si libre au moins 45 min.
+  const greenMin = marks.filter((m) => m === "available").length * CONFIG.slotMinutes;
+  if (keys.length && greenMin >= presenceThreshold(keys.length * CONFIG.slotMinutes)) return { code: "yes", text: "✅ tu es dispo" };
   if (marks.some((m) => m === "unavailable")) {
     const hasCourse = state.courseSlotKeys && keys.some((k) => state.courseSlotKeys.has(k) && state.marks[k] === "unavailable");
     return { code: "no", text: hasCourse ? "❌ tu as cours" : "❌ tu es indispo" };

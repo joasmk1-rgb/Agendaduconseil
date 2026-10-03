@@ -84,3 +84,11 @@ export function pollStatus(poll, now = new Date()) {
   if (st === "open" && poll.closeAt && now.getTime() >= t(poll.closeAt)) st = "closed";
   return st;
 }
+
+// Règle de présence pour une réunion : quelqu'un compte comme "dispo" s'il est
+// libre au moins 45 min sur le créneau (ou toute la durée si elle est plus
+// courte). Utilisée partout : meilleurs créneaux, résultats, sondage membre.
+export const MIN_PRESENCE_MINUTES = 45;
+export function presenceThreshold(durationMinutes) {
+  return Math.min(MIN_PRESENCE_MINUTES, durationMinutes || MIN_PRESENCE_MINUTES);
+}
