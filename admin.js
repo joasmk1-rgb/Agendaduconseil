@@ -4312,17 +4312,23 @@ function runAdmin() {
       const responses = poll.responses || [];
       const box = document.createElement("div");
       box.className = "fd-slots";
-      box.innerHTML = `<h4>Réponses au sondage (${responses.length})</h4>`;
+      box.innerHTML = `<h4>Réponses (${responses.length} au sondage, + ceux qui ont rempli leur calendrier)</h4>`;
+      // Les deux façons de répondre comptent : le "oui" au sondage, et pour
+      // ceux qui n'ont PAS répondu au sondage, leur calendrier (libre sur
+      // toute la durée du créneau). Une réponse au sondage prime toujours.
+      const voterNames = new Set(responses.map((r) => r.name));
+      const dur = (search && search.duration) || 60;
       const slots = (poll.slots || []).map((s) => {
         const names = responses.filter((r) => (Array.isArray(r.answer) ? r.answer : [r.answer]).includes(s.label)).map((r) => r.name);
-        return { ...s, names };
+        const cal = classifyMembers(slotKeysForRange(s.date, s.start, s.end), dur).available.filter((n) => !voterNames.has(n));
+        return { ...s, names, cal, total: names.length + cal.length };
       });
-      const max = Math.max(0, ...slots.map((s) => s.names.length));
+      const max = Math.max(0, ...slots.map((s) => s.total));
       slots.forEach((s) => {
         const row = document.createElement("div");
-        row.className = `fd-slot${s.names.length && s.names.length === max ? " fd-best" : ""}`;
+        row.className = `fd-slot${s.total && s.total === max ? " fd-best" : ""}`;
         const text = document.createElement("span");
-        text.innerHTML = `<strong>${s.label}</strong> — ${s.names.length} oui <span class="hint">(${s.names.join(", ") || "—"})</span>`;
+        text.innerHTML = `<strong>${s.label}</strong> — <strong>${s.total} dispo</strong> : ${s.names.length} oui au sondage <span class="hint">(${s.names.join(", ") || "—"})</span>${s.cal.length ? ` + ${s.cal.length} d'après le calendrier <span class="hint">(${s.cal.join(", ")})</span>` : ""}`;
         row.appendChild(text);
         row.appendChild(fdButton("Choisir ce créneau", "btn-ghost", () => fdChoose(poll, s)));
         box.appendChild(row);
