@@ -18,7 +18,7 @@
   <div id="nav-overlay" class="nav-overlay hidden"></div>
   <nav id="nav-drawer" class="nav-drawer hidden" aria-label="Navigation">
     <button type="button" class="nav-item active" data-view="dashboard"><span class="nav-icon">📊</span> Tableau de bord</button>
-    <button type="button" class="nav-item" data-view="find-date"><span class="nav-icon">📆</span> Trouver une date</button>
+    <button type="button" class="nav-item" data-view="find-date"><span class="nav-icon">📆</span> Trouver une date / qui est dispo</button>
     <button type="button" class="nav-item" data-view="meetings"><span class="nav-icon">🗓️</span> Réunions</button>
     <button type="button" class="nav-item" data-view="tasks"><span class="nav-icon">📋</span> Tâches</button>
     <button type="button" class="nav-item" data-view="projects"><span class="nav-icon">📁</span> Dossiers</button>
@@ -226,15 +226,6 @@
             <button type="button" id="event-cancel-edit-btn" class="btn btn-ghost btn-sm hidden">Annuler la modification</button>
           </form>
           <ul id="event-list" class="item-list"></ul>
-        </section>
-
-        <section class="admin-panel full-width" aria-label="Disponibilités par événement">
-          <h2>Qui est dispo pour un événement ?</h2>
-          <div class="control-group">
-            <label for="event-availability-select">Événement</label>
-            <select id="event-availability-select"><option value="">— Choisir un événement —</option></select>
-          </div>
-          <div id="event-availability-result" class="hint"></div>
         </section>
 
       </section>
@@ -458,6 +449,16 @@
         </form>
         <p id="fd-form-status" class="hint"></p>
         <div id="fd-list" class="fd-list"></div>
+      </section>
+
+      <section class="admin-panel full-width" aria-label="Qui est dispo pour un événement">
+        <h2>La date est déjà fixée : qui est dispo ?</h2>
+        <p class="hint">Choisis une réunion ou un événement existant pour voir qui peut venir, d'après les calendriers de chacun.</p>
+        <div class="control-group">
+          <label for="event-availability-select">Événement</label>
+          <select id="event-availability-select"><option value="">— Choisir un événement —</option></select>
+        </div>
+        <div id="event-availability-result" class="hint"></div>
       </section>
     </div>
 

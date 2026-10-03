@@ -25,7 +25,7 @@ export const ADMIN_PASSPHRASE = "conseil2026";
 // dans le site (admin.html?embed=<outil>).
 export const TOOL_LABELS = {
   dashboard: "📊 Tableau de bord",
-  "find-date": "📆 Trouver une date",
+  "find-date": "📆 Trouver une date · qui est dispo",
   polls: "📝 Sondages",
   meetings: "🗓️ Réunions",
   "agenda-proposals": "💬 Suggestions ODJ",
@@ -51,8 +51,8 @@ export const ROLE_LABELS = {
 // (config/current.roleTools = { poste: [outils...] }). "tab:roles" = l'onglet
 // public "👥 Disponibilités".
 export const DEFAULT_ROLE_TOOLS = {
-  presidente: ["find-date", "polls", "tab:roles"],
-  "vice-presidente": ["find-date", "polls", "tab:roles"],
+  presidente: ["find-date", "polls"],
+  "vice-presidente": ["find-date", "polls"],
   secretaire: ["find-date", "polls", "meetings", "agenda-proposals", "availability", "import"],
   tresorier: ["projects", "export"],
   communication: ["tasks", "projects"],
@@ -67,10 +67,10 @@ export function toolsFor(member, roleTools) {
   if (member.isAdmin) return ALL_TOOLS;
   return roleList(member, roleTools).filter((t) => ALL_TOOLS.includes(t));
 }
-export function hasRolesTab(member, roleTools) {
-  if (!member) return false;
-  if (member.isAdmin) return true;
-  return roleList(member, roleTools).includes("tab:roles");
+// L'ancien onglet public "👥 Disponibilités" est remplacé par "Qui est dispo ?"
+// dans l'outil Trouver une date : plus jamais affiché.
+export function hasRolesTab() {
+  return false;
 }
 
 // Sondages planifiés : status "planned" + openAt / closeAt (ISO "YYYY-MM-DDTHH:MM",

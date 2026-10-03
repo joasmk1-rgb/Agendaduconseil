@@ -430,7 +430,6 @@ function runAdmin() {
   // ---------- Outils par poste (grille poste × outil) ----------
   const HIDEABLE = [
     ...Object.entries(TOOL_LABELS).map(([id, label]) => ({ id, label })),
-    { id: "tab:roles", label: "👥 Onglet Disponibilités" },
   ];
   const hiddenToolsList = document.getElementById("hidden-tools-list");
   const hiddenToolsStatus = document.getElementById("hidden-tools-status");
