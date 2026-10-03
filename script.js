@@ -1339,6 +1339,14 @@ publicTabs.addEventListener("click", (e) => {
   const btn = e.target.closest(".public-tab-btn");
   if (!btn || btn.classList.contains("hidden")) return;
   switchTab(btn.dataset.tab);
+  // Onglet direct d'un outil (conseillers avec un poste) : on ouvre l'outil
+  // et seul cet onglet-là est marqué actif.
+  if (btn.dataset.tool) {
+    publicTabs.querySelectorAll(".public-tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    if (currentTool !== btn.dataset.tool || toolsFrame.classList.contains("hidden")) openTool(btn.dataset.tool);
+  } else if (btn.dataset.tab === "tools") {
+    publicTabs.querySelectorAll(".tool-tab-btn").forEach((b) => b.classList.remove("active"));
+  }
 });
 
 // La barre d'onglets entière (pas juste les boutons ODJ/Tâches/Disponibilités)
@@ -1355,10 +1363,27 @@ const toolsFrame = document.getElementById("tools-frame");
 const toolsHint = document.getElementById("tools-hint");
 let currentTool = null;
 let renderedToolsKey = "";
+// Admin : un onglet "🛠️ Outils" avec tous les outils. Les autres : un
+// onglet par outil autorisé, directement dans la barre (pas de sous-menu).
 function renderToolsPicker(tools) {
-  const key = tools.join(",");
+  const asTabs = !state.isAdmin;
+  const key = tools.join(",") + (asTabs ? "|tabs" : "|picker");
   if (key === renderedToolsKey) return;
   renderedToolsKey = key;
+  publicTabs.querySelectorAll(".tool-tab-btn").forEach((b) => b.remove());
+  toolsTabBtn.classList.toggle("hidden", asTabs || !tools.length);
+  toolsPicker.classList.toggle("hidden", asTabs);
+  if (asTabs) {
+    tools.forEach((t) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "public-tab-btn tool-tab-btn";
+      b.dataset.tab = "tools";
+      b.dataset.tool = t;
+      b.textContent = TOOL_LABELS[t] || t;
+      publicTabs.appendChild(b);
+    });
+  }
   toolsPicker.innerHTML = tools
     .map((t) => `<button type="button" class="mode-btn tool-btn${t === currentTool ? " active" : ""}" data-tool="${t}">${TOOL_LABELS[t] || t}</button>`)
     .join("");
@@ -1398,7 +1423,7 @@ function applyPublicTabsVisibility() {
   rolesTabBtn.classList.toggle("hidden", !rolesEnabled);
   if (rolesEnabled) ensureRolesDataLoaded();
   const tools = state.password ? toolsFor({ isAdmin: state.isAdmin, role: state.role }, roleTools) : [];
-  toolsTabBtn.classList.toggle("hidden", !tools.length);
+  toolsTabBtn.classList.toggle("hidden", !tools.length || !state.isAdmin);
   renderToolsPicker(tools);
   if (!tools.length && state.activeTab === "tools") switchTab("calendar");
   publicTabs.classList.toggle("hidden", !agendaEnabled && !tasksEnabled && !rolesEnabled && !tools.length);

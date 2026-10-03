@@ -921,3 +921,4 @@ body.embedded { min-height: 0 !important; }
 .fd-switch .mode-btn { border: 2px solid var(--color-border); border-radius: 999px; padding: 8px 16px; font-weight: 600; background: var(--color-surface); }
 .fd-switch .mode-btn.active { background: var(--uc-navy); color: #fff; border-color: var(--uc-navy); }
 section.fd-part.hidden { display: none; }
+.tools-picker.hidden { display: none; }
