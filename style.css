@@ -922,3 +922,4 @@ body.embedded { min-height: 0 !important; }
 .fd-switch .mode-btn.active { background: var(--uc-navy); color: #fff; border-color: var(--uc-navy); }
 section.fd-part.hidden { display: none; }
 .tools-picker.hidden { display: none; }
+.fd-how { color: var(--color-muted); font-size: 0.8em; }

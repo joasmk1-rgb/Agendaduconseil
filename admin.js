@@ -4109,10 +4109,13 @@ function runAdmin() {
     currentMembers.forEach((m) => {
       const marks = marksByMember.get(m.id) || {};
       const auto = new Set(m.courseMarkedKeys || []);
-      const answered = voters.has(m.id) || keys.some((k) => marks[k] === "available" || (marks[k] === "unavailable" && !auto.has(k)));
-      (answered ? filled : missing).push(m.name);
+      const voted = voters.has(m.id);
+      const cal = keys.some((k) => marks[k] === "available" || (marks[k] === "unavailable" && !auto.has(k)));
+      if (voted || cal) filled.push({ name: m.name, how: voted && cal ? "sondage + calendrier" : voted ? "sondage" : "calendrier" });
+      else missing.push(m.name);
     });
-    return { filled: filled.sort(), missing: missing.sort() };
+    filled.sort((a, b) => a.name.localeCompare(b.name));
+    return { filled, missing: missing.sort() };
   }
 
   // Meilleurs créneaux : classés par nombre de dispos puis d'indispos, sans
@@ -4253,7 +4256,8 @@ function runAdmin() {
       const pct = Math.round((part.filled.length / total) * 100);
       p.innerHTML = `<div><strong>${part.filled.length}/${currentMembers.length}</strong> membres ont répondu (calendrier rempli sur la plage ou sondage)</div>
         <div class="fd-bar"><span style="width:${pct}%"></span></div>
-        <details><summary>Qui manque ? (${part.missing.length})</summary><p class="hint">${part.missing.join(", ") || "Personne 🎉"}</p></details>`;
+        <details open><summary>✅ Ont répondu (${part.filled.length})</summary><p class="hint">${part.filled.map((f) => `${f.name} <span class="fd-how">(${f.how})</span>`).join(", ") || "Personne pour l'instant"}</p></details>
+        <details open><summary>❔ N'ont pas encore répondu (${part.missing.length})</summary><p class="hint">${part.missing.join(", ") || "Personne 🎉"}</p></details>`;
       card.appendChild(p);
     }
 
