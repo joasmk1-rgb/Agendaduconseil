@@ -419,7 +419,11 @@
     </div>
 
     <div class="view" data-view="find-date">
-      <section class="admin-panel full-width" aria-label="Trouver une date">
+      <div class="fd-switch" role="tablist" aria-label="Trouver une date ou qui est dispo">
+        <button type="button" class="mode-btn active" data-fd-part="new" role="tab" aria-selected="true">🔍 Trouver une nouvelle date</button>
+        <button type="button" class="mode-btn" data-fd-part="check" role="tab" aria-selected="false">👀 Date déjà fixée : qui est dispo ?</button>
+      </div>
+      <section class="admin-panel full-width fd-part" data-fd-part="new" aria-label="Trouver une date">
         <h2>Trouver une date de réunion</h2>
         <p class="hint">1. Donne la plage de dates : les membres voient un bandeau et remplissent leurs dispos sur cette plage. 2. Suis le remplissage et les meilleurs créneaux, qui se recalculent tout seuls. 3. Publie le sondage (tout de suite si tu veux) : chacun peut soit remplir son calendrier, soit cocher directement les créneaux. 4. Choisis le créneau gagnant : la réunion et l'événement sont créés.</p>
         <form id="fd-form" class="fd-form">
@@ -451,7 +455,7 @@
         <div id="fd-list" class="fd-list"></div>
       </section>
 
-      <section class="admin-panel full-width" aria-label="Qui est dispo pour un événement">
+      <section class="admin-panel full-width fd-part hidden" data-fd-part="check" aria-label="Qui est dispo pour un événement">
         <h2>La date est déjà fixée : qui est dispo ?</h2>
         <p class="hint">Choisis une réunion ou un événement existant pour voir qui peut venir, d'après les calendriers de chacun.</p>
         <div class="control-group">

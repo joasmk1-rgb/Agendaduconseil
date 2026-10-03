@@ -1031,6 +1031,18 @@ function runAdmin() {
 
   eventAvailabilitySelect.addEventListener("change", renderEventAvailability);
 
+  // Trouver une date : bascule entre "nouvelle date" et "date déjà fixée".
+  document.querySelectorAll(".fd-switch [data-fd-part]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const part = btn.dataset.fdPart;
+      document.querySelectorAll(".fd-switch [data-fd-part]").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+        b.setAttribute("aria-selected", String(b === btn));
+      });
+      document.querySelectorAll("section.fd-part").forEach((sec) => sec.classList.toggle("hidden", sec.dataset.fdPart !== part));
+    });
+  });
+
   function renderEventAvailabilitySelect() {
     const previous = eventAvailabilitySelect.value;
     const sorted = currentEvents.slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
