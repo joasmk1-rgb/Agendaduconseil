@@ -510,6 +510,13 @@ function runAdmin() {
   const pollAudienceEl = document.getElementById("poll-audience");
   const pollAudience = makeAudiencePicker(pollAudienceEl);
   const fdAudience = makeAudiencePicker(document.getElementById("fd-audience"));
+  // "Reprendre la plage d'un événement" partout où on choisit une plage.
+  const eventRangePickers = [];
+  const $ = (id) => document.getElementById(id);
+  eventRangePickers.push(Grid.mountEventRangePicker({ startDate: $("fd-start"), endDate: $("fd-end"), startTime: $("fd-from"), endTime: $("fd-to"), keepTimesIfAllDay: true, before: $("fd-title").closest("label") }, () => currentEvents));
+  eventRangePickers.push(Grid.mountEventRangePicker({ startDate: $("fill-quick-start-date"), endDate: $("fill-quick-end-date"), startTime: $("fill-quick-start-time"), endTime: $("fill-quick-end-time"), before: $("fill-quick-start-time").parentElement }, () => currentEvents));
+  eventRangePickers.push(Grid.mountEventRangePicker({ startDate: $("bulk-fill-start-date"), endDate: $("bulk-fill-end-date"), startTime: $("bulk-fill-start-time"), endTime: $("bulk-fill-end-time"), before: $("bulk-fill-start-time").parentElement }, () => currentEvents));
+  eventRangePickers.push(Grid.mountEventRangePicker({ startDate: $("response-range-start"), endDate: $("response-range-end"), before: $("response-range-start").parentElement }, () => currentEvents));
   // Disponibilités : superposer seulement les membres choisis sur la heatmap.
   const heatmapAudience = makeAudiencePicker(document.getElementById("heatmap-audience"), {
     label: "Membres superposés sur la grille",
@@ -4563,6 +4570,7 @@ function runAdmin() {
 
   db.listenEvents((events) => {
     currentEvents = events;
+    eventRangePickers.forEach((p) => p.refresh());
     renderEvents();
     renderEventAvailabilitySelect();
     renderMeetingEventSelect();

@@ -945,3 +945,5 @@ section.fd-part.hidden { display: none; }
 .evt-label-edit input { width: 110px; padding: 2px 6px; }
 .heatmap-audience { margin-bottom: 8px; }
 #heatmap-grid .cell.all-free { outline: 2px solid #f59e0b; outline-offset: -2px; font-weight: 700; }
+.event-range-pick { max-width: 100%; font-size: 0.85rem; }
+.fd-form .event-range-pick { grid-column: 1 / -1; justify-self: start; }

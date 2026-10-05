@@ -2875,8 +2875,20 @@ db.listenConfig((config) => {
   if (state.marksLoaded) maybeAutoApplyCourses();
   applyPublicTabsVisibility();
 });
+// "Reprendre la plage d'un événement" dans le marquage rapide.
+const bulkEventRangePicker = Grid.mountEventRangePicker(
+  {
+    startDate: document.getElementById("bulk-start-date"),
+    endDate: document.getElementById("bulk-end-date"),
+    startTime: document.getElementById("bulk-start-time"),
+    endTime: document.getElementById("bulk-end-time"),
+    before: document.getElementById("bulk-start-time").parentElement,
+  },
+  () => state.events
+);
 db.listenEvents((events) => {
   state.events = events;
+  bulkEventRangePicker.refresh();
   eventsLoaded = true;
   renderGrid();
   renderMemberDashboard();

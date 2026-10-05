@@ -282,3 +282,73 @@ export function renderHourRows(container, dates, times, events, blockedSlots, ce
     });
   });
 }
+
+// ---------------------- "Reprendre la plage d'un événement" ----------------------
+// Petit menu à placer devant n'importe quel formulaire de plage (dates/heures) :
+// choisir un événement (ex : "Octobre rose") remplit les champs avec ses dates
+// et, s'il a des heures, ses heures (événement "toute la journée" = heures
+// vidées, ou laissées telles quelles si le champ n'accepte pas le vide).
+// fields = { startDate, endDate, startTime?, endTime?, keepTimesIfAllDay? }
+export function mountEventRangePicker(fields, getEvents) {
+  // fields.before : élément devant lequel insérer le menu (par défaut le
+  // champ "date de début" ou son <label>).
+  const anchor = fields.before || fields.startDate.closest("label") || fields.startDate;
+  const select = document.createElement("select");
+  select.className = "event-range-pick";
+  select.title = "Remplir la plage avec les dates/heures d'un événement";
+  const fill = () => {
+    const todayISO = toISODate(new Date());
+    const evs = (getEvents() || []).filter((e) => e && e.date);
+    const upcoming = evs.filter((e) => (e.endDate || e.date) >= todayISO).sort((a, b) => a.date.localeCompare(b.date));
+    const past = evs.filter((e) => (e.endDate || e.date) < todayISO).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+    const fmt = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+    const opt = (e) => {
+      const dates = e.endDate && e.endDate !== e.date ? `${fmt(e.date)} → ${fmt(e.endDate)}` : fmt(e.date);
+      const hours = !e.allDay && e.startTime ? ` · ${e.startTime.replace(":", "h")}–${(e.endTime || "").replace(":", "h")}` : "";
+      return `<option value="${e.id}">${(e.label || "Événement").replace(/</g, "&lt;")} (${dates}${hours})</option>`;
+    };
+    select.innerHTML =
+      `<option value="">📅 Reprendre la plage d'un événement…</option>` +
+      (upcoming.length ? `<optgroup label="À venir">${upcoming.map(opt).join("")}</optgroup>` : "") +
+      (past.length ? `<optgroup label="Passés">${past.map(opt).join("")}</optgroup>` : "") +
+      (evs.length ? "" : `<option value="" disabled>Aucun événement</option>`);
+  };
+  const set = (input, value) => {
+    if (!input) return;
+    input.value = value;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  select.addEventListener("focus", fill);
+  select.addEventListener("mousedown", fill);
+  select.addEventListener("change", () => {
+    const ev = (getEvents() || []).find((e) => e.id === select.value);
+    if (!ev) return;
+    set(fields.startDate, ev.date);
+    set(fields.endDate, ev.endDate || ev.date);
+    if (!ev.allDay && ev.startTime) {
+      set(fields.startTime, ev.startTime);
+      set(fields.endTime, ev.endTime || "");
+    } else if (!fields.keepTimesIfAllDay) {
+      set(fields.startTime, "");
+      set(fields.endTime, "");
+    }
+    select.value = "";
+    select.blur();
+  });
+  try {
+    fill();
+  } catch {
+    // Événements pas encore chargés : rempli au premier clic.
+    select.innerHTML = `<option value="">📅 Reprendre la plage d'un événement…</option>`;
+  }
+  if (anchor.classList && anchor.classList.contains("control-group")) {
+    const wrap = document.createElement("div");
+    wrap.className = "control-group";
+    wrap.appendChild(select);
+    anchor.parentNode.insertBefore(wrap, anchor);
+  } else {
+    anchor.parentNode.insertBefore(select, anchor);
+  }
+  return { refresh: fill };
+}
