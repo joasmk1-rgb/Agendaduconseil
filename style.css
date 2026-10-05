@@ -933,3 +933,13 @@ section.fd-part.hidden { display: none; }
 .fd-form .fd-audience { grid-column: 1 / -1; }
 .fd-form .audience-picker > label { flex-direction: row; align-items: center; gap: 8px; }
 .audience-picker label.aud-member { display: flex; flex-direction: row; align-items: center; gap: 6px; font-size: 0.9rem; }
+
+/* Case verte venue d'un sondage : badge "évt" (renommable) + bulle au survol */
+.cell.slot.poll-evt { position: relative; }
+.cell.slot .evt-badge {
+  position: absolute; right: 2px; bottom: 1px; z-index: 3; pointer-events: none;
+  font-size: 0.6rem; line-height: 1; padding: 1px 3px; border-radius: 3px;
+  background: #065f46; color: #fff; max-width: calc(100% - 4px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.evt-label-edit { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; margin-left: 6px; }
+.evt-label-edit input { width: 110px; padding: 2px 6px; }

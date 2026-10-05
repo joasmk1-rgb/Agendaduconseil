@@ -338,12 +338,18 @@ export async function getMarks(password) {
 // sondage de date, pour pouvoir les remettre comme avant s'il décoche.
 // mergeFields : les champs non fournis (ex. pollFills quand l'admin remplit
 // à la place d'un membre) sont conservés, ceux fournis sont remplacés en entier.
-export async function saveMarks(password, name, marks, pollFills) {
+// pollLabels (optionnel) = { pollId: "réunion" } : nom affiché sur le
+// calendrier pour les cases venues de ce sondage ("évt" par défaut).
+export async function saveMarks(password, name, marks, pollFills, pollLabels) {
   const data = { name, marks, updatedAt: serverTimestamp() };
   const fields = ["name", "marks", "updatedAt"];
   if (pollFills !== undefined) {
     data.pollFills = pollFills;
     fields.push("pollFills");
+  }
+  if (pollLabels !== undefined) {
+    data.pollLabels = pollLabels;
+    fields.push("pollLabels");
   }
   await setDoc(availabilityDocRef(password), data, { mergeFields: fields });
 }
@@ -351,7 +357,7 @@ export async function saveMarks(password, name, marks, pollFills) {
 export async function getAvailability(password) {
   const snap = await getDoc(availabilityDocRef(password));
   const d = snap.exists() ? snap.data() : {};
-  return { marks: d.marks || {}, pollFills: d.pollFills || {} };
+  return { marks: d.marks || {}, pollFills: d.pollFills || {}, pollLabels: d.pollLabels || {} };
 }
 
 export function listenAllAvailability(callback) {

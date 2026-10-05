@@ -267,6 +267,7 @@ logoutBtn.addEventListener("click", () => {
   state.role = "";
   state.marks = {};
   state.pollFills = {};
+  state.pollLabels = {};
   state.marksLoaded = false;
   state.selectedCourses = [];
   state.groupSessions = [];
@@ -328,6 +329,7 @@ async function enterAsMember(member) {
     const av = await db.getAvailability(state.password);
     state.marks = av.marks;
     state.pollFills = av.pollFills;
+    state.pollLabels = av.pollLabels;
   }
   state.marksLoaded = true;
   renderGrid();
@@ -380,6 +382,7 @@ passwordChangeForm.addEventListener("submit", async (e) => {
       const av = await db.getAvailability(state.password);
       state.marks = av.marks;
       state.pollFills = av.pollFills;
+    state.pollLabels = av.pollLabels;
     }
     passwordChangeNewInput.value = "";
     passwordChangeConfirmInput.value = "";
@@ -1112,7 +1115,14 @@ function applyPollAnswerToMarks(poll, answer) {
   });
   // Coché : on passe en vert en retenant l'état d'avant.
   chosenKeys.forEach((k) => {
-    if (state.marks[k] === "available") return;
+    if (state.marks[k] === "available") {
+      // Déjà vert : rien à changer, mais on le note pour le badge "évt".
+      if (!(k in fills)) {
+        fills[k] = "available";
+        changed = true;
+      }
+      return;
+    }
     fills[k] = state.marks[k] || null;
     state.marks[k] = "available";
     skipsChanged = setCourseSkip(k, true) || skipsChanged;
@@ -1182,6 +1192,53 @@ async function uncheckPollSlotsNoLongerFree() {
       console.error("Décochage du sondage impossible :", err);
     }
   }
+}
+
+// Badge "évt" + bulle au survol sur les cases vertes venues d'un sondage
+// (restent après la fermeture du sondage). key -> { pollId, first, tip }.
+function pollEventCells() {
+  const map = new Map();
+  const pollsById = new Map((state.polls || []).map((p) => [p.id, p]));
+  Object.entries(state.pollFills || {}).forEach(([pollId, fills]) => {
+    const poll = pollsById.get(pollId);
+    const label = ((state.pollLabels || {})[pollId] || "").trim() || "évt";
+    Object.keys(fills).forEach((k) => {
+      if (state.marks[k] !== "available") return;
+      const [dateISO, time] = k.split("|");
+      const slot = poll && (poll.slots || []).find((s) => s.date === dateISO && time >= s.start && time < s.end);
+      let tip = `📌 ${label}`;
+      if (poll) {
+        tip += ` — ${poll.question}`;
+        if (slot) tip += ` (${fmtSlotShort(slot)})`;
+        if (poll.status === "done" && poll.chosen) {
+          const c = poll.chosen;
+          tip += c.date === dateISO && c.start === (slot && slot.start) ? "\n✅ Créneau retenu : la réunion est fixée ici" : `\nRéunion fixée ailleurs : ${fmtSlotShort(c)}`;
+        } else if (poll.status === "open") {
+          tip += "\nTu as coché ce créneau dans le sondage";
+        } else {
+          tip += "\nSondage terminé";
+        }
+      } else {
+        tip += "\nVenu d'un sondage (supprimé depuis)";
+      }
+      map.set(k, { pollId, label, tip });
+    });
+  });
+  // Badge sur la première case de chaque bloc continu.
+  map.forEach((v, k) => {
+    const [dateISO, time] = k.split("|");
+    const [h, m] = time.split(":").map(Number);
+    const pm = h * 60 + m - CONFIG.slotMinutes;
+    const prevKey = Grid.slotKey(dateISO, `${String(Math.floor(pm / 60)).padStart(2, "0")}:${String(pm % 60).padStart(2, "0")}`);
+    const prev = map.get(prevKey);
+    v.first = !prev || prev.pollId !== v.pollId;
+  });
+  return map;
+}
+function fmtSlotShort(s) {
+  const d = new Date(`${s.date}T12:00:00`);
+  const day = d.toLocaleDateString("fr-BE", { weekday: "short", day: "2-digit", month: "2-digit" });
+  return `${day} ${s.start.replace(":", "h")}–${s.end.replace(":", "h")}`;
 }
 
 function isKeyInCollectingSearch(key) {
@@ -1332,7 +1389,7 @@ function renderPollBanner() {
           : "";
         if (mine && !editingPolls.has(poll.id)) {
           const picked = (Array.isArray(mine.answer) ? mine.answer : [mine.answer]).filter((a) => a !== "Aucun");
-          return `<div class="avail-request-item done" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong> — tu as répondu ✅ (${picked.length ? `${picked.length} créneau${picked.length > 1 ? "x" : ""}` : "aucun ne te convient"}) <button type="button" class="btn btn-ghost btn-sm poll-edit-btn" data-poll="${poll.id}">Modifier</button> ${calBtn}</div>`;
+          return `<div class="avail-request-item done" data-poll-id="${poll.id}">🗳️ <strong>${poll.question}</strong> — tu as répondu ✅ (${picked.length ? `${picked.length} créneau${picked.length > 1 ? "x" : ""}` : "aucun ne te convient"}) <button type="button" class="btn btn-ghost btn-sm poll-edit-btn" data-poll="${poll.id}">Modifier</button> ${calBtn}${picked.length ? `<label class="evt-label-edit">Nom sur mon calendrier <input type="text" class="evt-label-input" data-poll="${poll.id}" maxlength="20" placeholder="évt" value="${((state.pollLabels || {})[poll.id] || "").replace(/"/g, "&quot;")}"></label>` : ""}</div>`;
         }
         const prev = new Set(mine ? (Array.isArray(mine.answer) ? mine.answer : [mine.answer]) : []);
         const slotByLabel = new Map((poll.slots || []).map((s, i) => [s.label, { ...s, n: i + 1 }]));
@@ -1409,6 +1466,16 @@ function renderPollBanner() {
     };
     box.addEventListener("change", update);
     update();
+  });
+  pollBanner.querySelectorAll(".evt-label-input").forEach((input) => {
+    input.addEventListener("change", () => {
+      state.pollLabels = state.pollLabels || {};
+      const v = input.value.trim();
+      if (v) state.pollLabels[input.dataset.poll] = v;
+      else delete state.pollLabels[input.dataset.poll];
+      persistMarks();
+      renderGrid();
+    });
   });
   pollBanner.querySelectorAll(".poll-edit-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -2495,6 +2562,7 @@ function renderGrid() {
   const blockedSlots = state.config.blockedSlots || [];
   const searchesForGrid = collectingSearches();
   const pollCells = state.password ? pollSlotCellMap() : new Map();
+  const evtCells = state.password ? pollEventCells() : new Map();
   const courseLabels = computeSelectedCourseLabels();
 
   gridEl.innerHTML = "";
@@ -2545,6 +2613,17 @@ function renderGrid() {
         if (ps.last) cell.classList.add("poll-slot-last");
         const t = `Proposé au sondage (n°${ps.n}) : ${ps.label}`;
         cell.title = cell.title ? cell.title + "\n" + t : t;
+      }
+      const ev = evtCells.get(key);
+      if (ev) {
+        cell.classList.add("poll-evt");
+        if (ev.first) {
+          const b = document.createElement("span");
+          b.className = "evt-badge";
+          b.textContent = ev.label;
+          cell.appendChild(b);
+        }
+        cell.title = cell.title ? cell.title + "\n" + ev.tip : ev.tip;
       }
       cell.addEventListener("mousedown", onCellMouseDown);
       cell.addEventListener("mouseenter", onCellMouseEnter);
@@ -2713,7 +2792,7 @@ async function persistMarks() {
   saveStatus.textContent = "Enregistrement…";
   saveStatus.className = "save-status saving";
   try {
-    await db.saveMarks(state.password, state.name, state.marks, state.pollFills || {});
+    await db.saveMarks(state.password, state.name, state.marks, state.pollFills || {}, state.pollLabels || {});
     saveStatus.textContent = "Enregistré ✓";
     saveStatus.className = "save-status saved";
     renderAvailabilityBanner();
