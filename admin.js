@@ -418,10 +418,11 @@ function runAdmin() {
 
   // Sélecteur "Destinataires" (sondages + Trouver une date) : tout le monde,
   // ou une sélection cochée à la main, avec raccourcis par poste.
-  function makeAudiencePicker(el) {
+  function makeAudiencePicker(el, { label = "Destinataires", onChange = null, hint = "seules elles verront ce sondage et seront comptées" } = {}) {
     const picked = new Set();
+    const notify = () => onChange && onChange();
     el.classList.add("audience-picker");
-    el.innerHTML = `<label>Destinataires <select class="aud-mode">
+    el.innerHTML = `<label>${label} <select class="aud-mode">
         <option value="all">Tout le monde</option>
         <option value="pick">Une sélection de personnes</option>
       </select></label>
@@ -444,6 +445,7 @@ function runAdmin() {
         const all = ids().every((id) => picked.has(id));
         ids().forEach((id) => (all ? picked.delete(id) : picked.add(id)));
         draw();
+        notify();
       });
       quick.appendChild(b);
     };
@@ -460,7 +462,7 @@ function runAdmin() {
       none.type = "button";
       none.className = "btn btn-ghost btn-sm";
       none.textContent = "Aucun";
-      none.addEventListener("click", () => { picked.clear(); draw(); });
+      none.addEventListener("click", () => { picked.clear(); draw(); notify(); });
       quick.appendChild(none);
       list.innerHTML = "";
       members.forEach((m) => {
@@ -469,16 +471,17 @@ function runAdmin() {
         const cb = document.createElement("input");
         cb.type = "checkbox";
         cb.checked = picked.has(m.id);
-        cb.addEventListener("change", () => { cb.checked ? picked.add(m.id) : picked.delete(m.id); count.textContent = `${picked.size} personne${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""}`; });
+        cb.addEventListener("change", () => { cb.checked ? picked.add(m.id) : picked.delete(m.id); count.textContent = `${picked.size} personne${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""}`; notify(); });
         lab.appendChild(cb);
         lab.append(` ${m.name}${m.role && TOOL_ROLE_LABELS[m.role] ? ` (${TOOL_ROLE_LABELS[m.role]})` : ""}`);
         list.appendChild(lab);
       });
-      count.textContent = `${picked.size} personne${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""} — seules elles verront ce sondage et seront comptées`;
+      count.textContent = `${picked.size} personne${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""} — ${hint}`;
     }
     mode.addEventListener("change", () => {
       body.classList.toggle("hidden", mode.value !== "pick");
       if (mode.value === "pick") draw();
+      notify();
     });
     return {
       // {} = tout le monde ; { audience: [...] } ; null = sélection vide (alerte)
@@ -498,11 +501,21 @@ function runAdmin() {
       refresh() {
         if (mode.value === "pick") draw();
       },
+      // null = tout le monde ; sinon Set des ids cochés
+      selected() {
+        return mode.value === "pick" ? new Set(picked) : null;
+      },
     };
   }
   const pollAudienceEl = document.getElementById("poll-audience");
   const pollAudience = makeAudiencePicker(pollAudienceEl);
   const fdAudience = makeAudiencePicker(document.getElementById("fd-audience"));
+  // Disponibilités : superposer seulement les membres choisis sur la heatmap.
+  const heatmapAudience = makeAudiencePicker(document.getElementById("heatmap-audience"), {
+    label: "Membres superposés sur la grille",
+    hint: "la grille ne compte qu'elles ; contour orange = toutes dispo",
+    onChange: () => renderHeatmap(),
+  });
 
   let currentEvents = [];
   let currentAvailability = [];
@@ -3458,10 +3471,13 @@ function runAdmin() {
     const times = Grid.buildTimeSlots();
 
     const counts = new Map(); // key -> { available: [], unavailable: [] }
-    activeResponses().forEach((r) => {
+    const sel = heatmapAudience.selected();
+    const shown = sel ? activeResponses().filter((r) => sel.has(r.id)) : activeResponses();
+    shown.forEach((r) => {
       Object.entries(r.marks || {}).forEach(([key, value]) => {
-        const entry = counts.get(key) || { available: [], unavailable: [] };
+        const entry = counts.get(key) || { available: [], unavailable: [], ids: new Set() };
         entry[value === "available" ? "available" : "unavailable"].push(r.name || "?");
+        entry.ids.add(r.id);
         counts.set(key, entry);
       });
     });
@@ -3471,7 +3487,8 @@ function runAdmin() {
     heatmapGridEl.style.gridTemplateRows = Grid.gridTemplateRows(times.length);
     Grid.renderGridHeaders(heatmapGridEl, dates, currentEvents);
 
-    const maxCount = currentMembers.length || 1;
+    const maxCount = (sel ? sel.size : currentMembers.length) || 1;
+    const selMembers = sel ? currentMembers.filter((m) => sel.has(m.id)) : [];
 
     Grid.renderHourRows(heatmapGridEl, dates, times, currentEvents, currentConfig.blockedSlots || [], (cell, { dateISO, timeLabel, blocked }) => {
       const key = Grid.slotKey(dateISO, timeLabel);
@@ -3490,8 +3507,16 @@ function runAdmin() {
         if (unavailCount > 0) {
           cell.classList.add("has-unavailable");
         }
+        if (sel && sel.size && availCount === sel.size) {
+          cell.classList.add("all-free");
+          titleParts.push("⭐ Toute la sélection est dispo");
+        }
         if (availCount) titleParts.push(`Dispo : ${entry.available.join(", ")}`);
         if (unavailCount) titleParts.push(`Pas dispo : ${entry.unavailable.join(", ")}`);
+      }
+      if (sel && selMembers.length) {
+        const blank = selMembers.filter((m) => !(entry && entry.ids.has(m.id))).map((m) => m.name);
+        if (blank.length) titleParts.push(`Rien mis : ${blank.join(", ")}`);
       }
       // Surcouche "cours" (voir computeStudentLoadOverlay) : un liseré violet
       // par-dessus, sans jamais toucher au fond vert des dispos ci-dessus.
@@ -4526,6 +4551,7 @@ function runAdmin() {
     renderBulkFillMemberCheckboxes();
     pollAudience.refresh();
     fdAudience.refresh();
+    heatmapAudience.refresh();
     renderOrphans();
     renderResponseCount();
     renderMeetings();
