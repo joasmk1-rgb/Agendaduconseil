@@ -266,6 +266,7 @@ logoutBtn.addEventListener("click", () => {
   state.isAdmin = false;
   state.role = "";
   state.marks = {};
+  state.pollFills = {};
   state.marksLoaded = false;
   state.selectedCourses = [];
   state.groupSessions = [];
@@ -323,10 +324,15 @@ async function enterAsMember(member) {
   bulkMarkPanel.classList.toggle("hidden", window.innerWidth < BULK_SIDEBAR_BREAKPOINT);
 
   state.marksLoaded = false;
-  state.marks = await db.getMarks(state.password);
+  {
+    const av = await db.getAvailability(state.password);
+    state.marks = av.marks;
+    state.pollFills = av.pollFills;
+  }
   state.marksLoaded = true;
   renderGrid();
   maybeAutoApplyCourses();
+  reconcilePollsWithCalendar();
   if (state.activeTab === "agenda") renderAgendaTab();
   if (state.openAgendaItemId) renderAgendaModal();
   renderMemberDashboard();
@@ -370,7 +376,11 @@ passwordChangeForm.addEventListener("submit", async (e) => {
     await db.changeMemberPassword(state.password, newPassword);
     state.password = newPassword;
     localStorage.setItem(LOGIN_KEY, newPassword);
-    state.marks = await db.getMarks(state.password);
+    {
+      const av = await db.getAvailability(state.password);
+      state.marks = av.marks;
+      state.pollFills = av.pollFills;
+    }
     passwordChangeNewInput.value = "";
     passwordChangeConfirmInput.value = "";
     passwordChangeStatus.textContent = "Mot de passe changé ✓ (garde-le bien en mémoire, il n'apparaît nulle part ailleurs)";
@@ -520,6 +530,7 @@ bulkApplyBtn.addEventListener("click", async () => {
     if (newValue) state.marks[key] = newValue;
     else delete state.marks[key];
     trackCourseSkip(key);
+    Object.values(state.pollFills || {}).forEach((fills) => delete fills[key]);
   });
 
   renderGrid();
@@ -531,6 +542,7 @@ bulkApplyBtn.addEventListener("click", async () => {
     renderGrid();
     renderCoursesSummary();
   }
+  uncheckPollSlotsNoLongerFree();
 });
 
 // ===================== POSITION DE DÉPART (scroll, pas un filtre) =====================
@@ -1051,6 +1063,127 @@ function mySlotStatus(slot) {
   return { code: "unknown", text: "❔ pas encore rempli" };
 }
 
+// ---- Sondage de date <-> calendrier : la dernière action gagne ----
+// Cocher un créneau dans le sondage le passe en vert sur mon calendrier
+// (même sur un cours ou une case rouge) ; l'état d'avant est gardé dans
+// state.pollFills[pollId][case] (null = case vide) pour le remettre si je
+// décoche. Inversement, si je mets du rouge sur mon calendrier et que je ne
+// suis plus libre 45 min sur un créneau coché, il se décoche de ma réponse.
+let calendarTouched = false;
+
+function answerLabels(answer) {
+  return (Array.isArray(answer) ? answer : [answer]).filter((a) => a && a !== "Aucun");
+}
+
+function setCourseSkip(key, skipped) {
+  if (!state.courseSlotKeys || !state.courseSlotKeys.has(key)) return false;
+  const skips = new Set(state.courseSkips || []);
+  if (skipped === skips.has(key)) return false;
+  skipped ? skips.add(key) : skips.delete(key);
+  state.courseSkips = Array.from(skips);
+  return true;
+}
+
+// Applique ma réponse (liste de libellés cochés) au calendrier. Ne persiste
+// rien si rien ne change.
+function applyPollAnswerToMarks(poll, answer) {
+  state.pollFills = state.pollFills || {};
+  const firstTime = !state.pollFills[poll.id];
+  const fills = state.pollFills[poll.id] || {};
+  const todayISO = Grid.toISODate(new Date());
+  const chosen = new Set(answerLabels(answer));
+  const chosenKeys = new Set();
+  (poll.slots || []).forEach((s) => {
+    if (chosen.has(s.label) && s.date >= todayISO) pollSlotKeys(s).forEach((k) => chosenKeys.add(k));
+  });
+  let changed = firstTime;
+  let skipsChanged = false;
+  // Décoché : on remet comme avant (si la case est toujours verte).
+  Object.keys(fills).forEach((k) => {
+    if (chosenKeys.has(k)) return;
+    if (state.marks[k] === "available") {
+      const prev = fills[k];
+      if (prev) state.marks[k] = prev;
+      else delete state.marks[k];
+      if (prev === "unavailable") skipsChanged = setCourseSkip(k, false) || skipsChanged;
+    }
+    delete fills[k];
+    changed = true;
+  });
+  // Coché : on passe en vert en retenant l'état d'avant.
+  chosenKeys.forEach((k) => {
+    if (state.marks[k] === "available") return;
+    fills[k] = state.marks[k] || null;
+    state.marks[k] = "available";
+    skipsChanged = setCourseSkip(k, true) || skipsChanged;
+    changed = true;
+  });
+  state.pollFills[poll.id] = fills;
+  return { changed, skipsChanged };
+}
+
+async function saveAfterPollSync({ changed, skipsChanged }) {
+  if (skipsChanged) {
+    await db.updateMemberCourses(state.password, state.name, state.selectedCourses, state.courseMarkedKeys, state.groupSessions, state.courseSkips);
+  }
+  if (changed) await persistMarks();
+  if (changed || skipsChanged) {
+    renderGrid();
+    renderCoursesSummary();
+  }
+}
+
+async function syncPollAnswerToCalendar(poll, answer) {
+  if (!state.password || !state.marksLoaded) return;
+  await saveAfterPollSync(applyPollAnswerToMarks(poll, answer));
+}
+
+// Réponses déjà envoyées avant cette fonction (ou depuis un autre appareil) :
+// appliquées une fois au calendrier.
+let reconciling = false;
+async function reconcilePollsWithCalendar() {
+  if (!state.password || !state.marksLoaded || reconciling) return;
+  reconciling = true;
+  try {
+    let total = { changed: false, skipsChanged: false };
+    myPolls()
+      .filter((p) => p.type === "date" && p.status === "open")
+      .forEach((p) => {
+        const mine = (p.responses || []).find((r) => r.password === state.password);
+        if (!mine || (state.pollFills || {})[p.id]) return;
+        const r = applyPollAnswerToMarks(p, mine.answer);
+        total = { changed: total.changed || r.changed, skipsChanged: total.skipsChanged || r.skipsChanged };
+      });
+    await saveAfterPollSync(total);
+  } finally {
+    reconciling = false;
+  }
+}
+
+// Après une modif du calendrier : les créneaux cochés où je ne suis plus
+// libre au moins 45 min se décochent de ma réponse.
+async function uncheckPollSlotsNoLongerFree() {
+  if (!state.password) return;
+  for (const p of myPolls().filter((x) => x.type === "date" && x.status === "open")) {
+    const mine = (p.responses || []).find((r) => r.password === state.password);
+    if (!mine) continue;
+    const labels = answerLabels(mine.answer);
+    const slotByLabel = new Map((p.slots || []).map((s) => [s.label, s]));
+    const keep = labels.filter((l) => {
+      const s = slotByLabel.get(l);
+      return !s || mySlotStatus(s).code === "yes";
+    });
+    if (keep.length === labels.length) continue;
+    const answer = keep.length ? keep : ["Aucun"];
+    try {
+      await db.submitPollResponse(p.id, state.password, state.name, answer);
+      await syncPollAnswerToCalendar(p, answer);
+    } catch (err) {
+      console.error("Décochage du sondage impossible :", err);
+    }
+  }
+}
+
 function isKeyInCollectingSearch(key) {
   return collectingSearches().some((p) => searchCoversKey(p.search, key));
 }
@@ -1317,6 +1450,7 @@ function renderPollBanner() {
       try {
         await db.submitPollResponse(pollId, state.password, state.name, answer);
         editingPolls.delete(pollId);
+        if (poll.type === "date") await syncPollAnswerToCalendar(poll, answer);
       } catch (err) {
         alert(err.message || "Échec de l'envoi, réessaie.");
         btn.disabled = false;
@@ -1811,6 +1945,7 @@ async function applySelectedCourses({ askOverwrite = false, silent = false } = {
       );
     }
     if (res.added || res.removed) await persistMarks();
+    if (overwriteGreen) uncheckPollSlotsNoLongerFree();
     renderGrid();
     renderCoursesSummary();
     if (!silent) coursesStatus.textContent = `Appliqué ✓ — ${res.added} créneau(x) de cours ajouté(s), ${res.removed} retiré(s).`;
@@ -1879,6 +2014,7 @@ async function resetEverything() {
     if (k.split("|")[0] < todayISO) marks[k] = v;
   });
   state.marks = marks;
+  state.pollFills = Object.fromEntries(Object.keys(state.pollFills || {}).map((id) => [id, {}]));
   state.programs = [];
   state.selectedCourses = [];
   state.groupSessions = [];
@@ -1886,7 +2022,7 @@ async function resetEverything() {
   state.courseMarkedKeys = [];
   profileStatus.textContent = "Effacement…";
   try {
-    await db.saveMarks(state.password, state.name, state.marks);
+    await db.saveMarks(state.password, state.name, state.marks, state.pollFills);
     await db.updateMemberPrograms(state.password, []);
     await db.updateMemberCourses(state.password, state.name, [], [], [], []);
   } catch (err) {
@@ -2463,6 +2599,8 @@ function applyPaint(cell) {
     cell.classList.remove("avail-requested");
   }
   trackCourseSkip(key);
+  Object.values(state.pollFills || {}).forEach((fills) => delete fills[key]);
+  calendarTouched = true;
   renderAvailabilityBanner();
 }
 
@@ -2575,7 +2713,7 @@ async function persistMarks() {
   saveStatus.textContent = "Enregistrement…";
   saveStatus.className = "save-status saving";
   try {
-    await db.saveMarks(state.password, state.name, state.marks);
+    await db.saveMarks(state.password, state.name, state.marks, state.pollFills || {});
     saveStatus.textContent = "Enregistré ✓";
     saveStatus.className = "save-status saved";
     renderAvailabilityBanner();
@@ -2590,6 +2728,10 @@ function stopPainting() {
   if (isPainting) {
     isPainting = false;
     persistMarks();
+    if (calendarTouched) {
+      calendarTouched = false;
+      uncheckPollSlotsNoLongerFree();
+    }
     if (courseSkipsDirty) {
       courseSkipsDirty = false;
       db.updateMemberCourses(state.password, state.name, state.selectedCourses, state.courseMarkedKeys, state.groupSessions, state.courseSkips)
@@ -2668,6 +2810,7 @@ db.listenTasks((tasks) => {
 });
 db.listenPolls((polls) => {
   state.polls = polls;
+  reconcilePollsWithCalendar();
   renderPollBanner();
   renderAvailabilityBanner();
   if (state.password) renderGrid();

@@ -333,8 +333,25 @@ export async function getMarks(password) {
   return snap.exists() ? snap.data().marks || {} : {};
 }
 
-export async function saveMarks(password, name, marks) {
-  await setDoc(availabilityDocRef(password), { name, marks, updatedAt: serverTimestamp() });
+// pollFills (optionnel) = { pollId: { case: valeur d'avant | null } } : les
+// cases passées en vert parce que le membre a coché le créneau dans un
+// sondage de date, pour pouvoir les remettre comme avant s'il décoche.
+// mergeFields : les champs non fournis (ex. pollFills quand l'admin remplit
+// à la place d'un membre) sont conservés, ceux fournis sont remplacés en entier.
+export async function saveMarks(password, name, marks, pollFills) {
+  const data = { name, marks, updatedAt: serverTimestamp() };
+  const fields = ["name", "marks", "updatedAt"];
+  if (pollFills !== undefined) {
+    data.pollFills = pollFills;
+    fields.push("pollFills");
+  }
+  await setDoc(availabilityDocRef(password), data, { mergeFields: fields });
+}
+
+export async function getAvailability(password) {
+  const snap = await getDoc(availabilityDocRef(password));
+  const d = snap.exists() ? snap.data() : {};
+  return { marks: d.marks || {}, pollFills: d.pollFills || {} };
 }
 
 export function listenAllAvailability(callback) {
