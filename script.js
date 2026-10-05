@@ -1,7 +1,7 @@
 // ===================== SCRIPT.JS (page membre) =====================
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold } from "./config.js";
+import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold, pollIsFor } from "./config.js";
 import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
@@ -979,9 +979,14 @@ function availabilityRequestStats(ev) {
 // Recherches de date lancées par l'admin (polls type "date", status
 // "collecting") : la plage demandée est mise en avant en orange sur le
 // calendrier tant que le créneau n'est pas rempli.
+// Sondages qui me concernent (destinataires) — utilisé partout côté membre.
+function myPolls() {
+  return (state.polls || []).filter((p) => state.password && pollIsFor(p, state.password));
+}
+
 function collectingSearches() {
   const todayISO = Grid.toISODate(new Date());
-  return (state.polls || []).filter(
+  return myPolls().filter(
     (p) => p.type === "date" && (p.status === "collecting" || p.status === "open") && p.search && p.search.end >= todayISO
   );
 }
@@ -1003,7 +1008,7 @@ function searchCoversKey(search, key) {
 function openDatePollSlots() {
   const todayISO = Grid.toISODate(new Date());
   const list = [];
-  (state.polls || [])
+  myPolls()
     .filter((p) => p.type === "date" && p.status === "open")
     .forEach((p) => {
       (p.slots || []).forEach((s, i) => {
@@ -1162,7 +1167,7 @@ function renderPollBanner() {
     pollBanner.innerHTML = "";
     return;
   }
-  const open = (state.polls || []).filter((p) => (p.type === "date" ? p.status === "open" : pollStatus(p) === "open"));
+  const open = myPolls().filter((p) => (p.type === "date" ? p.status === "open" : pollStatus(p) === "open"));
   const myAnswer = (p) => (p.responses || []).find((r) => r.password === state.password);
   // Les sondages de date restent visibles après réponse (réduits, avec
   // "Modifier") : on peut changer d'avis ou passer au calendrier.

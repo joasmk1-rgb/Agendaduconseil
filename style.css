@@ -923,3 +923,13 @@ body.embedded { min-height: 0 !important; }
 section.fd-part.hidden { display: none; }
 .tools-picker.hidden { display: none; }
 .fd-how { color: var(--color-muted); font-size: 0.8em; }
+
+/* Destinataires d'un sondage */
+.audience-picker { flex-basis: 100%; }
+.audience-picker .aud-body { margin-top: 6px; padding: 8px; border: 1px solid var(--color-border); border-radius: 8px; }
+.audience-picker .aud-quick { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.audience-picker .aud-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2px 10px; }
+.audience-picker .aud-member { font-weight: normal; }
+.fd-form .fd-audience { grid-column: 1 / -1; }
+.fd-form .audience-picker > label { flex-direction: row; align-items: center; gap: 8px; }
+.audience-picker label.aud-member { display: flex; flex-direction: row; align-items: center; gap: 6px; font-size: 0.9rem; }

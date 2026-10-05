@@ -85,6 +85,12 @@ export function pollStatus(poll, now = new Date()) {
   return st;
 }
 
+// Destinataires d'un sondage : poll.audience = [ids membres]. Absent ou vide
+// = tout le monde. Seuls les destinataires le voient et sont comptés.
+export function pollIsFor(poll, memberId) {
+  return !Array.isArray(poll.audience) || !poll.audience.length || poll.audience.includes(memberId);
+}
+
 // Règle de présence pour une réunion : quelqu'un compte comme "dispo" s'il est
 // libre au moins 45 min sur le créneau (ou toute la durée si elle est plus
 // courte). Utilisée partout : meilleurs créneaux, résultats, sondage membre.

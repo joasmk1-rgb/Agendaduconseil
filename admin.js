@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -415,6 +415,95 @@ function runAdmin() {
 
   let currentConfig = { rangeDays: 90, includeWeekends: false };
   let currentMembers = [];
+
+  // Sélecteur "Destinataires" (sondages + Trouver une date) : tout le monde,
+  // ou une sélection cochée à la main, avec raccourcis par poste.
+  function makeAudiencePicker(el) {
+    const picked = new Set();
+    el.classList.add("audience-picker");
+    el.innerHTML = `<label>Destinataires <select class="aud-mode">
+        <option value="all">Tout le monde</option>
+        <option value="pick">Une sélection de personnes</option>
+      </select></label>
+      <div class="aud-body hidden">
+        <div class="aud-quick"></div>
+        <div class="aud-list"></div>
+        <p class="hint aud-count"></p>
+      </div>`;
+    const mode = el.querySelector(".aud-mode");
+    const body = el.querySelector(".aud-body");
+    const quick = el.querySelector(".aud-quick");
+    const list = el.querySelector(".aud-list");
+    const count = el.querySelector(".aud-count");
+    const quickBtn = (label, ids) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn btn-ghost btn-sm";
+      b.textContent = label;
+      b.addEventListener("click", () => {
+        const all = ids().every((id) => picked.has(id));
+        ids().forEach((id) => (all ? picked.delete(id) : picked.add(id)));
+        draw();
+      });
+      quick.appendChild(b);
+    };
+    function draw() {
+      const members = currentMembers.slice().sort((a, b) => a.name.localeCompare(b.name));
+      [...picked].forEach((id) => { if (!members.some((m) => m.id === id)) picked.delete(id); });
+      quick.innerHTML = "";
+      quickBtn("Tout le bureau", () => members.filter((m) => m.role).map((m) => m.id));
+      Object.entries(TOOL_ROLE_LABELS).forEach(([role, label]) => {
+        if (members.some((m) => m.role === role)) quickBtn(label, () => members.filter((m) => m.role === role).map((m) => m.id));
+      });
+      quickBtn("Tous", () => members.map((m) => m.id));
+      const none = document.createElement("button");
+      none.type = "button";
+      none.className = "btn btn-ghost btn-sm";
+      none.textContent = "Aucun";
+      none.addEventListener("click", () => { picked.clear(); draw(); });
+      quick.appendChild(none);
+      list.innerHTML = "";
+      members.forEach((m) => {
+        const lab = document.createElement("label");
+        lab.className = "checkbox-group aud-member";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = picked.has(m.id);
+        cb.addEventListener("change", () => { cb.checked ? picked.add(m.id) : picked.delete(m.id); count.textContent = `${picked.size} personne${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""}`; });
+        lab.appendChild(cb);
+        lab.append(` ${m.name}${m.role && TOOL_ROLE_LABELS[m.role] ? ` (${TOOL_ROLE_LABELS[m.role]})` : ""}`);
+        list.appendChild(lab);
+      });
+      count.textContent = `${picked.size} personne${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""} — seules elles verront ce sondage et seront comptées`;
+    }
+    mode.addEventListener("change", () => {
+      body.classList.toggle("hidden", mode.value !== "pick");
+      if (mode.value === "pick") draw();
+    });
+    return {
+      // {} = tout le monde ; { audience: [...] } ; null = sélection vide (alerte)
+      payload() {
+        if (mode.value !== "pick") return {};
+        if (!picked.size) {
+          alert("Coche au moins une personne (ou choisis « Tout le monde »).");
+          return null;
+        }
+        return { audience: [...picked] };
+      },
+      reset() {
+        picked.clear();
+        mode.value = "all";
+        body.classList.add("hidden");
+      },
+      refresh() {
+        if (mode.value === "pick") draw();
+      },
+    };
+  }
+  const pollAudienceEl = document.getElementById("poll-audience");
+  const pollAudience = makeAudiencePicker(pollAudienceEl);
+  const fdAudience = makeAudiencePicker(document.getElementById("fd-audience"));
+
   let currentEvents = [];
   let currentAvailability = [];
   let currentTasks = [];
@@ -974,12 +1063,12 @@ function runAdmin() {
   // dispo sur les créneaux donnés), "Indisponible" (a répondu "pas dispo" sur
   // au moins un créneau, sans atteindre le seuil) ou "Pas répondu" (rien de
   // tout ça). Partagé entre la vue "par événement" et le chercheur de créneau.
-  function classifyMembers(slotKeys, thresholdMinutes) {
+  function classifyMembers(slotKeys, thresholdMinutes, members = currentMembers) {
     const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
     const available = [];
     const unavailable = [];
     const unknown = [];
-    currentMembers.forEach((m) => {
+    members.forEach((m) => {
       const marks = marksByMember.get(m.id) || {};
       let availableSlots = 0;
       let hasUnavailable = false;
@@ -4098,6 +4187,16 @@ function runAdmin() {
     return keys;
   }
 
+  // Membres concernés par un sondage (destinataires) — tout le monde par défaut.
+  function pollMembers(poll) {
+    return currentMembers.filter((m) => !poll || pollIsFor(poll, m.id));
+  }
+  function audienceLabel(poll) {
+    if (!Array.isArray(poll.audience) || !poll.audience.length) return "";
+    const n = pollMembers(poll).length;
+    return `👥 ${n} destinataire${n > 1 ? "s" : ""}`;
+  }
+
   // "A rempli" = au moins une case marquée à la main sur la plage (les
   // heures de cours posées automatiquement ne comptent pas comme réponse).
   function fdParticipation(search, poll) {
@@ -4106,7 +4205,7 @@ function runAdmin() {
     const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
     const filled = [];
     const missing = [];
-    currentMembers.forEach((m) => {
+    pollMembers(poll).forEach((m) => {
       const marks = marksByMember.get(m.id) || {};
       const auto = new Set(m.courseMarkedKeys || []);
       const voted = voters.has(m.id);
@@ -4120,13 +4219,13 @@ function runAdmin() {
 
   // Meilleurs créneaux : classés par nombre de dispos puis d'indispos, sans
   // chevauchement entre eux, au plus FD_MAX_PER_DAY par jour pour varier.
-  function fdBestSlots(search) {
+  function fdBestSlots(search, members = currentMembers) {
     // "Dispo" = libre au moins 45 min sur le créneau ; à égalité, on préfère le créneau
     // où le plus de minutes sont cochées dispo (couverture partielle).
     const threshold = presenceThreshold(search.duration);
     const marksByMember = new Map(currentAvailability.map((r) => [r.id, r.marks || {}]));
     const greenCount = (keys) =>
-      currentMembers.reduce((n, m) => {
+      members.reduce((n, m) => {
         const marks = marksByMember.get(m.id) || {};
         return n + keys.filter((k) => marks[k] === "available").length;
       }, 0);
@@ -4140,7 +4239,7 @@ function runAdmin() {
           if (endMin > toMin) return;
           const endTime = minutesToTimeStr(endMin);
           const keys = slotKeysForRange(dateISO, startTime, endTime);
-          const c = classifyMembers(keys, threshold);
+          const c = classifyMembers(keys, threshold, members);
           results.push({ dateISO, startTime, endTime, green: greenCount(keys), ...c });
         });
     });
@@ -4193,6 +4292,8 @@ function runAdmin() {
       fdFormStatus.textContent = "Vérifie les heures (\"entre\" doit être avant \"et\").";
       return;
     }
+    const aud = fdAudience.payload();
+    if (aud === null) return;
     const lastVisible = Grid.toISODate(Grid.addDays(new Date(), currentConfig.rangeDays - 1));
     const warn = search.end > lastVisible
       ? ` ⚠️ La période affichée du site s'arrête le ${formatDateShortWithDay(lastVisible)} : allonge la "Fenêtre glissante" (Paramètres) pour que les membres voient toute la plage.`
@@ -4206,7 +4307,9 @@ function runAdmin() {
         options: [],
         responses: [],
         search,
+        ...aud,
       });
+      fdAudience.reset();
       fdFormStatus.textContent = `Recherche lancée : les membres sont prévenus sur leur calendrier.${warn}`;
     } catch (err) {
       console.error(err);
@@ -4246,15 +4349,15 @@ function runAdmin() {
       done: "✅ Réunion fixée",
       closed: "⚪ Arrêtée",
     }[poll.status] || poll.status;
-    card.innerHTML = `<div class="fd-card-head"><strong>${poll.question}</strong> <span class="hint">${fdRangeLabel(search)}</span><div class="fd-status">${statusLabel}</div></div>`;
+    card.innerHTML = `<div class="fd-card-head"><strong>${poll.question}</strong> <span class="hint">${fdRangeLabel(search)}${audienceLabel(poll) ? ` · ${audienceLabel(poll)}` : ""}</span><div class="fd-status">${statusLabel}</div></div>`;
 
     if (poll.status === "collecting" || poll.status === "open") {
       const part = fdParticipation(search, poll);
-      const total = currentMembers.length || 1;
+      const total = pollMembers(poll).length || 1;
       const p = document.createElement("div");
       p.className = "fd-participation";
       const pct = Math.round((part.filled.length / total) * 100);
-      p.innerHTML = `<div><strong>${part.filled.length}/${currentMembers.length}</strong> membres ont répondu (calendrier rempli sur la plage ou sondage)</div>
+      p.innerHTML = `<div><strong>${part.filled.length}/${pollMembers(poll).length}</strong> ${audienceLabel(poll) ? "destinataires" : "membres"} ont répondu (calendrier rempli sur la plage ou sondage)</div>
         <div class="fd-bar"><span style="width:${pct}%"></span></div>
         <details open><summary>✅ Ont répondu (${part.filled.length})</summary><p class="hint">${part.filled.map((f) => `${f.name} <span class="fd-how">(${f.how})</span>`).join(", ") || "Personne pour l'instant"}</p></details>
         <details open><summary>❔ N'ont pas encore répondu (${part.missing.length})</summary><p class="hint">${part.missing.join(", ") || "Personne 🎉"}</p></details>`;
@@ -4262,7 +4365,7 @@ function runAdmin() {
     }
 
     if (poll.status === "collecting") {
-      const slots = fdBestSlots(search);
+      const slots = fdBestSlots(search, pollMembers(poll));
       const excluded = fdExcluded.get(poll.id) || new Set();
       fdExcluded.set(poll.id, excluded);
       const box = document.createElement("div");
@@ -4320,7 +4423,7 @@ function runAdmin() {
       const dur = (search && search.duration) || 60;
       const slots = (poll.slots || []).map((s) => {
         const names = responses.filter((r) => (Array.isArray(r.answer) ? r.answer : [r.answer]).includes(s.label)).map((r) => r.name);
-        const cal = classifyMembers(slotKeysForRange(s.date, s.start, s.end), presenceThreshold(dur)).available.filter((n) => !voterNames.has(n));
+        const cal = classifyMembers(slotKeysForRange(s.date, s.start, s.end), presenceThreshold(dur), pollMembers(poll)).available.filter((n) => !voterNames.has(n));
         return { ...s, names, cal, total: names.length + cal.length };
       });
       const max = Math.max(0, ...slots.map((s) => s.total));
@@ -4369,13 +4472,13 @@ function runAdmin() {
         endTime: slot.end,
         status: "confirme",
       });
-      const { available } = classifyMembers(slotKeysForRange(slot.date, slot.start, slot.end), presenceThreshold((poll.search || {}).duration || 60));
+      const { available } = classifyMembers(slotKeysForRange(slot.date, slot.start, slot.end), presenceThreshold((poll.search || {}).duration || 60), pollMembers(poll));
       const availableNames = new Set(available);
       (poll.responses || []).forEach((r) => {
         if ((Array.isArray(r.answer) ? r.answer : [r.answer]).includes(slot.label)) availableNames.add(r.name);
       });
       const attendance = {};
-      currentMembers.forEach((m) => {
+      pollMembers(poll).forEach((m) => {
         attendance[m.id] = availableNames.has(m.name) ? "present" : "absent";
       });
       const meetingId = await db.addMeeting({
@@ -4421,6 +4524,8 @@ function runAdmin() {
     renderHeatmap();
     renderFillMemberOptions();
     renderBulkFillMemberCheckboxes();
+    pollAudience.refresh();
+    fdAudience.refresh();
     renderOrphans();
     renderResponseCount();
     renderMeetings();
@@ -4467,6 +4572,8 @@ function runAdmin() {
     if (type === "yesno") pollTypeYesnoBtn.classList.add("active");
     if (type === "text") pollTypeTextBtn.classList.add("active");
     pollChoiceOptions.classList.toggle("hidden", type !== "choice");
+    // Le vote officiel a ses votants (présents de la réunion) : pas de sélection.
+    pollAudienceEl.classList.toggle("hidden", type === "vote");
   }
   pollTypeChoiceBtn.addEventListener("click", () => setPollType("choice"));
   pollTypeYesnoBtn.addEventListener("click", () => setPollType("yesno"));
@@ -4599,9 +4706,15 @@ function runAdmin() {
       payload.options = options;
       payload.multiple = pollMultipleInput.checked;
     }
+    if (pollType !== "vote") {
+      const aud = pollAudience.payload();
+      if (aud === null) return;
+      Object.assign(payload, aud);
+    }
     pollSubmitBtn.disabled = true;
     try {
       await db.addPoll(payload);
+      pollAudience.reset();
       pollForm.reset();
       pollOptionsInput.value = "";
       pollMultipleInput.checked = false;
@@ -4629,7 +4742,7 @@ function runAdmin() {
   function summarizePoll(poll) {
     const responses = poll.responses || [];
     const respondedIds = new Set(responses.map((r) => r.password));
-    const expected = poll.type === "vote" ? voteEligible(poll) : currentMembers;
+    const expected = poll.type === "vote" ? voteEligible(poll) : pollMembers(poll);
     const notResponded = expected.filter((m) => !respondedIds.has(m.id));
     if (poll.type === "text") {
       return { notResponded, texts: responses.map((r) => ({ name: r.name, answer: r.answer })) };
@@ -4703,7 +4816,8 @@ function runAdmin() {
         const statusLabel =
           (st === "open" ? "🟢 ouvert" : st === "planned" ? `📅 planifié${poll.openAt ? ` — s'ouvre ${fmtDT(poll.openAt)}` : " — à ouvrir toi-même"}` : "⚪ fermé") +
           (poll.closeAt && st !== "closed" ? ` · se ferme ${fmtDT(poll.closeAt)}` : "") +
-          (link ? ` · lié à ${link}` : "");
+          (link ? ` · lié à ${link}` : "") +
+          (audienceLabel(poll) && poll.type !== "vote" ? ` · ${audienceLabel(poll)}` : "");
         li.innerHTML = `<div class="poll-item-header"><strong>${poll.question}</strong> <span class="hint">(${typeLabel} — ${statusLabel})</span></div>`;
 
         const actions = document.createElement("span");
