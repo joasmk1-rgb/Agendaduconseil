@@ -4301,9 +4301,7 @@ function runAdmin() {
       picked.push(r);
       perDay.set(r.dateISO, (perDay.get(r.dateISO) || 0) + 1);
     }
-    // Gardés dans l'ordre du classement (le meilleur en haut) ; remis dans
-    // l'ordre chronologique seulement au moment de publier le sondage.
-    return picked;
+    return picked.sort((a, b) => (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime));
   }
 
   function fdSlotLabel(s) {
@@ -4413,7 +4411,7 @@ function runAdmin() {
       box.className = "fd-slots";
       box.innerHTML = `<h4>Sondage prêt (brouillon) — ${slots.length} créneaux libres, mis à jour en direct</h4><p class="hint">Classés par le moins d'indispos (une case vide compte comme dispo potentielle), puis le plus de dispos confirmées. Décoche ceux que tu ne veux pas proposer. ✅ dispo · ❌ pas dispo · ❔ pas encore répondu.</p>`;
       if (!slots.length) box.innerHTML += '<p class="hint">Aucun créneau possible : vérifie la plage, les heures et la durée.</p>';
-      slots.forEach((s, i) => {
+      slots.forEach((s) => {
         const key = `${s.dateISO}|${s.startTime}`;
         const row = document.createElement("label");
         row.className = "fd-slot";
@@ -4423,7 +4421,7 @@ function runAdmin() {
         cb.addEventListener("change", () => (cb.checked ? excluded.delete(key) : excluded.add(key)));
         row.appendChild(cb);
         const text = document.createElement("span");
-        text.innerHTML = `<span class="fd-rank">#${i + 1}</span> <strong>${fdSlotLabel(s)}</strong> <span class="fd-counts">✅ ${s.available.length} · ❌ ${s.unavailable.length} · ❔ ${s.unknown.length}</span>`;
+        text.innerHTML = `<strong>${fdSlotLabel(s)}</strong> <span class="fd-counts">✅ ${s.available.length} · ❌ ${s.unavailable.length} · ❔ ${s.unknown.length}</span>`;
         text.title = `Dispo : ${s.available.join(", ") || "—"}\nPas dispo : ${s.unavailable.join(", ") || "—"}`;
         row.appendChild(text);
         box.appendChild(row);
