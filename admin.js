@@ -1207,7 +1207,7 @@ function runAdmin() {
 
     results.sort((a, b) => {
       if (b.available.length !== a.available.length) return b.available.length - a.available.length;
-      const rc = compareRoleVectors(roleVector(a.available, currentMembers), roleVector(b.available, currentMembers));
+      const rc = roleTieOn() ? compareRoleVectors(roleVector(a.available, currentMembers), roleVector(b.available, currentMembers)) : 0;
       if (rc) return rc;
       if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
       const dcmp = a.dateISO.localeCompare(b.dateISO);
@@ -4283,10 +4283,10 @@ function runAdmin() {
     results.sort((a, b) => {
       if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
       // À égalité : celui où les postes les plus importants ne sont PAS indispo.
-      const ru = compareRoleVectors(roleVector(b.unavailable, members), roleVector(a.unavailable, members));
+      const ru = roleTieOn() ? compareRoleVectors(roleVector(b.unavailable, members), roleVector(a.unavailable, members)) : 0;
       if (ru) return ru;
       if (b.available.length !== a.available.length) return b.available.length - a.available.length;
-      const ra = compareRoleVectors(roleVector(a.available, members), roleVector(b.available, members));
+      const ra = roleTieOn() ? compareRoleVectors(roleVector(a.available, members), roleVector(b.available, members)) : 0;
       if (ra) return ra;
       if (b.green !== a.green) return b.green - a.green;
       return (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime);
@@ -4467,7 +4467,7 @@ function runAdmin() {
         return { ...s, names, cal, total: all.length, roles: roleVector(all, currentMembers), roleNames: fdRoleNames(all) };
       });
       // Meilleur = le plus de monde, puis (à égalité) les postes les plus importants.
-      const better = (a, b) => (b.total - a.total) || compareRoleVectors(a.roles, b.roles);
+      const better = (a, b) => (b.total - a.total) || (roleTieOn() ? compareRoleVectors(a.roles, b.roles) : 0);
       const best = slots.slice().sort(better)[0];
       slots.forEach((s) => {
         const row = document.createElement("div");
@@ -4502,6 +4502,22 @@ function runAdmin() {
     }
     return card;
   }
+
+  // Case "départager par poste" (Trouver une date), enregistrée dans
+  // config/current.roleTieBreak — activée tant qu'elle n'a jamais été décochée.
+  function roleTieOn() {
+    return currentConfig.roleTieBreak !== false;
+  }
+  const fdRoleTie = document.getElementById("fd-role-tie");
+  fdRoleTie.addEventListener("change", async () => {
+    try {
+      await db.saveConfig({ ...currentConfig, roleTieBreak: fdRoleTie.checked });
+    } catch (err) {
+      console.error(err);
+      alert("Échec de l'enregistrement, réessaie.");
+      fdRoleTie.checked = roleTieOn();
+    }
+  });
 
   // "Présidente, Secrétaire" — postes présents parmi ces noms, du plus important au moins.
   function fdRoleNames(names) {
@@ -4560,6 +4576,7 @@ function runAdmin() {
   // ---------- Abonnements en direct ----------
   db.listenConfig((config) => {
     currentConfig = config || { rangeDays: 90, includeWeekends: false };
+    fdRoleTie.checked = currentConfig.roleTieBreak !== false;
     fillConfigForm(currentConfig);
     renderBlockedSlots();
     renderHeatmap();

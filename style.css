@@ -948,3 +948,4 @@ section.fd-part.hidden { display: none; }
 .event-range-pick { max-width: 100%; font-size: 0.85rem; }
 .fd-form .event-range-pick { grid-column: 1 / -1; justify-self: start; }
 .fd-roles { color: #7c3aed; font-weight: 600; }
+.fd-role-tie { margin: 6px 0; font-size: 0.9rem; }
