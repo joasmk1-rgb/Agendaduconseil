@@ -4301,7 +4301,9 @@ function runAdmin() {
       picked.push(r);
       perDay.set(r.dateISO, (perDay.get(r.dateISO) || 0) + 1);
     }
-    return picked.sort((a, b) => (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime));
+    // Gardés dans l'ordre du classement (le meilleur en haut) ; remis dans
+    // l'ordre chronologique seulement au moment de publier le sondage.
+    return picked;
   }
 
   function fdSlotLabel(s) {
@@ -4411,7 +4413,7 @@ function runAdmin() {
       box.className = "fd-slots";
       box.innerHTML = `<h4>Sondage prêt (brouillon) — ${slots.length} créneaux libres, mis à jour en direct</h4><p class="hint">Classés par le moins d'indispos (une case vide compte comme dispo potentielle), puis le plus de dispos confirmées. Décoche ceux que tu ne veux pas proposer. ✅ dispo · ❌ pas dispo · ❔ pas encore répondu.</p>`;
       if (!slots.length) box.innerHTML += '<p class="hint">Aucun créneau possible : vérifie la plage, les heures et la durée.</p>';
-      slots.forEach((s) => {
+      slots.forEach((s, i) => {
         const key = `${s.dateISO}|${s.startTime}`;
         const row = document.createElement("label");
         row.className = "fd-slot";
@@ -4421,7 +4423,7 @@ function runAdmin() {
         cb.addEventListener("change", () => (cb.checked ? excluded.delete(key) : excluded.add(key)));
         row.appendChild(cb);
         const text = document.createElement("span");
-        text.innerHTML = `<strong>${fdSlotLabel(s)}</strong> <span class="fd-counts">✅ ${s.available.length} · ❌ ${s.unavailable.length} · ❔ ${s.unknown.length}</span>`;
+        text.innerHTML = `<span class="fd-rank">#${i + 1}</span> <strong>${fdSlotLabel(s)}</strong> <span class="fd-counts">✅ ${s.available.length} · ❌ ${s.unavailable.length} · ❔ ${s.unknown.length}</span>`;
         text.title = `Dispo : ${s.available.join(", ") || "—"}\nPas dispo : ${s.unavailable.join(", ") || "—"}`;
         row.appendChild(text);
         box.appendChild(row);
@@ -4431,7 +4433,9 @@ function runAdmin() {
       actions.className = "control-group actions";
       actions.appendChild(
         fdButton("📣 Publier le sondage", "btn-primary", async () => {
-          const chosen = slots.filter((s) => !excluded.has(`${s.dateISO}|${s.startTime}`));
+          const chosen = slots
+            .filter((s) => !excluded.has(`${s.dateISO}|${s.startTime}`))
+            .sort((a, b) => (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime));
           if (!chosen.length) {
             alert("Garde au moins un créneau à proposer.");
             return;
@@ -4468,12 +4472,14 @@ function runAdmin() {
       });
       // Meilleur = le plus de monde, puis (à égalité) les postes les plus importants.
       const better = (a, b) => (b.total - a.total) || (roleTieOn() ? compareRoleVectors(a.roles, b.roles) : 0);
-      const best = slots.slice().sort(better)[0];
-      slots.forEach((s) => {
+      // Du plus voté au moins voté (à égalité : ordre chronologique).
+      slots.sort((a, b) => better(a, b) || (a.date + a.start).localeCompare(b.date + b.start));
+      const best = slots[0];
+      slots.forEach((s, i) => {
         const row = document.createElement("div");
         row.className = `fd-slot${best && best.total && better(s, best) === 0 ? " fd-best" : ""}`;
         const text = document.createElement("span");
-        text.innerHTML = `<strong>${s.label}</strong> — <strong>${s.total} dispo</strong>${s.roleNames ? ` <span class="fd-roles">· ${s.roleNames}</span>` : ""} : ${s.names.length} oui au sondage <span class="hint">(${s.names.join(", ") || "—"})</span>${s.cal.length ? ` + ${s.cal.length} d'après le calendrier <span class="hint">(${s.cal.join(", ")})</span>` : ""}`;
+        text.innerHTML = `<span class="fd-rank">#${i + 1}</span> <strong>${s.label}</strong> — <strong>${s.total} dispo</strong>${s.roleNames ? ` <span class="fd-roles">· ${s.roleNames}</span>` : ""} : ${s.names.length} oui au sondage <span class="hint">(${s.names.join(", ") || "—"})</span>${s.cal.length ? ` + ${s.cal.length} d'après le calendrier <span class="hint">(${s.cal.join(", ")})</span>` : ""}`;
         row.appendChild(text);
         row.appendChild(fdButton("Choisir ce créneau", "btn-ghost", () => fdChoose(poll, s)));
         box.appendChild(row);

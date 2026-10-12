@@ -949,3 +949,4 @@ section.fd-part.hidden { display: none; }
 .fd-form .event-range-pick { grid-column: 1 / -1; justify-self: start; }
 .fd-roles { color: #7c3aed; font-weight: 600; }
 .fd-role-tie { margin: 6px 0; font-size: 0.9rem; }
+.fd-rank { display: inline-block; min-width: 2.2em; color: #64748b; font-weight: 700; font-size: 0.85rem; }
