@@ -947,3 +947,4 @@ section.fd-part.hidden { display: none; }
 #heatmap-grid .cell.all-free { outline: 2px solid #f59e0b; outline-offset: -2px; font-weight: 700; }
 .event-range-pick { max-width: 100%; font-size: 0.85rem; }
 .fd-form .event-range-pick { grid-column: 1 / -1; justify-self: start; }
+.fd-roles { color: #7c3aed; font-weight: 600; }

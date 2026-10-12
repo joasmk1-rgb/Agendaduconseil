@@ -91,6 +91,20 @@ export function pollIsFor(poll, memberId) {
   return !Array.isArray(poll.audience) || !poll.audience.length || poll.audience.includes(memberId);
 }
 
+// Départage par poste : à nombre de personnes égal, le créneau qui réunit
+// les postes les plus importants passe devant. Ordre : présidente > (VP =
+// secrétaire) > communication > trésorier > membre sans poste.
+export const ROLE_TIERS = [["presidente"], ["vice-presidente", "secretaire"], ["communication"], ["tresorier"]];
+export function roleVector(names, members) {
+  const roleByName = new Map((members || []).map((m) => [m.name, m.role || ""]));
+  return ROLE_TIERS.map((tier) => (names || []).filter((n) => tier.includes(roleByName.get(n))).length);
+}
+// < 0 si a a des postes plus importants que b (à trier en premier).
+export function compareRoleVectors(a, b) {
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return b[i] - a[i];
+  return 0;
+}
+
 // Règle de présence pour une réunion : quelqu'un compte comme "dispo" s'il est
 // libre au moins 45 min sur le créneau (ou toute la durée si elle est plus
 // courte). Utilisée partout : meilleurs créneaux, résultats, sondage membre.

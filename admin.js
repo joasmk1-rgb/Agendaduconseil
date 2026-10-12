@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor, roleVector, compareRoleVectors } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -1207,6 +1207,8 @@ function runAdmin() {
 
     results.sort((a, b) => {
       if (b.available.length !== a.available.length) return b.available.length - a.available.length;
+      const rc = compareRoleVectors(roleVector(a.available, currentMembers), roleVector(b.available, currentMembers));
+      if (rc) return rc;
       if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
       const dcmp = a.dateISO.localeCompare(b.dateISO);
       if (dcmp !== 0) return dcmp;
@@ -4280,7 +4282,12 @@ function runAdmin() {
     // par le plus de dispos confirmées, puis par le plus de minutes en vert.
     results.sort((a, b) => {
       if (a.unavailable.length !== b.unavailable.length) return a.unavailable.length - b.unavailable.length;
+      // À égalité : celui où les postes les plus importants ne sont PAS indispo.
+      const ru = compareRoleVectors(roleVector(b.unavailable, members), roleVector(a.unavailable, members));
+      if (ru) return ru;
       if (b.available.length !== a.available.length) return b.available.length - a.available.length;
+      const ra = compareRoleVectors(roleVector(a.available, members), roleVector(b.available, members));
+      if (ra) return ra;
       if (b.green !== a.green) return b.green - a.green;
       return (a.dateISO + a.startTime).localeCompare(b.dateISO + b.startTime);
     });
@@ -4456,14 +4463,17 @@ function runAdmin() {
       const slots = (poll.slots || []).map((s) => {
         const names = responses.filter((r) => (Array.isArray(r.answer) ? r.answer : [r.answer]).includes(s.label)).map((r) => r.name);
         const cal = classifyMembers(slotKeysForRange(s.date, s.start, s.end), presenceThreshold(dur), pollMembers(poll)).available.filter((n) => !voterNames.has(n));
-        return { ...s, names, cal, total: names.length + cal.length };
+        const all = names.concat(cal);
+        return { ...s, names, cal, total: all.length, roles: roleVector(all, currentMembers), roleNames: fdRoleNames(all) };
       });
-      const max = Math.max(0, ...slots.map((s) => s.total));
+      // Meilleur = le plus de monde, puis (à égalité) les postes les plus importants.
+      const better = (a, b) => (b.total - a.total) || compareRoleVectors(a.roles, b.roles);
+      const best = slots.slice().sort(better)[0];
       slots.forEach((s) => {
         const row = document.createElement("div");
-        row.className = `fd-slot${s.total && s.total === max ? " fd-best" : ""}`;
+        row.className = `fd-slot${best && best.total && better(s, best) === 0 ? " fd-best" : ""}`;
         const text = document.createElement("span");
-        text.innerHTML = `<strong>${s.label}</strong> — <strong>${s.total} dispo</strong> : ${s.names.length} oui au sondage <span class="hint">(${s.names.join(", ") || "—"})</span>${s.cal.length ? ` + ${s.cal.length} d'après le calendrier <span class="hint">(${s.cal.join(", ")})</span>` : ""}`;
+        text.innerHTML = `<strong>${s.label}</strong> — <strong>${s.total} dispo</strong>${s.roleNames ? ` <span class="fd-roles">· ${s.roleNames}</span>` : ""} : ${s.names.length} oui au sondage <span class="hint">(${s.names.join(", ") || "—"})</span>${s.cal.length ? ` + ${s.cal.length} d'après le calendrier <span class="hint">(${s.cal.join(", ")})</span>` : ""}`;
         row.appendChild(text);
         row.appendChild(fdButton("Choisir ce créneau", "btn-ghost", () => fdChoose(poll, s)));
         box.appendChild(row);
@@ -4491,6 +4501,13 @@ function runAdmin() {
       card.appendChild(actions);
     }
     return card;
+  }
+
+  // "Présidente, Secrétaire" — postes présents parmi ces noms, du plus important au moins.
+  function fdRoleNames(names) {
+    const order = ["presidente", "vice-presidente", "secretaire", "communication", "tresorier"];
+    const roles = names.map((n) => (currentMembers.find((m) => m.name === n) || {}).role).filter((r) => r && TOOL_ROLE_LABELS[r]);
+    return order.filter((r) => roles.includes(r)).map((r) => TOOL_ROLE_LABELS[r]).join(", ");
   }
 
   async function fdChoose(poll, slot) {
