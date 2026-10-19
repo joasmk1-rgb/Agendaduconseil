@@ -1826,10 +1826,40 @@ function runAdmin() {
             if (!confirm(msg)) return;
             const base = { type: "approval", options: APPROVAL_OPTIONS.slice(), status: "open", closeAt, meetingId: meeting.id, responses: [] };
             await db.addPoll({ ...base, approvalKind: "odj", question: `Approuves-tu l'ordre du jour de la réunion du ${fmtDateFR(meeting.date)} ?` });
-            if (prev) await db.addPoll({ ...base, approvalKind: "pv", pvOfMeetingId: prev.id, question: `Approuves-tu le PV de la réunion du ${fmtDateFR(prev.date)} ?` });
+            const pvAlready = prev && currentPolls.some((p) => p.type === "approval" && p.approvalKind === "pv" && p.pvOfMeetingId === prev.id);
+            if (prev && !pvAlready) await db.addPoll({ ...base, approvalKind: "pv", pvOfMeetingId: prev.id, question: `Approuves-tu le PV de la réunion du ${fmtDateFR(prev.date)} ?` });
             window.showAdminView && window.showAdminView("polls");
           });
           header.appendChild(apBtn);
+        } else {
+          // Réunion terminée : approbation de SON PV, sans attendre que la
+          // réunion suivante soit planifiée (fermée au début de celle-ci si elle existe).
+          const existingPv = currentPolls.filter((p) => p.type === "approval" && p.approvalKind === "pv" && p.pvOfMeetingId === meeting.id);
+          const pvBtn = document.createElement("button");
+          pvBtn.type = "button";
+          pvBtn.className = "btn btn-ghost btn-sm";
+          pvBtn.textContent = existingPv.length ? "🗳️ Approbation du PV lancée" : "🗳️ Lancer l'approbation du PV";
+          pvBtn.addEventListener("click", async () => {
+            if (existingPv.length) {
+              window.showAdminView && window.showAdminView("polls");
+              return;
+            }
+            const next = currentMeetings
+              .filter((x) => x.id !== meeting.id && (x.date || "") > (meeting.date || "") && x.status !== "done")
+              .sort((a, b) => (a.date || "").localeCompare(b.date || ""))[0];
+            const msg = `Créer le sondage « Approbation du PV de la réunion du ${fmtDateFR(meeting.date)} » ?\n\n${next ? `Il se fermera au début de la réunion du ${fmtDateFR(next.date)}.` : "Pas encore de réunion suivante : pas de fermeture automatique (tu peux en mettre une dans Sondages ou le fermer à la main)."}`;
+            if (!confirm(msg)) return;
+            const poll = { type: "approval", options: APPROVAL_OPTIONS.slice(), status: "open", responses: [], approvalKind: "pv", pvOfMeetingId: meeting.id, question: `Approuves-tu le PV de la réunion du ${fmtDateFR(meeting.date)} ?` };
+            if (next) {
+              poll.meetingId = next.id;
+              poll.closeAt = `${next.date}T${next.startTime || "08:00"}`;
+            } else {
+              poll.meetingId = meeting.id;
+            }
+            await db.addPoll(poll);
+            window.showAdminView && window.showAdminView("polls");
+          });
+          header.appendChild(pvBtn);
         }
 
         const removeBtn = document.createElement("button");
