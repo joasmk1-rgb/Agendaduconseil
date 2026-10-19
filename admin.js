@@ -4472,6 +4472,16 @@ function runAdmin() {
       const box = document.createElement("div");
       box.className = "fd-slots";
       box.innerHTML = `<h4>Sondage prêt (brouillon) — ${slots.length} créneaux libres, mis à jour en direct</h4><p class="hint">Classés par le moins d'indispos (une case vide compte comme dispo potentielle), puis le plus de dispos confirmées. Décoche ceux que tu ne veux pas proposer. ✅ dispo · ❌ pas dispo · ❔ pas encore répondu.</p>`;
+      // Nombre de créneaux proposés, modifiable sur le brouillon (max 4 par jour).
+      const countLab = document.createElement("label");
+      countLab.className = "fd-count-edit";
+      countLab.innerHTML = `Propositions : <select>${[10, 15, 20, 25, 30, 32].map((n) => `<option value="${n}"${n === (search.count || FD_SLOT_COUNT) ? " selected" : ""}>${n} créneaux</option>`).join("")}</select>`;
+      countLab.querySelector("select").addEventListener("change", (e) => db.updatePoll(poll.id, { search: { ...search, count: Number(e.target.value) } }));
+      box.appendChild(countLab);
+      const nDays = fdDates(search).length;
+      if ((search.count || FD_SLOT_COUNT) > nDays * FD_MAX_PER_DAY) {
+        box.insertAdjacentHTML("beforeend", `<p class="hint">ℹ️ ${nDays} jour${nDays > 1 ? "s" : ""} dans la plage × ${FD_MAX_PER_DAY} par jour = ${nDays * FD_MAX_PER_DAY} créneaux au maximum.</p>`);
+      }
       if (!slots.length) box.innerHTML += '<p class="hint">Aucun créneau possible : vérifie la plage, les heures et la durée.</p>';
       slots.forEach((s) => {
         const key = `${s.dateISO}|${s.startTime}`;
@@ -4547,6 +4557,11 @@ function runAdmin() {
       card.appendChild(box);
       const actions = document.createElement("div");
       actions.className = "control-group actions";
+      actions.appendChild(fdButton("↩️ Repasser en brouillon", "btn-ghost", async () => {
+        const n = (poll.responses || []).length;
+        if (!confirm(n ? `Repasser en brouillon ? Les ${n} réponse(s) déjà reçues seront effacées (les membres devront répondre à nouveau).` : "Repasser en brouillon pour changer les créneaux proposés ? Le sondage disparaît chez les membres jusqu'à ce que tu le republies.")) return;
+        await db.updatePoll(poll.id, { status: "collecting", responses: [], options: [], slots: [] });
+      }));
       actions.appendChild(fdButton("Arrêter sans choisir", "btn-ghost", async () => {
         if (confirm("Arrêter ce sondage sans fixer de date ?")) await db.updatePoll(poll.id, { status: "closed" });
       }));
