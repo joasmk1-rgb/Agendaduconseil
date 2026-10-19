@@ -4804,15 +4804,27 @@ function runAdmin() {
   const pollPlanClose = document.getElementById("poll-plan-close");
   function fillPlanLinkSelect() {
     const todayISO = Grid.toISODate(new Date());
-    const meetings = currentMeetings.filter((m) => (m.date || "") >= todayISO).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-    const events = currentEvents.filter((e) => (e.date || "") >= todayISO).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    // À venir ou en cours (un événement sur plusieurs jours déjà commencé
+    // compte), puis les passés récents — utile pour un sondage de retour ou
+    // l'approbation d'un PV.
+    const end = (x) => x.endDate || x.date || "";
+    const byDate = (a, b) => (a.date || "").localeCompare(b.date || "");
+    const byDateDesc = (a, b) => (b.date || "").localeCompare(a.date || "");
+    const upMeetings = currentMeetings.filter((m) => (m.date || "") >= todayISO).sort(byDate);
+    const pastMeetings = currentMeetings.filter((m) => (m.date || "") < todayISO).sort(byDateDesc).slice(0, 10);
+    const upEvents = currentEvents.filter((e) => end(e) >= todayISO).sort(byDate);
+    const pastEvents = currentEvents.filter((e) => end(e) < todayISO).sort(byDateDesc).slice(0, 15);
     const searches = currentPolls.filter((p) => p.type === "date" && (p.status === "collecting" || p.status === "open"));
     const keep = pollPlanLink.value;
+    const evLabel = (e) => `📅 ${e.label} (${e.endDate && e.endDate !== e.date ? `${e.date} → ${e.endDate}` : e.date})`;
+    const group = (label, html) => (html ? `<optgroup label="${label}">${html}</optgroup>` : "");
     pollPlanLink.innerHTML =
       '<option value="">Rien de particulier</option>' +
-      searches.map((p) => `<option value="search:${p.id}">📆 ${p.question} (date pas encore fixée)</option>`).join("") +
-      meetings.map((m) => `<option value="meeting:${m.id}">🗓️ Réunion du ${m.date}</option>`).join("") +
-      events.map((e) => `<option value="event:${e.id}">📅 ${e.label} (${e.date})</option>`).join("");
+      group("Réunion à fixer", searches.map((p) => `<option value="search:${p.id}">📆 ${p.question} (date pas encore fixée)</option>`).join("")) +
+      group("Réunions à venir", upMeetings.map((m) => `<option value="meeting:${m.id}">🗓️ Réunion du ${m.date}</option>`).join("")) +
+      group("Événements à venir / en cours", upEvents.map((e) => `<option value="event:${e.id}">${evLabel(e)}</option>`).join("")) +
+      group("Réunions passées", pastMeetings.map((m) => `<option value="meeting:${m.id}">🗓️ Réunion du ${m.date}</option>`).join("")) +
+      group("Événements passés", pastEvents.map((e) => `<option value="event:${e.id}">${evLabel(e)}</option>`).join(""));
     if ([...pollPlanLink.options].some((o) => o.value === keep)) pollPlanLink.value = keep;
   }
   function syncPlanUi() {
