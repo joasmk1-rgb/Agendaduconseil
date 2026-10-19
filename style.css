@@ -950,3 +950,14 @@ section.fd-part.hidden { display: none; }
 .fd-roles { color: #7c3aed; font-weight: 600; }
 .fd-role-tie { margin: 6px 0; font-size: 0.9rem; }
 .fd-rank { display: inline-block; min-width: 2.2em; color: #64748b; font-weight: 700; font-size: 0.85rem; }
+
+/* Approbation ODJ / PV + liens de documents */
+.poll-doc-link { margin-left: 6px; }
+.poll-remark { display: block; width: 100%; margin-top: 6px; }
+.poll-remark.hidden { display: none; }
+.poll-doc-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; flex-wrap: wrap; font-size: 0.9rem; }
+.poll-doc-row input { flex: 1; min-width: 220px; }
+.poll-doc-row.missing { color: #b45309; font-weight: 600; }
+.approval-remarks { margin: 6px 0; padding: 6px 10px; border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); border-radius: 4px; }
+.approval-remarks ul { margin: 4px 0 0; padding-left: 18px; }
+.poll-doc input { width: 100%; }

@@ -739,7 +739,8 @@ export async function removePoll(id) {
 
 // Transaction pour éviter qu'un double-clic (ou deux onglets) n'ajoute deux
 // réponses du même membre.
-export async function submitPollResponse(id, password, name, answer) {
+// extra : champs en plus sur la réponse (ex. { remark } pour une approbation).
+export async function submitPollResponse(id, password, name, answer, extra = {}) {
   const ref = doc(firestore, "polls", id);
   await runTransaction(firestore, async (tx) => {
     const snap = await tx.get(ref);
@@ -751,7 +752,7 @@ export async function submitPollResponse(id, password, name, answer) {
     if (st === "open" && data.closeAt && now >= new Date(data.closeAt).getTime()) st = "closed";
     if (st !== "open") throw new Error(st === "planned" ? "Ce vote n'est pas encore ouvert." : "Ce sondage est fermé.");
     const current = (data.responses || []).filter((r) => r.password !== password);
-    tx.update(ref, { responses: [...current, { password, name, answer }] });
+    tx.update(ref, { responses: [...current, { ...extra, password, name, answer }] });
   });
 }
 

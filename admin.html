@@ -117,6 +117,11 @@
           <div class="control-group checkbox-group">
             <label><input type="checkbox" id="config-password-change"> Autoriser les membres à changer leur mot de passe</label>
           </div>
+          <div class="control-group">
+            <label>💬 Lien du Teams du conseil <span class="hint">(affiché en haut du site pour les membres connectés — vide = pas de bouton)</span>
+              <input type="url" id="config-teams-url" placeholder="https://teams.microsoft.com/…">
+            </label>
+          </div>
           <p class="hint">Le changement de mot de passe est disponible pour chacun dans « Mon profil » (volet replié tout en bas).</p>
           <div class="control-group actions">
             <button type="submit" class="btn btn-primary">Enregistrer</button>
@@ -321,6 +326,7 @@
             <button type="button" id="poll-type-yesno" class="mode-btn" data-polltype="yesno">Oui / Non (avis de tous)</button>
             <button type="button" id="poll-type-text" class="mode-btn" data-polltype="text">Réponse libre</button>
             <button type="button" id="poll-type-vote" class="mode-btn" data-polltype="vote">🗳️ Vote officiel (présents)</button>
+            <button type="button" id="poll-type-approval" class="mode-btn" data-polltype="approval">✅ Approbation (ODJ / PV)</button>
           </div>
         </div>
         <div id="poll-vote-options" class="control-group hidden">
@@ -331,10 +337,25 @@
             <option value="2/3">Majorité des 2/3 (abstentions non comptées)</option>
           </select></label>
         </div>
+        <div id="poll-approval-options" class="control-group hidden">
+          <p class="hint">Chacun répond « J'approuve » ou « Je n'approuve pas » (avec une remarque obligatoire pour dire quoi corriger). Astuce : le bouton « 🗳️ Lancer les approbations » dans <strong>Réunions</strong> crée les deux sondages (ODJ + PV précédent) en un clic.</p>
+          <label>Approbation de
+            <select id="poll-approval-kind">
+              <option value="odj">l'ordre du jour</option>
+              <option value="pv">du PV</option>
+              <option value="other">autre document</option>
+            </select>
+          </label>
+        </div>
         <div id="poll-choice-options" class="control-group">
           <label>Options (une par ligne)</label>
           <textarea id="poll-options-input" rows="3" placeholder="Option A&#10;Option B&#10;Option C"></textarea>
           <label class="checkbox-group"><input type="checkbox" id="poll-multiple-input"> Autoriser plusieurs choix à la fois</label>
+        </div>
+        <div class="control-group poll-doc">
+          <label>📄 Colle ici le lien du document <span class="hint">(Teams, SharePoint, OneDrive, Drive… — optionnel, sauf pour une approbation)</span>
+            <input type="url" id="poll-doc-url" placeholder="https://…">
+          </label>
         </div>
         <div id="poll-audience" class="control-group"></div>
         <div class="control-group poll-plan">

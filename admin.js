@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor, roleVector, compareRoleVectors } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor, roleVector, compareRoleVectors, safeUrl, APPROVAL_OPTIONS } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -301,6 +301,11 @@ function runAdmin() {
   const pollVoteOptions = document.getElementById("poll-vote-options");
   const pollVoteMeeting = document.getElementById("poll-vote-meeting");
   const pollVoteMajority = document.getElementById("poll-vote-majority");
+  const pollTypeApprovalBtn = document.getElementById("poll-type-approval");
+  const pollApprovalOptions = document.getElementById("poll-approval-options");
+  const pollApprovalKind = document.getElementById("poll-approval-kind");
+  const pollDocUrl = document.getElementById("poll-doc-url");
+  const configTeamsUrl = document.getElementById("config-teams-url");
   const pollPlanMode = document.getElementById("poll-plan-mode");
   const pollPlanLink = document.getElementById("poll-plan-link");
   const pollPlanOpen = document.getElementById("poll-plan-open");
@@ -571,6 +576,7 @@ function runAdmin() {
     agendaTabToggle.checked = !!(config && config.agendaTabEnabled);
     tasksTabToggle.checked = !!(config && config.tasksTabEnabled);
     passwordChangeToggle.checked = !!(config && config.passwordChangeEnabled);
+    configTeamsUrl.value = (config && config.teamsUrl) || "";
     focusDateInput.value = (config && config.focusDate) || "";
   }
 
@@ -623,6 +629,7 @@ function runAdmin() {
         agendaTabEnabled: agendaTabToggle.checked,
         tasksTabEnabled: tasksTabToggle.checked,
         passwordChangeEnabled: passwordChangeToggle.checked,
+        teamsUrl: safeUrl(configTeamsUrl.value),
       });
       configStatus.textContent = "Enregistré ✓";
     } catch (err) {
@@ -1799,6 +1806,31 @@ function runAdmin() {
           }
         });
         header.appendChild(statusBtn);
+
+        // Approbations ODJ (cette réunion) + PV (réunion précédente) en un clic.
+        if (meeting.status !== "done") {
+          const existing = currentPolls.filter((p) => p.type === "approval" && p.meetingId === meeting.id);
+          const apBtn = document.createElement("button");
+          apBtn.type = "button";
+          apBtn.className = "btn btn-ghost btn-sm";
+          apBtn.textContent = existing.length ? `🗳️ Approbations lancées (${existing.length})` : "🗳️ Lancer les approbations";
+          apBtn.title = "Crée les sondages « Approbation de l'ordre du jour » de cette réunion et « Approbation du PV » de la réunion précédente, fermés au début de la réunion.";
+          apBtn.addEventListener("click", async () => {
+            if (existing.length) {
+              window.showAdminView && window.showAdminView("polls");
+              return;
+            }
+            const prev = previousMeeting(meeting);
+            const closeAt = `${meeting.date}T${meeting.startTime || "08:00"}`;
+            const msg = `Créer ${prev ? "2 sondages" : "1 sondage"} ?\n\n• Approbation de l'ordre du jour du ${fmtDateFR(meeting.date)}${prev ? `\n• Approbation du PV du ${fmtDateFR(prev.date)}` : "\n(aucune réunion précédente trouvée : pas de sondage PV)"}\n\nOuverts tout de suite, fermés au début de la réunion. Tu colleras ensuite les liens des documents dans Sondages.`;
+            if (!confirm(msg)) return;
+            const base = { type: "approval", options: APPROVAL_OPTIONS.slice(), status: "open", closeAt, meetingId: meeting.id, responses: [] };
+            await db.addPoll({ ...base, approvalKind: "odj", question: `Approuves-tu l'ordre du jour de la réunion du ${fmtDateFR(meeting.date)} ?` });
+            if (prev) await db.addPoll({ ...base, approvalKind: "pv", pvOfMeetingId: prev.id, question: `Approuves-tu le PV de la réunion du ${fmtDateFR(prev.date)} ?` });
+            window.showAdminView && window.showAdminView("polls");
+          });
+          header.appendChild(apBtn);
+        }
 
         const removeBtn = document.createElement("button");
         removeBtn.type = "button";
@@ -4636,7 +4668,9 @@ function runAdmin() {
 
   function setPollType(type) {
     pollType = type;
-    [pollTypeChoiceBtn, pollTypeYesnoBtn, pollTypeTextBtn, pollTypeVoteBtn].forEach((btn) => btn.classList.remove("active"));
+    [pollTypeChoiceBtn, pollTypeYesnoBtn, pollTypeTextBtn, pollTypeVoteBtn, pollTypeApprovalBtn].forEach((btn) => btn.classList.remove("active"));
+    if (type === "approval") pollTypeApprovalBtn.classList.add("active");
+    pollApprovalOptions.classList.toggle("hidden", type !== "approval");
     if (type === "vote") pollTypeVoteBtn.classList.add("active");
     pollVoteOptions.classList.toggle("hidden", type !== "vote");
     if (type === "vote") fillVoteMeetingSelect();
@@ -4651,6 +4685,38 @@ function runAdmin() {
   pollTypeYesnoBtn.addEventListener("click", () => setPollType("yesno"));
   pollTypeTextBtn.addEventListener("click", () => setPollType("text"));
   pollTypeVoteBtn.addEventListener("click", () => setPollType("vote"));
+  pollTypeApprovalBtn.addEventListener("click", () => {
+    setPollType("approval");
+    suggestApprovalQuestion();
+  });
+  // Question proposée d'après le type (ODJ / PV) et la réunion choisie dans
+  // "Lié à" — tant que l'admin n'a pas écrit sa propre question.
+  let approvalAutoQuestion = "";
+  function suggestApprovalQuestion() {
+    if (pollType !== "approval") return;
+    const cur = pollQuestionInput.value.trim();
+    if (cur && cur !== approvalAutoQuestion) return;
+    const link = pollPlanLink.value || "";
+    const m = link.startsWith("meeting:") ? currentMeetings.find((x) => x.id === link.slice(8)) : null;
+    const kind = pollApprovalKind.value;
+    let q = "";
+    if (kind === "odj") q = `Approuves-tu l'ordre du jour de la réunion${m ? ` du ${fmtDateFR(m.date)}` : ""} ?`;
+    else if (kind === "pv") q = `Approuves-tu le PV de la réunion${m ? ` du ${fmtDateFR((previousMeeting(m) || m).date)}` : " précédente"} ?`;
+    if (q) {
+      approvalAutoQuestion = q;
+      pollQuestionInput.value = q;
+    }
+  }
+  pollApprovalKind.addEventListener("change", suggestApprovalQuestion);
+  pollPlanLink.addEventListener("change", suggestApprovalQuestion);
+  function fmtDateFR(iso) {
+    return iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("fr-BE", { weekday: "long", day: "numeric", month: "long" }) : "";
+  }
+  function previousMeeting(meeting) {
+    return currentMeetings
+      .filter((x) => x.id !== meeting.id && (x.date || "") < (meeting.date || ""))
+      .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+  }
 
   // ---------- Planification des sondages ----------
   const pollPlanClose = document.getElementById("poll-plan-close");
@@ -4750,6 +4816,17 @@ function runAdmin() {
       payload.options = ["Pour", "Contre", "Abstention"];
       payload.status = "open";
     }
+    const docUrl = safeUrl(pollDocUrl.value);
+    if (pollDocUrl.value.trim() && !docUrl) {
+      alert("Le lien du document doit commencer par https://");
+      return;
+    }
+    if (docUrl) payload.docUrl = docUrl;
+    if (pollType === "approval") {
+      payload.options = APPROVAL_OPTIONS.slice();
+      payload.approvalKind = pollApprovalKind.value;
+      if (!docUrl && !confirm("Pas encore de lien vers le document. Créer quand même ? (tu pourras le coller plus tard dans la liste des sondages)")) return;
+    }
     // Planification
     const mode = pollPlanMode.value;
     if (mode === "manual") payload.status = "planned";
@@ -4793,6 +4870,8 @@ function runAdmin() {
       pollPlanMode.value = "now";
       pollPlanOpen.value = "";
       pollPlanClose.value = "";
+      pollDocUrl.value = "";
+      approvalAutoQuestion = "";
       syncPlanUi();
       setPollType("choice");
     } catch (err) {
@@ -4809,7 +4888,10 @@ function runAdmin() {
   const pollDetailView = new Set();
   const openVoteEntry = new Set(); // panneaux "saisir les votes" laissés ouverts
   // Les sondages planifiés s'ouvrent / se ferment à l'heure : on rafraîchit.
-  setInterval(() => renderPolls(), 60000);
+  setInterval(() => {
+    // Pas de rafraîchissement pendant qu'on tape (ex. lien du document).
+    if (!pollList.contains(document.activeElement)) renderPolls();
+  }, 60000);
 
   function summarizePoll(poll) {
     const responses = poll.responses || [];
@@ -4820,7 +4902,7 @@ function runAdmin() {
       return { notResponded, texts: responses.map((r) => ({ name: r.name, answer: r.answer })) };
     }
     // choice / yesno : compte par option
-    const options = poll.type === "yesno" ? ["Oui", "Non"] : poll.type === "vote" ? ["Pour", "Contre", "Abstention"] : poll.options || [];
+    const options = poll.type === "yesno" ? ["Oui", "Non"] : poll.type === "vote" ? ["Pour", "Contre", "Abstention"] : poll.type === "approval" ? APPROVAL_OPTIONS : poll.options || [];
     const counts = {};
     options.forEach((o) => (counts[o] = 0));
     responses.forEach((r) => {
@@ -4871,6 +4953,16 @@ function runAdmin() {
       const noVoters = expected ? "" : '<p class="hint">⚠️ Personne n\'est marqué présent dans cette réunion : coche les présences dans Réunions pour que les membres puissent voter.</p>';
       return `${head}${noVoters}${barsHtml}${detailHtml}${notRespondedHtml.replace("N'ont pas répondu", "N'ont pas encore voté")}`;
     }
+    if (poll.type === "approval") {
+      // Les remarques sont toujours nominatives : il faut savoir qui demande quelle correction.
+      const remarks = (poll.responses || []).filter((r) => r.remark);
+      const remarksHtml = remarks.length
+        ? `<div class="approval-remarks"><strong>✏️ Corrections demandées (${remarks.length})</strong><ul>${remarks
+            .map((r) => `<li><strong>${r.name}</strong> : ${String(r.remark).replace(/</g, "&lt;")}</li>`)
+            .join("")}</ul></div>`
+        : "";
+      return `${barsHtml}${remarksHtml}${detailHtml}${notRespondedHtml}`;
+    }
     return `${barsHtml}${detailHtml}${notRespondedHtml}`;
   }
 
@@ -4882,7 +4974,7 @@ function runAdmin() {
       .forEach((poll) => {
         const li = document.createElement("li");
         li.className = "poll-item";
-        const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre", vote: "🗳️ Vote" }[poll.type] || poll.type;
+        const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre", vote: "🗳️ Vote", approval: "✅ Approbation" }[poll.type] || poll.type;
         const st = pollStatus(poll);
         const link = pollLinkLabel(poll);
         const statusLabel =
@@ -4891,6 +4983,22 @@ function runAdmin() {
           (link ? ` · lié à ${link}` : "") +
           (audienceLabel(poll) && poll.type !== "vote" ? ` · ${audienceLabel(poll)}` : "");
         li.innerHTML = `<div class="poll-item-header"><strong>${poll.question}</strong> <span class="hint">(${typeLabel} — ${statusLabel})</span></div>`;
+        // Lien du document : collable / modifiable directement ici.
+        const doc = document.createElement("div");
+        doc.className = `poll-doc-row${poll.type === "approval" && !poll.docUrl ? " missing" : ""}`;
+        doc.innerHTML = `${poll.type === "approval" && !poll.docUrl ? "⚠️ " : ""}📄 <input type="url" placeholder="Colle ici le lien du document (Teams, SharePoint, Drive…)" value="${poll.docUrl || ""}"> <button type="button" class="btn btn-ghost btn-sm">Enregistrer</button>${poll.docUrl ? ` <a href="${safeUrl(poll.docUrl)}" target="_blank" rel="noopener">Ouvrir</a>` : ""}`;
+        const docInput = doc.querySelector("input");
+        const saveDoc = async () => {
+          const url = safeUrl(docInput.value);
+          if (docInput.value.trim() && !url) {
+            alert("Le lien doit commencer par https://");
+            return;
+          }
+          if ((url || null) !== (poll.docUrl || null)) await db.updatePoll(poll.id, { docUrl: url || null });
+        };
+        doc.querySelector("button").addEventListener("click", saveDoc);
+        docInput.addEventListener("change", saveDoc);
+        li.appendChild(doc);
 
         const actions = document.createElement("span");
         actions.className = "item-actions";
@@ -5308,6 +5416,7 @@ function runAdmin() {
     currentPolls = polls;
     renderPolls();
     renderFindDate();
+    renderMeetings();
   });
 
   db.listenAgendaProposals((proposals) => {

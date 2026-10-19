@@ -85,6 +85,13 @@ export function pollStatus(poll, now = new Date()) {
   return st;
 }
 
+// Lien externe sûr (http/https seulement) — pour les liens de documents / Teams.
+export function safeUrl(u) {
+  const s = String(u || "").trim();
+  return /^https?:\/\//i.test(s) ? s.replace(/"/g, "%22").replace(/</g, "%3C") : "";
+}
+export const APPROVAL_OPTIONS = ["J'approuve", "Je n'approuve pas"];
+
 // Destinataires d'un sondage : poll.audience = [ids membres]. Absent ou vide
 // = tout le monde. Seuls les destinataires le voient et sont comptés.
 export function pollIsFor(poll, memberId) {

@@ -1,7 +1,7 @@
 // ===================== SCRIPT.JS (page membre) =====================
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold, pollIsFor } from "./config.js";
+import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold, pollIsFor, safeUrl, APPROVAL_OPTIONS } from "./config.js";
 import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
@@ -1439,10 +1439,20 @@ function renderPollBanner() {
           .join("");
       } else if (poll.type === "yesno") {
         fieldsHtml = `<label class="checkbox-group"><input type="radio" name="poll-${poll.id}" value="Oui"> Oui</label><label class="checkbox-group"><input type="radio" name="poll-${poll.id}" value="Non"> Non</label>`;
+      } else if (poll.type === "approval") {
+        fieldsHtml =
+          APPROVAL_OPTIONS.map((o) => `<label class="checkbox-group"><input type="radio" name="poll-${poll.id}" value="${o}"> ${o === APPROVAL_OPTIONS[0] ? "✅" : "✏️"} ${o}</label>`).join("") +
+          `<textarea class="poll-remark hidden" rows="2" placeholder="Qu'est-ce qu'il faut corriger ou ajouter ?"></textarea>`;
       } else {
         fieldsHtml = `<input type="text" class="poll-text-input" data-poll="${poll.id}" placeholder="Ta réponse">`;
       }
-      return `<div class="avail-request-item poll-banner-item" data-poll-id="${poll.id}">📝 <strong>${poll.question}</strong><div class="poll-banner-fields">${fieldsHtml}</div><button type="button" class="btn btn-primary btn-sm poll-submit-btn" data-poll="${poll.id}">Répondre</button></div>`;
+      const doc = safeUrl(poll.docUrl);
+      const docHtml = doc
+        ? `<a class="btn btn-ghost btn-sm poll-doc-link" href="${doc}" target="_blank" rel="noopener">📄 Ouvrir le document</a>`
+        : poll.type === "approval"
+          ? '<span class="hint">📄 Le document n\'est pas encore en ligne.</span>'
+          : "";
+      return `<div class="avail-request-item poll-banner-item" data-poll-id="${poll.id}">${poll.type === "approval" ? "✅" : "📝"} <strong>${poll.question}</strong> ${docHtml}<div class="poll-banner-fields">${fieldsHtml}</div><button type="button" class="btn btn-primary btn-sm poll-submit-btn" data-poll="${poll.id}">Répondre</button></div>`;
     })
     .join("");
 
@@ -1475,6 +1485,14 @@ function renderPollBanner() {
       else delete state.pollLabels[input.dataset.poll];
       persistMarks();
       renderGrid();
+    });
+  });
+  // Approbation : la remarque s'ouvre quand on choisit "Je n'approuve pas".
+  pollBanner.querySelectorAll(".poll-remark").forEach((ta) => {
+    const item = ta.closest(".poll-banner-item");
+    item.addEventListener("change", () => {
+      const v = (item.querySelector("input:checked") || {}).value;
+      ta.classList.toggle("hidden", v !== APPROVAL_OPTIONS[1]);
     });
   });
   pollBanner.querySelectorAll(".poll-edit-btn").forEach((btn) => {
@@ -1513,9 +1531,18 @@ function renderPollBanner() {
         }
         answer = (poll.type === "choice" && poll.multiple) || poll.type === "date" ? checked : checked[0];
       }
+      const extra = {};
+      if (poll.type === "approval" && answer === APPROVAL_OPTIONS[1]) {
+        const remark = (item.querySelector(".poll-remark").value || "").trim();
+        if (!remark) {
+          alert("Dis en quelques mots ce qu'il faut corriger, pour qu'on puisse le faire.");
+          return;
+        }
+        extra.remark = remark.slice(0, 1000);
+      }
       btn.disabled = true;
       try {
-        await db.submitPollResponse(pollId, state.password, state.name, answer);
+        await db.submitPollResponse(pollId, state.password, state.name, answer, extra);
         editingPolls.delete(pollId);
         if (poll.type === "date") await syncPollAnswerToCalendar(poll, answer);
       } catch (err) {
@@ -2871,6 +2898,14 @@ gridScrollEl.addEventListener("scroll", () => syncDateStrip(), { passive: true }
 // tout de suite, sans attendre de connexion.
 db.listenConfig((config) => {
   state.config = config;
+  {
+    const teams = document.getElementById("teams-link");
+    const url = safeUrl(config && config.teamsUrl);
+    if (teams) {
+      teams.classList.toggle("hidden", !url);
+      if (url) teams.href = url;
+    }
+  }
   renderGrid();
   if (state.marksLoaded) maybeAutoApplyCourses();
   applyPublicTabsVisibility();
