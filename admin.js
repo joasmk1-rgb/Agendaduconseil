@@ -4553,6 +4553,44 @@ function runAdmin() {
       card.appendChild(actions);
     }
 
+    // Réunion pas encore fixée : on prépare déjà l'ODJ et les approbations.
+    // Les points sont stockés avec meetingId = "search:<id>" et basculent sur
+    // la vraie réunion quand on choisit le créneau (voir fdChoose).
+    if (poll.status === "collecting" || poll.status === "open") {
+      const prep = document.createElement("details");
+      prep.className = "fd-prep";
+      const searchKey = `search:${poll.id}`;
+      const nItems = currentAgendaItems.filter((it) => it.meetingId === searchKey).length;
+      const approvals = currentPolls.filter((p) => p.type === "approval" && p.searchId === poll.id);
+      prep.open = fdPrepOpen.has(poll.id);
+      prep.addEventListener("toggle", () => (prep.open ? fdPrepOpen.add(poll.id) : fdPrepOpen.delete(poll.id)));
+      prep.innerHTML = `<summary>📝 Préparer la réunion dès maintenant <span class="hint">(${nItems} point${nItems > 1 ? "s" : ""} d'ODJ · ${approvals.length} approbation${approvals.length > 1 ? "s" : ""})</span></summary><p class="hint">Tout ce que tu prépares ici passe automatiquement sur la réunion quand tu choisis le créneau.</p>`;
+      const apBtn = document.createElement("button");
+      apBtn.type = "button";
+      apBtn.className = "btn btn-ghost btn-sm";
+      apBtn.textContent = approvals.length ? `🗳️ Approbations lancées (${approvals.length}) — voir dans Sondages` : "🗳️ Lancer les approbations (ODJ + PV précédent)";
+      apBtn.addEventListener("click", async () => {
+        if (approvals.length) {
+          window.showAdminView && window.showAdminView("polls");
+          return;
+        }
+        const todayISO = Grid.toISODate(new Date());
+        const prev = currentMeetings
+          .filter((m) => (m.date || "") <= todayISO)
+          .sort((a, b) => (b.date || "").localeCompare(a.date || ""))[0];
+        const pvAlready = prev && currentPolls.some((p) => p.type === "approval" && p.approvalKind === "pv" && p.pvOfMeetingId === prev.id);
+        const msg = `Créer ${prev && !pvAlready ? "2 sondages" : "1 sondage"} ?\n\n• Approbation de l'ordre du jour de « ${poll.question} »${prev ? (pvAlready ? `\n(le PV du ${fmtDateFR(prev.date)} a déjà son sondage)` : `\n• Approbation du PV du ${fmtDateFR(prev.date)}`) : ""}\n\nOuverts tout de suite. Quand tu fixes la date, ils se rattachent à la réunion et se ferment à son heure de début.`;
+        if (!confirm(msg)) return;
+        const base = { type: "approval", options: APPROVAL_OPTIONS.slice(), status: "open", searchId: poll.id, responses: [], audience: poll.audience || null };
+        await db.addPoll({ ...base, approvalKind: "odj", autoQuestion: true, question: `Approuves-tu l'ordre du jour de la prochaine réunion (« ${poll.question} ») ?` });
+        if (prev && !pvAlready) await db.addPoll({ ...base, approvalKind: "pv", pvOfMeetingId: prev.id, question: `Approuves-tu le PV de la réunion du ${fmtDateFR(prev.date)} ?` });
+        window.showAdminView && window.showAdminView("polls");
+      });
+      prep.appendChild(apBtn);
+      prep.appendChild(renderAgendaSection({ id: searchKey }));
+      card.appendChild(prep);
+    }
+
     if (poll.status === "done" && poll.chosen) {
       const p = document.createElement("p");
       p.textContent = `Réunion fixée le ${poll.chosen.label} — visible dans Réunions et dans le calendrier de tous.`;
@@ -4592,6 +4630,8 @@ function runAdmin() {
     return order.filter((r) => roles.includes(r)).map((r) => TOOL_ROLE_LABELS[r]).join(", ");
   }
 
+  const fdPrepOpen = new Set(); // volets "Préparer la réunion" laissés ouverts
+
   async function fdChoose(poll, slot) {
     if (!confirm(`Fixer la réunion le ${slot.label} ? La réunion et l'événement sont créés, le sondage est clôturé.`)) return;
     try {
@@ -4628,7 +4668,19 @@ function runAdmin() {
       await db.updatePoll(poll.id, { status: "done", chosen: slot, meetingId });
       // Votes / sondages préparés pour cette réunion avant que la date soit fixée.
       await Promise.all(
-        currentPolls.filter((p) => p.searchId === poll.id).map((p) => db.updatePoll(p.id, { meetingId, searchId: null }))
+        currentPolls
+          .filter((p) => p.searchId === poll.id)
+          .map((p) => {
+            const patch = { meetingId, searchId: null };
+            // Approbations : fermées au début de la réunion, question datée.
+            if (p.type === "approval" && !p.closeAt) patch.closeAt = `${slot.date}T${slot.start}`;
+            if (p.type === "approval" && p.approvalKind === "odj" && p.autoQuestion) patch.question = `Approuves-tu l'ordre du jour de la réunion du ${fmtDateFR(slot.date)} ?`;
+            return db.updatePoll(p.id, patch);
+          })
+      );
+      // Points d'ODJ préparés sur la recherche -> la vraie réunion.
+      await Promise.all(
+        currentAgendaItems.filter((it) => it.meetingId === `search:${poll.id}`).map((it) => db.updateAgendaItem(it.id, { meetingId }))
       );
     } catch (err) {
       console.error(err);
@@ -5360,9 +5412,17 @@ function runAdmin() {
       acceptBtn.className = "btn btn-primary btn-sm";
       acceptBtn.textContent = "✅ Accepter";
       acceptBtn.addEventListener("click", async () => {
-        const meeting = nextPlannedMeeting();
+        let meeting = nextPlannedMeeting();
         if (!meeting) {
-          alert("Aucune réunion prévue à venir — crée d'abord la prochaine réunion (onglet Réunions) avant d'accepter cette suggestion.");
+          // Pas encore de réunion, mais une recherche de date en cours : le
+          // point va dans l'ODJ préparé sur cette recherche.
+          const search = currentPolls
+            .filter((x) => x.type === "date" && (x.status === "collecting" || x.status === "open"))
+            .sort((a, b) => ((a.search || {}).start || "").localeCompare((b.search || {}).start || ""))[0];
+          if (search) meeting = { id: `search:${search.id}` };
+        }
+        if (!meeting) {
+          alert("Aucune réunion prévue à venir (ni recherche de date en cours) — crée d'abord la prochaine réunion avant d'accepter cette suggestion.");
           return;
         }
         acceptBtn.disabled = true;
@@ -5440,6 +5500,7 @@ function runAdmin() {
   db.listenAgendaItems((items) => {
     currentAgendaItems = items;
     renderMeetings();
+    renderFindDate();
   });
 
   db.listenPolls((polls) => {
