@@ -1,5 +1,5 @@
 // ===================== ADMIN.JS =====================
-import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor, roleVector, compareRoleVectors, safeUrl, APPROVAL_OPTIONS } from "./config.js";
+import { ADMIN_PASSPHRASE, CONFIG, toolsFor, TOOL_LABELS, ROLE_LABELS as TOOL_ROLE_LABELS, DEFAULT_ROLE_TOOLS, pollStatus, presenceThreshold, pollIsFor, roleVector, compareRoleVectors, safeUrl, APPROVAL_OPTIONS, EXTERNAL_VOTED } from "./config.js";
 
 // Mode "intégré" : admin.html?embed=<outil> est affiché dans l'onglet
 // "🛠️ Outils" du site public, pour les postes (présidente, secrétaire…).
@@ -305,6 +305,9 @@ function runAdmin() {
   const pollApprovalOptions = document.getElementById("poll-approval-options");
   const pollApprovalKind = document.getElementById("poll-approval-kind");
   const pollDocUrl = document.getElementById("poll-doc-url");
+  const pollTypeExternalBtn = document.getElementById("poll-type-external");
+  const pollExternalOptions = document.getElementById("poll-external-options");
+  const pollExternalUrl = document.getElementById("poll-external-url");
   const configTeamsUrl = document.getElementById("config-teams-url");
   const pollPlanMode = document.getElementById("poll-plan-mode");
   const pollPlanLink = document.getElementById("poll-plan-link");
@@ -4765,7 +4768,9 @@ function runAdmin() {
 
   function setPollType(type) {
     pollType = type;
-    [pollTypeChoiceBtn, pollTypeYesnoBtn, pollTypeTextBtn, pollTypeVoteBtn, pollTypeApprovalBtn].forEach((btn) => btn.classList.remove("active"));
+    [pollTypeChoiceBtn, pollTypeYesnoBtn, pollTypeTextBtn, pollTypeVoteBtn, pollTypeApprovalBtn, pollTypeExternalBtn].forEach((btn) => btn.classList.remove("active"));
+    if (type === "external") pollTypeExternalBtn.classList.add("active");
+    pollExternalOptions.classList.toggle("hidden", type !== "external");
     if (type === "approval") pollTypeApprovalBtn.classList.add("active");
     pollApprovalOptions.classList.toggle("hidden", type !== "approval");
     if (type === "vote") pollTypeVoteBtn.classList.add("active");
@@ -4782,6 +4787,7 @@ function runAdmin() {
   pollTypeYesnoBtn.addEventListener("click", () => setPollType("yesno"));
   pollTypeTextBtn.addEventListener("click", () => setPollType("text"));
   pollTypeVoteBtn.addEventListener("click", () => setPollType("vote"));
+  pollTypeExternalBtn.addEventListener("click", () => setPollType("external"));
   pollTypeApprovalBtn.addEventListener("click", () => {
     setPollType("approval");
     suggestApprovalQuestion();
@@ -4931,6 +4937,15 @@ function runAdmin() {
       return;
     }
     if (docUrl) payload.docUrl = docUrl;
+    if (pollType === "external") {
+      const ext = safeUrl(pollExternalUrl.value);
+      if (!ext) {
+        alert("Colle le lien du Forms (il doit commencer par https://).");
+        return;
+      }
+      payload.externalUrl = ext;
+      payload.options = [EXTERNAL_VOTED];
+    }
     if (pollType === "approval") {
       payload.options = APPROVAL_OPTIONS.slice();
       payload.approvalKind = pollApprovalKind.value;
@@ -4980,6 +4995,7 @@ function runAdmin() {
       pollPlanOpen.value = "";
       pollPlanClose.value = "";
       pollDocUrl.value = "";
+      pollExternalUrl.value = "";
       approvalAutoQuestion = "";
       syncPlanUi();
       setPollType("choice");
@@ -5011,7 +5027,7 @@ function runAdmin() {
       return { notResponded, texts: responses.map((r) => ({ name: r.name, answer: r.answer })) };
     }
     // choice / yesno : compte par option
-    const options = poll.type === "yesno" ? ["Oui", "Non"] : poll.type === "vote" ? ["Pour", "Contre", "Abstention"] : poll.type === "approval" ? APPROVAL_OPTIONS : poll.options || [];
+    const options = poll.type === "yesno" ? ["Oui", "Non"] : poll.type === "vote" ? ["Pour", "Contre", "Abstention"] : poll.type === "approval" ? APPROVAL_OPTIONS : poll.type === "external" ? [EXTERNAL_VOTED] : poll.options || [];
     const counts = {};
     options.forEach((o) => (counts[o] = 0));
     responses.forEach((r) => {
@@ -5072,6 +5088,11 @@ function runAdmin() {
         : "";
       return `${barsHtml}${remarksHtml}${detailHtml}${notRespondedHtml}`;
     }
+    if (poll.type === "external") {
+      const ext = safeUrl(poll.externalUrl);
+      const voted = (poll.responses || []).length;
+      return `<p class="vote-summary"><strong>${voted} / ${voted + summary.notResponded.length}</strong> disent avoir voté${ext ? ` · <a href="${ext}" target="_blank" rel="noopener">Ouvrir le Forms</a> (les résultats sont dans Forms)` : ""}</p>${notRespondedHtml.replace("N'ont pas répondu", "N'ont pas encore voté")}`;
+    }
     return `${barsHtml}${detailHtml}${notRespondedHtml}`;
   }
 
@@ -5083,7 +5104,7 @@ function runAdmin() {
       .forEach((poll) => {
         const li = document.createElement("li");
         li.className = "poll-item";
-        const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre", vote: "🗳️ Vote", approval: "✅ Approbation" }[poll.type] || poll.type;
+        const typeLabel = { choice: "Choix", yesno: "Oui/Non", text: "Libre", vote: "🗳️ Vote", approval: "✅ Approbation", external: "🔗 Vote externe (Forms)" }[poll.type] || poll.type;
         const st = pollStatus(poll);
         const link = pollLinkLabel(poll);
         const statusLabel =

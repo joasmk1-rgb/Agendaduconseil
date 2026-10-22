@@ -91,6 +91,7 @@ export function safeUrl(u) {
   return /^https?:\/\//i.test(s) ? s.replace(/"/g, "%22").replace(/</g, "%3C") : "";
 }
 export const APPROVAL_OPTIONS = ["J'approuve", "Je n'approuve pas"];
+export const EXTERNAL_VOTED = "J'ai voté";
 
 // Destinataires d'un sondage : poll.audience = [ids membres]. Absent ou vide
 // = tout le monde. Seuls les destinataires le voient et sont comptés.

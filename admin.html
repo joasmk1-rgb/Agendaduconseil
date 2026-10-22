@@ -327,6 +327,7 @@
             <button type="button" id="poll-type-text" class="mode-btn" data-polltype="text">Réponse libre</button>
             <button type="button" id="poll-type-vote" class="mode-btn" data-polltype="vote">🗳️ Vote officiel (présents)</button>
             <button type="button" id="poll-type-approval" class="mode-btn" data-polltype="approval">✅ Approbation (ODJ / PV)</button>
+            <button type="button" id="poll-type-external" class="mode-btn" data-polltype="external">🔗 Vote externe (Forms)</button>
           </div>
         </div>
         <div id="poll-vote-options" class="control-group hidden">
@@ -346,6 +347,10 @@
               <option value="other">autre document</option>
             </select>
           </label>
+        </div>
+        <div id="poll-external-options" class="control-group hidden">
+          <p class="hint">Le vote se fait sur Microsoft Forms (anonyme) : le site affiche un bouton « 🗳️ Voter sur Forms » et une case « J'ai voté ». Il ne connaît jamais le vote, seulement qui dit avoir voté — pratique pour relancer.<br>Réglages du Forms : « Seules les personnes de mon organisation peuvent répondre », décocher « Enregistrer le nom », cocher « Une réponse par personne ».</p>
+          <label>🔗 Colle ici le lien du Forms <input type="url" id="poll-external-url" placeholder="https://forms.office.com/…"></label>
         </div>
         <div id="poll-choice-options" class="control-group">
           <label>Options (une par ligne)</label>

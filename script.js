@@ -1,7 +1,7 @@
 // ===================== SCRIPT.JS (page membre) =====================
 import * as Grid from "./grid.js";
 import * as db from "./db.js";
-import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold, pollIsFor, safeUrl, APPROVAL_OPTIONS } from "./config.js";
+import { CONFIG, TOOL_LABELS, toolsFor, hasRolesTab, pollStatus, presenceThreshold, pollIsFor, safeUrl, APPROVAL_OPTIONS, EXTERNAL_VOTED } from "./config.js";
 import { computeUnavailableSlots } from "./ics.js";
 import * as Courses from "./courses.js";
 
@@ -1439,6 +1439,11 @@ function renderPollBanner() {
           .join("");
       } else if (poll.type === "yesno") {
         fieldsHtml = `<label class="checkbox-group"><input type="radio" name="poll-${poll.id}" value="Oui"> Oui</label><label class="checkbox-group"><input type="radio" name="poll-${poll.id}" value="Non"> Non</label>`;
+      } else if (poll.type === "external") {
+        const ext = safeUrl(poll.externalUrl);
+        fieldsHtml =
+          (ext ? `<a class="btn btn-primary btn-sm" href="${ext}" target="_blank" rel="noopener">🗳️ Voter sur Forms</a>` : '<span class="hint">Lien du vote pas encore disponible.</span>') +
+          `<label class="checkbox-group"><input type="checkbox" name="poll-${poll.id}" value="${EXTERNAL_VOTED}"> J'ai voté</label><span class="hint">Ton vote reste anonyme : le site sait juste que tu as voté.</span>`;
       } else if (poll.type === "approval") {
         fieldsHtml =
           APPROVAL_OPTIONS.map((o) => `<label class="checkbox-group"><input type="radio" name="poll-${poll.id}" value="${o}"> ${o === APPROVAL_OPTIONS[0] ? "✅" : "✏️"} ${o}</label>`).join("") +
